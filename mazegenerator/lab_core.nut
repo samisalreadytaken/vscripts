@@ -1,14 +1,11 @@
 //------------ Copyright (C) 2019 Sam - STEAM_0:1:26669608 --------------
-
-/////////////////////////////////
-/////////////////////////////////
-/////////////////////////////////
-/////////////////////////////////
+//------------------------------
+//
 // cell values
 // ["value", "1", "2", "3", "4", "position", "propSpawned"]
 //    [0]    [1]  [2]  [3]  [4]     [5]           [6]
-/////////////////////////////////
-/////////////////////////////////
+//
+//------------------------------
 //   x 1 2 3 4 5 6
 // y
 // 1   0 0 0 0 0 0
@@ -18,13 +15,12 @@
 // 5   0 0 0 0 0 0
 // 6   0 0 0 0 0 0
 //
-//////////////////////
-//////directions//////
-///////// 1 //////////
-/////// 4   2 ////////
-///////// 3 //////////
-//////////////////////
-//////////////////////
+//------------------------------
+//--- directions ---------------
+//        1
+//      4   2
+//        3
+//------------------------------
 
 PrecacheModel(mdl_player)
 PrecacheModel(pxl_rev)
@@ -47,65 +43,97 @@ PrecacheModel(mdl_t_2)
 PrecacheModel(mdl_t_3)
 PrecacheModel(mdl_t_4)
 
-// gameui <- VS.Entity.CreateUI()
-VS.GetSoloPlayer()
+function Init(i=0)
+{
+	MAZE_YX = VS.Console.CreateDisplay2D(_MAZE_X+2,_MAZE_Y+2, 6)
 
-MAZE_YX <- VS.Console.CreateDisplayArray( _MAZE_X+2,_MAZE_Y+2, 7 )
-VS.Console.SetPositions3D( 5, "xy" )
+	SetPositions( pos_worldstart, CELL_DIST, 5, "xy" )
+	SetBorders()
 
-breakwalls_amt <- ceil(sqrt(_MAZE_X * _MAZE_Y) / 5).tointeger()
+	breakwalls_amt = ceil(sqrt(_MAZE_X * _MAZE_Y) / 5).tointeger()
 
-EXT <- _EXT - _WALL
-CELL_DIST <- _WALL * 2 + EXT * 2 + _CELL_SIZE
+	c_start = cell(_POS_START_X,_POS_START_Y)
+	c_next = c_start
+	c_exit = cell(_POS_EXIT_X,_POS_EXIT_Y)
 
-VS.Console.PXL_DIST <- CELL_DIST
+	cellPoint(c_start)[_ENTRYDIR] = 1
+	cellPoint(c_start)[0] = 1
+	cellPoint(c_exit)[_EXITDIR] = 1
 
-// return vector
+	d_override = 0
+	d_reverse = 0
+	m_path = array(1,0)
+	c_previous = null
+
+	FindEnt()
+	foreach( ent in list_prop ) ent.Destroy()
+	list_ent.clear()
+	list_prop.clear()
+
+	if(i)Chat("Maze reset and updated.")
+}
+
+// x,y input - return vector
 function cell(x, y)
 {
 	return Vector(x,y,MAZE_YX[y][x][0])
 }
-// x,y input, set value
+
+// x,y input - set value
 function cellSet2(x, y, value)
 {
 	MAZE_YX[y][x][0] = value
 }
-// vector input, set value
+
+// vector input - set value
 function cellSet(input, value)
 {
 	cellPoint(input)[0] = value
 }
-// vector input, return point
+
+// vector input - return point
 function cellPoint(input)
 {
 	return MAZE_YX[input.y][input.x]
 }
 
-isBorder <- 9
+function SetPositions( worldstart, distance, idx, plane = "yz" )
+{
+	if(typeof worldstart != "Vector") throw "Invalid input type '"+typeof(worldstart)+"' ; expected 'Vector'"
+
+	local vec = Vector()
+	local X = _MAZE_X+2
+
+	for( local y = 0; y < _MAZE_Y+2; y++ )
+	{
+		vec.x = worldstart.x
+		vec.y = worldstart.y
+		vec.z = worldstart.z
+
+		if( plane.tolower() == "yz" )      vec.z -= distance * y
+		else if( plane.tolower() == "xy" ) vec.y -= distance * y
+		else throw "Incorrect plane type! "+plane
+
+		for( local x = 0; x < _MAZE_X+2; x++ )
+		{
+			local pt = MAZE_YX[y][x]
+			vec.x += distance
+
+			pt[idx]   = Vector()
+			pt[idx].x = vec.x
+			pt[idx].y = vec.y
+			pt[idx].z = vec.z
+		}
+	}
+}
 
 function SetBorders()
 {
-	for( local x = 0; x <= _MAZE_X+1; x++ ) cellSet2(x, 0, isBorder)
-	for( local x = 0; x <= _MAZE_X+1; x++ ) cellSet2(x, _MAZE_Y+1, isBorder)
-	for( local y = 0; y <= _MAZE_Y+1; y++ ) cellSet2(_MAZE_X+1, y, isBorder)
-	for( local y = 0; y <= _MAZE_Y+1; y++ ) cellSet2(0, y, isBorder)
+	for( local x = 0; x <= _MAZE_X+1; x++ ) cellSet2(x, 0, ISBORDER)
+	for( local x = 0; x <= _MAZE_X+1; x++ ) cellSet2(x, _MAZE_Y+1, ISBORDER)
+	for( local y = 0; y <= _MAZE_Y+1; y++ ) cellSet2(_MAZE_X+1, y, ISBORDER)
+	for( local y = 0; y <= _MAZE_Y+1; y++ ) cellSet2(0, y, ISBORDER)
 }
-
-SetBorders()
-
-c_start <- cell(_POS_START_X,_POS_START_Y)
-c_next <- c_start
-cellPoint(c_start)[_ENTRYDIR] = 1
-cellPoint(c_start)[0] = 1
-
-c_exit <- cell(_POS_EXIT_X,_POS_EXIT_Y)
-cellPoint(c_exit)[_EXITDIR] = 1
-
-toggle_breakw <- 0
-d_override <- 0
-d_reverse <- 0
-m_path <- array(1,0)
-c_previous <- null
 
 function FindNext(input)
 {
@@ -131,17 +159,17 @@ function FindNext(input)
 		return
 	}
 
-	if( DEBUG == 1 )
+	if( DEBUG )
 	{
 		PrintMaze()
-//		PrintMaze_dir()
+		// PrintMaze_dir()
 		if( fGenDelay != 0.0 )
 			EntFireHandle( ENT_SCRIPT, "RunScriptCode", "FindNext(c_next)", fGenDelay )
 		else {
 			// manual
 		}
 	}
-	else if( DEBUG == 0 )
+	else if( !DEBUG )
 	{
 		EntFireHandle( ENT_SCRIPT, "RunScriptCode", "FindNext(c_next)", fGenDelay )
 	}
@@ -168,7 +196,7 @@ function GetNext(dir)
 //			printd(" <- " + dir + "left")
 			break
 	}
-//	printd("next: ["+c_next.x+","+c_next.y+"] = "+cellPoint(c_next)[0]+" | up: "+cellPoint(c_next)[1]+"; right: "+cellPoint(c_next)[2]+"; down: "+cellPoint(c_next)[3]+"; left: "+cellPoint(c_next)[4]+"; pos: "+cellPoint(c_next)[5].x+","+cellPoint(c_next)[5].y+"; ")
+	// printd("next: ["+c_next.x+","+c_next.y+"] = "+cellPoint(c_next)[0]+" | up: "+cellPoint(c_next)[1]+"; right: "+cellPoint(c_next)[2]+"; down: "+cellPoint(c_next)[3]+"; left: "+cellPoint(c_next)[4]+"; pos: "+cellPoint(c_next)[5].x+","+cellPoint(c_next)[5].y+"; ")
 }
 
 function TestDir()
@@ -424,12 +452,12 @@ function BreakRandomWalls()
 	{
 		if( rand_point[1] == 1 && rand_point[2] == 1 && rand_point[3] == 1 && rand_point[4] == 1 )
 		{
-		//	printl(" No walls, break the loop... \t" + rand_point[5].x + " " + rand_point[5].y + " " + rand_point[5].z)
+			// printl(" No walls, break the loop... \t" + rand_point[5].x + " " + rand_point[5].y + " " + rand_point[5].z)
 			break
 		}
-			//print(rand_dir)
+		// print(rand_dir)
 		rand_dir = RandomInt(1,4)
-			//printl(" is already open, checking "+rand_dir)
+		// printl(" is already open, checking "+rand_dir)
 	}
 
 	rand_point[ rand_dir ] = 1
@@ -438,7 +466,7 @@ function BreakRandomWalls()
 	c_previous = rand_cell
 	GetNext( rand_dir )
 
-	//printl("rand " + c_previous.x + "," + c_previous.y + "\t next " + c_next.x + "," + c_next.y + "\n")
+	// printl("rand " + c_previous.x + "," + c_previous.y + "\t next " + c_next.x + "," + c_next.y + "\n")
 
 	GetPropAt( cellPoint( c_next )[5] ).Destroy()
 	cellPoint( c_next )[ revdir( rand_dir ) ] = 1
@@ -480,6 +508,8 @@ function OnPostComplete()
 //		prints(" Broke walls.")
 	}
 	FindEnt()
+
+	HPlayer.SetOrigin(cellPoint(c_start)[5])
 }
 
 function PrintMaze()
@@ -551,46 +581,13 @@ function FindEnt()
 		if(ent.GetClassname().slice(0,4) == "prop")
 			list_prop.append(ent)
 	}
-//	printd("Total entity count: " + list_ent.len() )
-//	printd("Total prop   count: " + list_prop.len() )
+	// printd("Total entity count: " + list_ent.len() )
+	// printd("Total prop   count: " + list_prop.len() )
 
 	return list_ent.len()
 }
 
 //------------------------------
-
-function reset()
-{
-	MAZE_YX <- VS.Console.CreateDisplayArray(_MAZE_X+2,_MAZE_Y+2, 7)
-	VS.Console.SetPositions3D(5, "xy")
-	SetBorders()
-
-	breakwalls_amt <- ceil(sqrt(_MAZE_X * _MAZE_Y) / 5).tointeger()
-
-	c_start <- cell(_POS_START_X,_POS_START_Y)
-	c_next <- c_start
-	c_exit <- cell(_POS_EXIT_X,_POS_EXIT_Y)
-
-	cellPoint(c_start)[_ENTRYDIR] = 1
-	cellPoint(c_start)[0] = 1
-	cellPoint(c_exit)[_EXITDIR] = 1
-
-	d_override <- 0
-	d_reverse <- 0
-	m_path <- array(1,0)
-	c_previous <- null
-
-	FindEnt()
-
-	foreach( ent in list_prop ) ent.Destroy()
-
-	list_ent.clear()
-	list_prop.clear()
-
-	Chat("Maze reset and updated.")
-
-	return true
-}
 
 function printVars()
 {
@@ -601,7 +598,7 @@ function printVars()
 	printl( "Entry direction\t: " + TranslateDirToText(_ENTRYDIR) )
 	printl( "Exit position \t: " + _POS_EXIT_X + "," + _POS_EXIT_Y )
 	printl( "Exit direction \t: " + TranslateDirToText(_EXITDIR) )
-	printl( "worldstart pos \t: " + VS.Console.pos_worldstart.x + "," + VS.Console.pos_worldstart.y + "," + VS.Console.pos_worldstart.z)
+	printl( "worldstart pos \t: " + pos_worldstart.x + "," +pos_worldstart.y + "," + pos_worldstart.z)
 	printl(" ----")
 	FindEnt()
 	printl("Total entity count: " + (list_ent.len() - list_prop.len()) + " (excluding props)")
@@ -661,7 +658,7 @@ function EnableDynamicSpawning()
 
 	DS_SetPlayer()
 
-	VS.Entity.OnTimer( VS.Entity.CreateTimer( "think_dyn_spwn", 0.1, 0, 0, 0, 0 ), "Think_DynamicSpawning", this )
+	VS.Timer.OnTimer( VS.Timer.Create( "think_dyn_spwn", 0.1 ), "Think_DynamicSpawning", this )
 }
 
 function Think_DynamicSpawning()
@@ -682,7 +679,7 @@ function DS_GetPlayer()
 			// [x, y]
 			ds_currnt = [point[1], point[2]]
 
-			//printl("Found player at " + ds_currnt[0] + "," + ds_currnt[1])
+			// printl("Found player at " + ds_currnt[0] + "," + ds_currnt[1])
 			break
 		}
 	}
@@ -694,10 +691,10 @@ function DS_GetPlayer()
 // will fix later
 function DS_SetPlayer()
 {
-	//HPlayer.SetOrigin( cellPoint(cell(_POS_START_X,_POS_START_Y))[5] )
+	// HPlayer.SetOrigin( cellPoint(cell(_POS_START_X,_POS_START_Y))[5] )
 	HPlayer.SetOrigin( cellPoint(cell(75,75))[5] )
 
-	//ds_currnt = [_POS_START_X,_POS_START_Y]
+	// ds_currnt = [_POS_START_X,_POS_START_Y]
 	ds_currnt = [75,75]
 
 	local pos = HPlayer.EyePosition()

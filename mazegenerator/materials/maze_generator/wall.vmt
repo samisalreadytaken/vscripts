@@ -1,0 +1,38 @@
+"VertexLitGeneric"
+{
+$basetexture "vgui/white"
+//$basetexture "metal/maze_gen_wall"
+$surfaceprop metal
+$bumpmap "metal/black_wall_metal_002f_normal"
+$reflectivity "[ 0.6 0.6 0.6 ]" 
+$envmap "metal/black_wall_envmap_002a"
+hdr
+{
+$envmap "metal/black_wall_envmap_002a_hdr"
+}
+$envmaplightscale .6
+
+$normalmapalphaenvmapmask 1
+$envmapcontrast 1
+$envmapsaturation .2
+$envmaptint .2 .2 .2
+"%keywords" "maze"
+
+//$detail "detail/metal_detail_01"
+//$detailscale 1.25
+//$detailblendfactor 1
+//$detailblendmode 0
+
+//$selfillum 1
+//$selfillummask "metal/black_wall_metal_002f"
+//$selfillumtint "[ 100 100 100 ]"
+
+	Proxies
+	{
+		MaterialModify
+		{
+
+		}
+	}
+
+}

@@ -1,35 +1,19 @@
 //------------ Copyright (C) 2019 Sam - STEAM_0:1:26669608 --------------
 
-function StartMazeCreation()
-{
-	if( !maze_dynamic_spawning )
-		if( !CheckForCrash() )
-			return
-
-	EntFireHandle( ENT_SCRIPT, "RunScriptCode", "FindNext(c_next)", 1.0 )
-}
-
-function cmd_create()
-{
-	reset()
-	EntFireHandle( ENT_SCRIPT, "RunScriptCode", "StartMazeCreation()", 0.1 )
-}
-
 ::OnGameEvent_player_say <- function( data )
 {
 	local msg = data.text
 
-	if( msg.slice(0,1) == "/")
-		say_cmd( msg.slice(1).tolower() )
+	if( msg.slice(0,1) != "/") return
+
+	SMain.say_cmd( msg.slice(1).tolower() )
 }
 
 function say_cmd( str )
 {
 	local buffer = split(str, " ")
-	local cmd = buffer[0]
-	local val
-	try( val = buffer[1] )
-	catch(e){}
+	local val, cmd = buffer[0]
+	try( val = buffer[1] ) catch(e){}
 
 	switch( cmd ){
 //------------------------------
@@ -39,6 +23,7 @@ function say_cmd( str )
 			_MAZE_X = buffer3[0]
 			_MAZE_Y = buffer3[1]
 			Chat( "Maze is now (" + _MAZE_X +"x" + _MAZE_Y + ")" )
+			printl( "Maze is now (" + _MAZE_X +"x" + _MAZE_Y + ")" )
 			break
 
 //------------------------------
@@ -48,11 +33,13 @@ function say_cmd( str )
 			_POS_START_X = buffer3[0]
 			_POS_START_Y = buffer3[1]
 			Chat( "Entry position \t: " + _POS_START_X + "," + _POS_START_Y )
+			printl( "Entry position \t: " + _POS_START_X + "," + _POS_START_Y )
 			break
 
 		case "entrydir":
 			_ENTRYDIR = TranslateTextToDir( val )
 			Chat( "Entry direction\t: " + TranslateDirToText(_ENTRYDIR) )
+			printl( "Entry direction\t: " + TranslateDirToText(_ENTRYDIR) )
 			break
 
 //------------------------------
@@ -62,17 +49,19 @@ function say_cmd( str )
 			_POS_EXIT_X = buffer3[0]
 			_POS_EXIT_Y = buffer3[1]
 			Chat( "Exit position \t: " + _POS_EXIT_X + "," + _POS_EXIT_Y )
+			printl( "Exit position \t: " + _POS_EXIT_X + "," + _POS_EXIT_Y )
 			break
 
 		case "exitdir":
 			_EXITDIR = TranslateTextToDir( val )
 			Chat( "Exit direction \t: " + TranslateDirToText(_EXITDIR) )
+			printl( "Exit direction \t: " + TranslateDirToText(_EXITDIR) )
 			break
 
 //------------------------------
 		case "worldstart":
 			// doesnt sanitise the input
-			VS.Console.pos_worldstart = Vector( val )
+			pos_worldstart = Vector( val )
 			break
 
 		case "create":
@@ -104,8 +93,9 @@ function say_cmd( str )
 			}
 			break
 
+		case "init":
 		case "reset":
-			reset()
+			Init(1)
 			break
 
 		case "findent":
@@ -120,24 +110,30 @@ function say_cmd( str )
 			cmd_fp()
 			break
 
-		case "status":
-			local buffer3 = GetInputXY( val )
-			if ( !buffer3 ) return
-			printStatus( buffer3[0], buffer3[1] )
-			break
-
-		case "t":
-
-			break
-
 		default:
 			Chat("Invalid command.")
 	}
 }
 
+function StartMazeCreation()
+{
+	if( !maze_dynamic_spawning )
+		if( CheckForCrash() )
+			return
+
+	Init()
+	EntFireHandle( ENT_SCRIPT, "RunScriptCode", "FindNext(c_next)", 1.0 )
+}
+
+function cmd_create()
+{
+	VS.GetSoloPlayer()
+	EntFireHandle( ENT_SCRIPT, "RunScriptCode", "StartMazeCreation()", 0.1 )
+}
+
 function cmd_tp()
 {
-	player.SetAngles(0,0,0)
+	HPlayer.SetAngles(0,0,0)
 
 	SendToConsole("cam_collision 0")
 	SendToConsole("cam_idealdist 4000")
@@ -161,7 +157,7 @@ function cmd_cam()
 {
 	if( toggle_cam == 0 )
 	{
-		EntFire("camera", "Enable", "", 0.1, player)
+		EntFire("camera", "Enable", "", 0.1, HPlayer)
 		SendToConsole("r_drawviewmodel 0");
 		SendToConsole("fov_cs_debug 60");
 		SendToConsole("r_farz 6299")
@@ -171,7 +167,7 @@ function cmd_cam()
 	}
 	else
 	{
-		EntFire("camera", "Disable", "", 0.1, player)
+		EntFire("camera", "Disable", "", 0.1, HPlayer)
 		SendToConsole("r_farz 1800")
 		SendToConsole("fov_cs_debug 0")
 		EntFire( "mat_cam", "setmaterialvar", "0", 0.01 )
@@ -180,19 +176,15 @@ function cmd_cam()
 	}
 }
 
-function GetInputXY ( input, ix = 0, iy = 0 )
+function GetInputXY( input, ix = 0, iy = 0 )
 {
-	if( input == null)
-	{
-		Chat("Invalid input.")
-		return false
-	}
+	if( !input )
+		return Chat("Invalid input.")
 
 	local buffer2 = split(input, ",")
-	local x = ix
-	local y = iy
+	local x = ix, y = iy
 
-	if ( input.slice(0,1) == ",")
+	if( input.slice(0,1) == ",")
 	{
 		try( y = buffer2[0].tointeger() )
 		catch(e){Chat("Invalid input.")}
