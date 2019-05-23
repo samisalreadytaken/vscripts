@@ -6,7 +6,7 @@ IncludeScript("/vs_library/vs_include")
 //------------------------------
 //
 // Testing decals in CS:GO
-//  	https://www.youtube.com/watch?v=rIXsA9flaX0
+//  	https://www.youtube.com/watch?v=xyMLJQB5nYs
 //
 //
 // Place this file in:
