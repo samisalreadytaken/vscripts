@@ -112,7 +112,7 @@ function SetPositions( worldstart, distance, idx, plane = "yz" )
 
 		if( plane.tolower() == "yz" )      vec.z -= distance * y
 		else if( plane.tolower() == "xy" ) vec.y -= distance * y
-		else throw "Incorrect plane type! "+plane
+		else throw "Invalid plane type! "+plane
 
 		for( local x = 0; x < _MAZE_X+2; x++ )
 		{
@@ -139,11 +139,10 @@ function FindNext(input)
 {
 	c_previous = input
 	c_next = null
-	local dir = 0
 
 	if( d_override == 0 )
 	{
-		dir = RandomInt(1,4)
+		local dir = RandomInt(1,4)
 
 		GetNext(dir)
 		Check_fwd(dir)
@@ -164,14 +163,14 @@ function FindNext(input)
 		PrintMaze()
 		// PrintMaze_dir()
 		if( fGenDelay != 0.0 )
-			EntFireHandle( ENT_SCRIPT, "RunScriptCode", "FindNext(c_next)", fGenDelay )
+			delay( "FindNext(c_next)", fGenDelay )
 		else {
 			// manual
 		}
 	}
 	else if( !DEBUG )
 	{
-		EntFireHandle( ENT_SCRIPT, "RunScriptCode", "FindNext(c_next)", fGenDelay )
+		delay( "FindNext(c_next)", fGenDelay )
 	}
 }
 
@@ -248,9 +247,9 @@ function Check_fwd(dir)
 
 		if( d_override == 1 ) d_override = 0
 
-//		printd("\nNot visited, marked:")
-//		printd("      ["+c_next.x+","+c_next.y+"] = "+ cellPoint(c_next)[0] +" | up: "+cellPoint(c_next)[1]+"; right: "+cellPoint(c_next)[2]+"; down: "+cellPoint(c_next)[3]+"; left: "+cellPoint(c_next)[4])
-//		printd("")
+		// printd("\nNot visited, marked:")
+		// printd("      ["+c_next.x+","+c_next.y+"] = "+ cellPoint(c_next)[0] +" | up: "+cellPoint(c_next)[1]+"; right: "+cellPoint(c_next)[2]+"; down: "+cellPoint(c_next)[3]+"; left: "+cellPoint(c_next)[4])
+		// printd("")
 		return true
 	}
 	else if( cellPoint(c_next)[0] != 0 )
@@ -258,7 +257,7 @@ function Check_fwd(dir)
 		c_next = c_previous
 
 		d_override = 1
-//		printd("Already visited, re-search from the previous cell \n")
+		// printd("Already visited, re-search from the previous cell \n")
 
 		return false
 	}
@@ -279,11 +278,11 @@ function Check_reverse(dir)
 		cellSet( c_next,2 )
 		cellPoint( c_next )[ revdir(dir) ] = 1
 
-//		printd("Revisited")
+		// printd("Revisited")
 	}
 	else if( cellPoint(c_next)[0] == 2 )
 	{
-//		printd("Already revisited.")
+		// printd("Already revisited.")
 	}
 	else throw("Something went horribly wrong.")
 }
@@ -301,7 +300,7 @@ function revdir(input)
 
 function Create_cell(input)
 {
-//	printd("Create_cell() input pos: \t"+input[5].x+","+input[5].y+","+input[5].z)
+	// printd("Create_cell() input pos: \t"+input[5].x+","+input[5].y+","+input[5].z)
 
 	// kill if prop already exists on the point
 	if( showprocess && !maze_dynamic_spawning ) if( input[6] == 1 ) return
@@ -353,7 +352,7 @@ function Create_cell(input)
 		Create_core(input[5], "URL") // up right left
 
 	else if( input[1] == 1 && input[2] == 1 && input[3] == 1 && input[4] == 1){
-//		printd("NO CELL, DONT CREATE PROP \t " + input[5].x + " " + input[5].y + " " + input[5].z)
+		// printd("NO CELL, DONT CREATE PROP \t " + input[5].x + " " + input[5].y + " " + input[5].z)
 	}
 	else
 	{
@@ -493,7 +492,7 @@ function OnPostComplete()
 	else if( !maze_dynamic_spawning )
 		Create_cell(cellPoint(c_start))
 
-//	prints("\n MAZE COMPLETE ("+_MAZE_X+"x"+_MAZE_Y+") - " +count)
+	// prints("\n MAZE COMPLETE ("+_MAZE_X+"x"+_MAZE_Y+") - " +count)
 	Chat("Maze created.")
 
 	if( toggle_breakw )
@@ -501,11 +500,11 @@ function OnPostComplete()
 		local p = 1
 		while( p < breakwalls_amt)
 		{
-		// This is done to prevent overflow issues
-			EntFireHandle( ENT_SCRIPT, "RunScriptCode", "BreakRandomWalls()" )
+			// This is done to prevent overflow issues
+			delay("BreakRandomWalls()")
 			p++
 		}
-//		prints(" Broke walls.")
+		// prints(" Broke walls.")
 	}
 	FindEnt()
 
@@ -526,7 +525,7 @@ function PrintMaze()
 
 function PrintMaze_dir()
 {
-	print("\n");
+	print("\n")
 	for(local y = 1; y < _MAZE_Y+1; y++)
 	{
 		for(local x = 1; x < _MAZE_X+1; x++)
@@ -592,32 +591,34 @@ function FindEnt()
 function printVars()
 {
 	print("\n")
-	printl( "Maze size \t: " + _MAZE_X + "x" + _MAZE_Y )
-	printl( "v2 status \t: " + TranslateBoolToText(toggle_breakw) )
-	printl( "Entry position \t: " + _POS_START_X + "," + _POS_START_Y )
-	printl( "Entry direction\t: " + TranslateDirToText(_ENTRYDIR) )
-	printl( "Exit position \t: " + _POS_EXIT_X + "," + _POS_EXIT_Y )
-	printl( "Exit direction \t: " + TranslateDirToText(_EXITDIR) )
-	printl( "worldstart pos \t: " + pos_worldstart.x + "," +pos_worldstart.y + "," + pos_worldstart.z)
+	printl( "Maze size       : " + _MAZE_X + "x" + _MAZE_Y )
+	printl( "V2 status       : " + TranslateBoolToText(toggle_breakw) )
+	printl( "Entry position  : " + _POS_START_X + "," + _POS_START_Y )
+	printl( "Entry direction : " + TranslateDirToText(_ENTRYDIR) )
+	printl( "Exit position   : " + _POS_EXIT_X + "," + _POS_EXIT_Y )
+	printl( "Exit direction  : " + TranslateDirToText(_EXITDIR) )
+	printl( "worldstart pos  : " + pos_worldstart.x + "," +pos_worldstart.y + "," + pos_worldstart.z)
+	printl( "Dynamic spawning: " + TranslateBoolToText(maze_dynamic_spawning) )
 	printl(" ----")
 	FindEnt()
 	printl("Total entity count: " + (list_ent.len() - list_prop.len()) + " (excluding props)")
 	printl("Total prop   count: " + list_prop.len() )
 	print("\n")
 
-	Chat( "Maze size : "+ txt.yellow + _MAZE_X + "x" + _MAZE_Y )
-	Chat( "v2 status : "+ txt.yellow + TranslateBoolToText(toggle_breakw) )
-	Chat( "Entry position : "+ txt.yellow + _POS_START_X + "," + _POS_START_Y )
+	Chat( "Maze size: "+ txt.yellow + _MAZE_X + "x" + _MAZE_Y )
+	Chat( "V2 status: "+ txt.yellow + TranslateBoolToText(toggle_breakw) )
+	Chat( "Entry position: "+ txt.yellow + _POS_START_X + "," + _POS_START_Y )
 	Chat( "Entry direction: "+ txt.yellow + TranslateDirToText(_ENTRYDIR) )
-	Chat( "Exit position : "+ txt.yellow + _POS_EXIT_X + "," + _POS_EXIT_Y )
-	Chat( "Exit direction : "+ txt.yellow + TranslateDirToText(_EXITDIR) )
+	Chat( "Exit position: "+ txt.yellow + _POS_EXIT_X + "," + _POS_EXIT_Y )
+	Chat( "Exit direction: "+ txt.yellow + TranslateDirToText(_EXITDIR) )
+	Chat( "Dynamic spawning: " + TranslateBoolToText(maze_dynamic_spawning) )
 }
 
 function TranslateBoolToText( input )
 {
 	if( input )
 		return txt.lightgreen+"enabled"
-	else if( input )
+	else
 		return txt.lightred+"disabled"
 }
 
@@ -654,15 +655,16 @@ function Kreate_cell(input)
 
 function EnableDynamicSpawning()
 {
-//	printd("ENABLED DYNAMIC SPAWNING")
+	// printd("ENABLED DYNAMIC SPAWNING")
 
-	DS_SetPlayer()
+	delay( "DS_SetPlayer()" )
 
 	VS.Timer.OnTimer( VS.Timer.Create( "think_dyn_spwn", 0.1 ), "Think_DynamicSpawning", this )
 }
 
 function Think_DynamicSpawning()
 {
+	HPlayer.SetAngles(0,0,0)
 	DS_GetPlayer()
 	DS_Process()
 }
@@ -685,17 +687,12 @@ function DS_GetPlayer()
 	}
 }
 
-// the code isn't complete
-// it cannot spawn the border cells
-// that's why the player is spawned in the middle for now
-// will fix later
 function DS_SetPlayer()
 {
-	// HPlayer.SetOrigin( cellPoint(cell(_POS_START_X,_POS_START_Y))[5] )
-	HPlayer.SetOrigin( cellPoint(cell(75,75))[5] )
+	EntFireHandle(VS.Entity.Create("player_speedmod",null,{speed=0}),"modifyspeed","3",0,HPlayer)
 
-	// ds_currnt = [_POS_START_X,_POS_START_Y]
-	ds_currnt = [75,75]
+	HPlayer.SetOrigin( cellPoint(cell(_POS_START_X,_POS_START_Y))[5] )
+	ds_currnt = [_POS_START_X,_POS_START_Y]
 
 	local pos = HPlayer.EyePosition()
 	local prop = VS.Entity.CreateProp( Vector(pos.x,pos.y,pos.z+20), mdl_player )
@@ -723,20 +720,20 @@ function DS_Process()
 
 	// this method isn't perfect with small radii,
 	// but it's better than hard coding the cells
-	for( local xx = cx - r; xx <= cx + r; xx++ )
+	for( local xx = cx - r; xx <= cx + r; xx++ ) for( local yy = cy - r; yy <= cy + r; yy++ )
 	{
-		for( local yy = cy - r; yy <= cy + r; yy++ )
-		{
-			local point = cellPoint(cell(xx,yy))
-			local dx = xx - cx
-			local dy = yy - cy
-			local d = sqrt( dx*dx + dy*dy )
+		if(xx<1)xx=1;else if(xx>_MAZE_X)break
+		if(yy<1)yy=1;else if(yy>_MAZE_Y)break
 
-			if( d < r )
-				ds_nearby.append([point, xx, yy])
-			else
-				ds_delete.append(point)
-		}
+		local point = cellPoint(cell(xx,yy))
+		local dx = xx - cx
+		local dy = yy - cy
+		local d = sqrt( dx*dx + dy*dy )
+
+		if( d < r )
+			ds_nearby.append([point, xx, yy])
+		else
+			ds_delete.append(point)
 	}
 
 	foreach( i in ds_nearby )

@@ -59,17 +59,8 @@ function say_cmd( str )
 			break
 
 //------------------------------
-		case "worldstart":
-			// doesnt sanitise the input
-			pos_worldstart = Vector( val )
-			break
-
 		case "create":
 			cmd_create()
-			break
-
-		case "cam":
-			cmd_cam()
 			break
 
 		case "printdir":
@@ -81,16 +72,9 @@ function say_cmd( str )
 			break
 
 		case "v2":
-			if( toggle_breakw == 0 )
-			{
-				Chat("v2 enabled.")
-				toggle_breakw = 1
-			}
-			else if( toggle_breakw = 1 )
-			{
-				Chat("v2 disabled.")
-				toggle_breakw = 0
-			}
+			toggle_breakw != toggle_breakw
+			printl( "V2 "+TranslateBoolToText(toggle_breakw) )
+			Chat( "V2 "+TranslateBoolToText(toggle_breakw) )
 			break
 
 		case "init":
@@ -110,6 +94,13 @@ function say_cmd( str )
 			cmd_fp()
 			break
 
+		case "dyn":
+		case "dynamic":
+			maze_dynamic_spawning = !maze_dynamic_spawning
+			printl("Dynamic spawning "+TranslateBoolToText(maze_dynamic_spawning))
+			Chat("Dynamic spawning "+TranslateBoolToText(maze_dynamic_spawning))
+			break
+
 		default:
 			Chat("Invalid command.")
 	}
@@ -122,13 +113,13 @@ function StartMazeCreation()
 			return
 
 	Init()
-	EntFireHandle( ENT_SCRIPT, "RunScriptCode", "FindNext(c_next)", 1.0 )
+	delay( "FindNext(c_next)", 1.0 )
 }
 
 function cmd_create()
 {
 	VS.GetSoloPlayer()
-	EntFireHandle( ENT_SCRIPT, "RunScriptCode", "StartMazeCreation()", 0.1 )
+	delay( "StartMazeCreation()", 0.1 )
 }
 
 function cmd_tp()
@@ -150,30 +141,6 @@ function cmd_fp()
 	SendToConsole("r_farz -1")
 	SendToConsole("firstperson")
 	SendToConsole("fov_cs_debug 0")
-}
-
-toggle_cam <- 0
-function cmd_cam()
-{
-	if( toggle_cam == 0 )
-	{
-		EntFire("camera", "Enable", "", 0.1, HPlayer)
-		SendToConsole("r_drawviewmodel 0");
-		SendToConsole("fov_cs_debug 60");
-		SendToConsole("r_farz 6299")
-		EntFire( "mat_cam", "setmaterialvar", "1", 0.01 )
-
-		toggle_cam = 1
-	}
-	else
-	{
-		EntFire("camera", "Disable", "", 0.1, HPlayer)
-		SendToConsole("r_farz 1800")
-		SendToConsole("fov_cs_debug 0")
-		EntFire( "mat_cam", "setmaterialvar", "0", 0.01 )
-
-		toggle_cam = 0
-	}
 }
 
 function GetInputXY( input, ix = 0, iy = 0 )
