@@ -72,7 +72,7 @@ function say_cmd( str )
 			break
 
 		case "v2":
-			toggle_breakw != toggle_breakw
+			toggle_breakw = !toggle_breakw
 			printl( "V2 "+TranslateBoolToText(toggle_breakw) )
 			Chat( "V2 "+TranslateBoolToText(toggle_breakw) )
 			break
