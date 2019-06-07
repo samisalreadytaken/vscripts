@@ -1,10 +1,7 @@
 //-----------------------------------------------------------------------
 //------------ Copyright (C) 2019 Sam - STEAM_0:1:26669608 --------------
-//
-// This project is licensed under the terms of the GNU GPL license,
-// see <https://www.gnu.org/licenses/> for details.
+//                     github.com/samisalreadytaken
 //-----------------------------------------------------------------------
-//------------------------------
 //
 // Drawing in the CS:GO console, using vs_library/vs_console
 //

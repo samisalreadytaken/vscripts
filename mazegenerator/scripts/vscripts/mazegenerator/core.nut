@@ -27,6 +27,15 @@
 //        3
 //------------------------------
 
+function StripWeapons()
+{
+	if(!Entities.FindByName(null,"strip")) VS.Entity.Create("game_player_equip","strip",{spawnflags=2})
+	EntFire( "strip", "use", "", 0.0, HPlayer )
+}
+
+VS.GetSoloPlayer()
+StripWeapons()
+
 PrecacheModel(mdl_player)
 PrecacheModel(pxl_rev)
 
@@ -502,7 +511,7 @@ function OnPostComplete()
 	}
 	FindEnt()
 
-	HPlayer.SetOrigin(c_start.point()[5])
+	HPlayer.SetOrigin(Vector(c_start.point()[5].x,c_start.point()[5].y+CELL_DIST,c_start.point()[5].z))
 }
 
 function PrintMaze()
@@ -651,7 +660,7 @@ function EnableDynamicSpawning()
 
 function Think_DynamicSpawning()
 {
-	HPlayer.SetAngles(0,0,0)
+	if( bTP ) HPlayer.SetAngles(89,0,0)
 	DS_GetPlayer()
 	DS_Process()
 }
@@ -678,7 +687,7 @@ function DS_SetPlayer()
 {
 	EntFireHandle(VS.Entity.Create("player_speedmod",null,{speed=0}),"modifyspeed","3",0,HPlayer)
 
-	HPlayer.SetOrigin( cell(_POS_START_X,_POS_START_Y).point()[5] )
+	HPlayer.SetOrigin(Vector(c_start.point()[5].x,c_start.point()[5].y+CELL_DIST,c_start.point()[5].z))
 	ds_currnt = [_POS_START_X,_POS_START_Y]
 
 	local pos = HPlayer.EyePosition()
@@ -698,7 +707,7 @@ ds_currnt <- [-1,-1]
 
 function DS_Process()
 {
-	local r = 5
+	local r = 8
 	local cx = ds_currnt[0]
 	local cy = ds_currnt[1]
 

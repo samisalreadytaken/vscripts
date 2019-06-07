@@ -124,13 +124,14 @@ function cmd_create()
 
 function cmd_tp()
 {
+	bTP = true
 	HPlayer.SetAngles(0,0,0)
 
 	SendToConsole("cam_collision 0")
 	SendToConsole("cam_idealdist 4000")
 	SendToConsole("cam_idealpitch 90")
 	SendToConsole("cam_idealyaw 0")
-	SendToConsole("fov_cs_debug 100")
+	SendToConsole("fov_cs_debug 50")
 	SendToConsole("r_farz 3999")
 	SendToConsole("thirdperson")
 	SendToConsole("thirdperson_mayamode")
@@ -138,6 +139,7 @@ function cmd_tp()
 
 function cmd_fp()
 {
+	bTP = false
 	SendToConsole("r_farz -1")
 	SendToConsole("firstperson")
 	SendToConsole("fov_cs_debug 0")

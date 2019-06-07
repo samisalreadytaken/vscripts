@@ -75,3 +75,4 @@ c_previous <- null
 c_next <- null
 
 MAZE_YX <- null
+bTP <- false

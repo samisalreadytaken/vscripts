@@ -1,0 +1,17 @@
+ "LightMappedGeneric"
+ {
+  "$baseTexture" "aim_amplified/clock/countdown"
+  "$surfaceprop" "glass"
+  "$selfillum" 1
+  "$frame" 59
+  "$nodecal" "1"
+
+  "Proxies"
+  {
+  	"MaterialModify"
+	{
+		// fixme!  This has to be here, or material loading barfs.
+		"dummy" 0
+	}
+  }
+ }

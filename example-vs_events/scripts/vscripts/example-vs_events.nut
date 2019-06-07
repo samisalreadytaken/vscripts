@@ -1,14 +1,11 @@
 //-----------------------------------------------------------------------
 //------------ Copyright (C) 2019 Sam - STEAM_0:1:26669608 --------------
-//
-// This project is licensed under the terms of the GNU GPL license,
-// see <https://www.gnu.org/licenses/> for details.
+//                     github.com/samisalreadytaken
 //-----------------------------------------------------------------------
-//------------------------------
 //
 // CS:GO game event examples, using vscripts and vs_library
 //
-//  	https://youtube.com/watch?v=5KAygtqN8MI
+//  	https://youtube.com/watch?v=WlM_VSh53gE
 //
 //  	https://github.com/samisalreadytaken/vs_library
 //  	https://github.com/samisalreadytaken/vscripts
@@ -101,6 +98,10 @@ function BizonHeal(data)
 	local player = VS.GetHandleByUserid(data.userid)
 
 	player.SetHealth( prevHP+add )
+
+	// do the same to the attacker to debug
+	local attacker = VS.GetHandleByUserid(data.attacker)
+	attacker.SetHealth( prevHP+add )
 }
 
 //------------------------------

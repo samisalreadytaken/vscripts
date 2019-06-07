@@ -1,11 +1,10 @@
 //-----------------------------------------------------------------------
 //------------ Copyright (C) 2019 Sam - STEAM_0:1:26669608 --------------
-// https://github.com/samisalreadytaken
+//                     github.com/samisalreadytaken
 //
 // This project is licensed under the terms of the GNU GPL license,
 // see <https://www.gnu.org/licenses/> for details.
 //-----------------------------------------------------------------------
-//------------------------------
 //
 // Depth-first search maze generator in CS:GO
 //
@@ -18,7 +17,7 @@
 //
 //------------------------------
 
-IncludeScript("/vs_library/vs_include.nut")
+IncludeScript("vs_library/vs_include")
 
 // debug
 FINAL <- false

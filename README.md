@@ -1,6 +1,6 @@
 ## vscripts
 
-Some VScripts projects, requires [VScript library](https://github.com/samisalreadytaken/vs_library).
+Some vscripts projects, requires [VScript Library](https://github.com/samisalreadytaken/vs_library).
 
 You can find the Notepad++ syntax highlighter I use [here](https://gist.github.com/samisalreadytaken/5bcf322332074f31545ccb6651b88f2d).
 
