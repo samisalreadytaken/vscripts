@@ -5,7 +5,7 @@
 //
 // CS:GO game event examples, using vscripts and vs_library
 //
-//  	https://youtube.com/watch?v=WlM_VSh53gE
+//  	https://youtube.com/watch?v=5KAygtqN8MI
 //
 //  	https://github.com/samisalreadytaken/vs_library
 //  	https://github.com/samisalreadytaken/vscripts
