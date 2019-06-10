@@ -45,7 +45,7 @@
 //  	script offset = <value>
 //
 //------------------------------
-IncludeScript("vs_library/vs_include")
+IncludeScript("vs_library")
 
 // amount of shots to fire = x * y
 // x : horizontal

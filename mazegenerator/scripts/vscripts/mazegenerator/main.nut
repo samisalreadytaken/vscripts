@@ -17,7 +17,7 @@
 //
 //------------------------------
 
-IncludeScript("vs_library/vs_include")
+IncludeScript("vs_library")
 
 // debug
 FINAL <- false

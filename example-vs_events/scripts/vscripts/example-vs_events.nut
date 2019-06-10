@@ -11,7 +11,7 @@
 //  	https://github.com/samisalreadytaken/vscripts
 //
 // Standalone events library:
-//  	https://gist.github.com/samisalreadytaken/93aa23fb9e252861bada3710c649df10
+//  	https://github.com/samisalreadytaken/vs_library/blob/master/vs_library-events.nut
 //
 //
 // You must have read the vs_library/vs_events file documentation before continuing..!
@@ -19,7 +19,7 @@
 //
 //------------------------------
 
-IncludeScript("vs_library/vs_include")
+IncludeScript("vs_library")
 
 SendToConsole("mp_warmup_pausetimer 1;bot_stop 1;mp_autoteambalance 0;mp_limitteams 0")
 

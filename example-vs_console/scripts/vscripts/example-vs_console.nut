@@ -12,7 +12,7 @@
 //
 //------------------------------
 
-IncludeScript("vs_library/vs_include")
+IncludeScript("vs_library")
 
 SendToConsole("mp_warmup_end;mp_freezetime 0;mp_ignore_round_win_conditions 1")
 
