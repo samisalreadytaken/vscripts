@@ -18,7 +18,7 @@ function OnPostSpawn()
 
 	// de_cache
 	vStartPos <- Vector(3236.45,-26.97,1677.09)
-	vStartAngYaw <- 180
+	fStartAngYaw <- 180
 
 	VS.GetSoloPlayer()
 
