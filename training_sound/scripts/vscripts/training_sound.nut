@@ -5,15 +5,18 @@
 //
 // Directional Sound Training Map
 //
-//  	Workshop: https://steamcommunity.com/sharedfiles/filedetails/?id=1880365804
+//  	Workshop:
+//  		https://steamcommunity.com/sharedfiles/filedetails/?id=1880365804
 //
-//  	https://www.youtube.com/watch?v=WoJlC__oBqo
+//  		https://www.youtube.com/watch?v=WoJlC__oBqo
 //
 //------------------------------
 
-// require vs_library v1910.04
+// require vs_library v191010
 
 enum weapon{glock="glock",hkp2000="hkp2000",usp_silencer="usp_silencer",elite="elite",p250="p250",tec9="tec9",fn57="fn57",deagle="deagle",galilar="galilar",famas="famas",ak47="ak47",m4a1="m4a1",m4a1_silencer="m4a1_silencer",ssg08="ssg08",aug="aug",sg556="sg556",awp="awp",scar20="scar20",g3sg1="g3sg1",nova="nova",xm1014="xm1014",mag7="mag7",m249="m249",negev="negev",mac10="mac10",mp9="mp9",mp7="mp7",ump45="ump45",p90="p90",bizon="bizon",mp5sd="mp5sd",sawedoff="sawedoff",cz75a="cz75a"}
+
+const ENABLE = "enable"
 
 const T = 2
 const CT = 3
@@ -30,6 +33,7 @@ nResolution<- 128
 fIntvlCurr <- 1.0
 bBlindMode <- false
 bStarted   <- false
+bSpawned   <- false
 bAimHelper <- false
 bRange     <- false
 bSettingUp <- false
@@ -45,18 +49,22 @@ function Init()
 	// if a bot is CT
 	foreach( b in VS.GetPlayersAndBots()[1] ) if( activator == b )
 	{
-		printl(" !!! WRONG TEAM\n !!! WRONG TEAM\n !!! WRONG TEAM")
-		return SendToConsole("mp_restartgame 1")
+		printl(" !!! WRONG TEAM\nWhat have you done?!")
+		throw "WRONG TEAM"
 	}
 
 	// redundant
 	SendToConsole("game_mode 0;game_type 0;mp_warmup_end")
+
+	// t spawn points
+	EntFire("tt","setenabled")
 
 	// single player : HPlayer
 	VS.GetSoloPlayer()
 
 	SendToConsole("r_screenoverlay\"\"")
 	ScriptSetRadarHidden(false)
+	PrecacheScriptSound("Doors.Metal.Move1")
 
 	// sound target
 	// alternatively the bot's origin could be used,
@@ -69,6 +77,8 @@ function Init()
 
 	// vertical aim helper
 	hTimerAim <- VS.Timer( 1, 0.1,"CheckAng" )
+
+	hAIMBOT <- VS.Timer( 1, 0.01,"AIMBOT" )
 
 	// 1. set bot angles to the center of the map
 	// 2. sound-interval setting timer
@@ -117,15 +127,10 @@ function Init()
 	try{
 		Chat( txt.lightgreen + "● "+txt.lightblue+"Welcome, "+SPlayer.name+"!")
 		Chat( ChatPrefix() + txt.yellow + "Using a silenced weapon is suggested to protect your hearing.")
-		Chat( " " )
-		Chat( ChatPrefix() + txt.yellow + "This map's source code is available at:")
-		Chat( ChatPrefix() + txt.white + "github.com/samisalreadytaken" )
 		Chat(" ")
 		printl("\n\nWelcome, "+SPlayer.name+"!")
 		printl("Using a silenced weapon is suggested to protect your hearing.")
 		printl("")
-		printl("This map's source code is available at:")
-		printl("github.com/samisalreadytaken\n\n")
 	}catch(e){printl("Loading...")}
 }
 
@@ -216,6 +221,10 @@ function Process()
 	hTarget.EmitSound(GetSound())
 
 	EntFireHandle( hTimerSnd,"enable" )
+
+	EntFireHandle( hTimerThink,"enable" )
+
+	bSpawned = true
 }
 
 // if nSoundsLen has a value,
@@ -229,6 +238,8 @@ function GetSound()
 
 function GetBot()
 {
+	// redundant
+	if( list_bots.len() == 0 ) return SendToConsole("mp_restartgame 1")
 	return list_bots[0]
 }
 
@@ -436,14 +447,16 @@ function Stop()
 
 	Chat( ChatPrefix() + txt.purple + "STOP" )
 
+	bSpawned = false
 	bStarted = false
-	Kill(list_bots[0])
+	Kill(GetBot())
 	ScriptSetRadarHidden(false)
 	SendToConsole("r_screenoverlay\"\"")
 	EntFire("d","close")
 	EntFireHandle( hTimerSnd,"disable" )
 	EntFireHandle( hTimerThink,"disable" )
 	EntFireHandle( hTimerAim,"disable" )
+	EntFireHandle( hAIMBOT,"disable" )
 }
 
 function SetupBots()
@@ -510,6 +523,10 @@ function OnKill( ent )
 	// stop playing sound
 	EntFireHandle( hTimerSnd,"disable" )
 
+	EntFireHandle( hTimerThink,"disable" )
+
+	bSpawned = false
+
 	// next
 	delay( "s.Process()", RandomFloat(0.4,1.2) )
 }
@@ -537,15 +554,19 @@ function CheckAng()
 // bot look at 0,0,0
 function BotAng()
 {
-	local h = Vector()-list_bots[0].EyePosition()
+	local bot = GetBot()
 
-	list_bots[0].SetAngles(0,toDeg(atan2(h.y,h.x)),0)
+	local yaw = VS.GetAngle2D( bot.EyePosition(), Vector() )
+
+	bot.SetAngles(0,yaw,0)
 }
 
 // I can afford to get the entities like this,
 // because the only cases of getting these entities
 // are when player is not playing the game.
 // Therefore not compromising any performance.
+
+// this is also included in vs_library
 function Ent(s)
 {
 	return Entities.FindByName(null,s)
@@ -578,4 +599,17 @@ function SetTeam(i)
 {
 	TextureToggle("c", i-1)
 	VS.Entity.SetKeyInt( HPlayer, "teamnumber", i )
+}
+
+function AIMBOT()
+{
+	if( !bSpawned ) return
+
+	local bot = GetBot()
+
+	local head = VS.TraceDir( bot.EyePosition(), bot.GetForwardVector(), 14 )
+
+	local ang = VS.GetAngle( HPlayer.EyePosition(), head )
+
+	HPlayer.SetAngles(ang.x,ang.y,0)
 }
