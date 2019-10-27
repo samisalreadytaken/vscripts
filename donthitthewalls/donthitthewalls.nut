@@ -6,7 +6,7 @@
 //
 //-----------------------------------------------------------------------
 
-// lib ver 1910.10
+// lib ver 191026
 IncludeScript("vs_library")
 
 function OnPostSpawn()
@@ -15,6 +15,10 @@ function OnPostSpawn()
 	fIncrement <- 0.01
 
 	fIncrementInterval <- 0.1
+
+	// de_cache
+	vStartPos <- Vector(3236.45,-26.97,1677.09)
+	vStartAngYaw <- 180
 
 	VS.GetSoloPlayer()
 
@@ -53,8 +57,8 @@ function Start()
 {
 	fSpeed = 0.1
 
-	HPlayer.SetOrigin(Vector(3236.45,-26.97,1677.09))
-	HPlayer.SetAngles(0,180,0)
+	HPlayer.SetOrigin(vStartPos)
+	HPlayer.SetAngles(0,vStartAngYaw,0)
 	VS.Entity.SetKeyInt( HPlayer, "movetype", 8 )
 	EntFireHandle( hSpeed, "modifyspeed", fSpeed, 0.0, HPlayer )
 

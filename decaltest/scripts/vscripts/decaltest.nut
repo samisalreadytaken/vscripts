@@ -61,9 +61,9 @@ pos_start <- Vector(-1524, 1535, 81)
 
 VS.GetSoloPlayer()
 
-SendToConsole("mp_warmup_end;mp_freezetime 0;mp_ignore_round_win_conditions 1;sv_infinite_ammo 1;cl_drawhud_force_radar -1;r_cleardecals")
+SendToConsole("mp_warmup_end;mp_freezetime 0;mp_ignore_round_win_conditions 1;sv_infinite_ammo 1;r_cleardecals")
 
-lasermode(1)
+// lasermode(1)
 
 //------------------------------
 
@@ -78,7 +78,8 @@ delay( "::BREAK <- false", 0.3 )
 // Timer to keep the player looking down
 function SetAngles(){HPlayer.SetAngles(89,90,0)}
 if(!Entities.FindByName(null,"timer_angles"))
-	VS.Timer.OnTimer( VS.Timer.Create( "timer_angles", 0.001, 0, 0, 0, 1 ), "SetAngles", this )
+	VS.OnTimer( VS.CreateTimer( "timer_angles", 0.001, 0,0,0, 1 ), "SetAngles" )
+
 
 function SetPos( vec )
 {
@@ -217,10 +218,7 @@ function say_cmd( msg )
 function GetInputXY( input, ix = 0, iy = 0 )
 {
 	if( !input )
-	{
-		Chat("Invalid input.")
-		return null
-	}
+		return Chat("Invalid input.")
 
 	local buffer2 = split(input, ",")
 	local x = ix, y = iy

@@ -5,6 +5,11 @@
 //
 // Valve's Portal countdown timer recreated in vscripts
 //
+// This is a 1 to 1 recreation with slight adjustments
+// especially on how seconds work on displays.
+//
+// There are probably better ways of creating timer displays.
+//
 //---------------
 //
 // Clock.Show()
@@ -29,14 +34,14 @@ function Clock::Init()
 		for( local i = 59; i >= 0; i-- ) CD.append(i)
 	}
 
-	TextureToggle_create( "clock_minutes" )
-	TextureToggle_create( "clock_seconds" )
+	VS.CreateTextureToggle( "clock_minutes" )
+	VS.CreateTextureToggle( "clock_seconds" )
 
 	if( !Entities.FindByName(null, "timer_clock_seconds") )
 	{
-		VS.Timer.OnTimer( VS.Timer.Create( "timer_clock_seconds", 1,0,0,0,1 ), "TimerSec", this )
-		VS.Timer.OnTimer( VS.Timer.Create( "timer_clock_milliseconds", 0.1,0,0,0,1 ), "TimerMSec", this )
-		VS.Timer.OnTimer( VS.Timer.Create( "timer_clock_target", 1,0,0,0,1 ), "TimerFin", this )
+		VS.OnTimer( VS.CreateTimer( "timer_clock_seconds", 1,0,0,0,1 ), "TimerSec" )
+		VS.OnTimer( VS.CreateTimer( "timer_clock_milliseconds", 0.1,0,0,0,1 ), "TimerMSec" )
+		VS.OnTimer( VS.CreateTimer( "timer_clock_target", 1,0,0,0,1 ), "TimerFin" )
 	}
 
 	Reset()

@@ -10,8 +10,6 @@
 //  	https://github.com/samisalreadytaken/vs_library
 //  	https://github.com/samisalreadytaken/vscripts
 //
-// Standalone events library:
-//  	https://github.com/samisalreadytaken/vs_library/blob/master/vs_library-events.nut
 //
 //
 // You must have read the vs_library/vs_events file documentation before continuing..!

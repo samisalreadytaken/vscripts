@@ -59,7 +59,7 @@ PrecacheModel(mdl_t_4)
 
 function Init(i=0)
 {
-	MAZE_YX = VS.Console.CreateDisplay2D(_MAZE_X+2,_MAZE_Y+2, 6)
+	MAZE_YX = VS.Console.CreateArray2D(_MAZE_X+2,_MAZE_Y+2, 6)
 
 	SetPositions( pos_worldstart, CELL_DIST, 5, "xy" )
 	SetBorders()
@@ -425,10 +425,14 @@ function Create_core(pos, type)
 	VS.Entity.SetKey(ent, "solid", 6)
 }
 
+// An better method would be spawning
+// as many props that can be seen at once, all types
+// then moving them to create the maze.
+// This would save resources, and be better for performance.
 function CreateSolidProp(vec, mdl)
 {
-	local ent = VS.Entity.CreateProp( vec, mdl )
-	VS.Entity.SetKey(ent, "solid", 6)
+	local ent = VS.CreateProp( vec, mdl )
+	VS.Entity.SetKeyInt(ent, "solid", 6)
 	return ent
 }
 
@@ -436,7 +440,7 @@ function GetPropAt(vec)
 {
 	local ent = Entities.FindByClassnameNearest("prop_*", vec, 1)
 	// make sure it's solid, again!
-	VS.Entity.SetKey(ent, "solid", 6)
+	VS.Entity.SetKeyInt(ent, "solid", 6)
 	return ent
 }
 
@@ -655,7 +659,7 @@ function EnableDynamicSpawning()
 
 	delay( "DS_SetPlayer()" )
 
-	VS.Timer.OnTimer( VS.Timer.Create( "think_dyn_spwn", 0.1 ), "Think_DynamicSpawning", this )
+	VS.OnTimer( VS.CreateTimer( "think_dyn_spwn", 0.1 ), "Think_DynamicSpawning" )
 }
 
 function Think_DynamicSpawning()
@@ -691,9 +695,9 @@ function DS_SetPlayer()
 	ds_currnt = [_POS_START_X,_POS_START_Y]
 
 	local pos = HPlayer.EyePosition()
-	local prop = VS.Entity.CreateProp( Vector(pos.x,pos.y,pos.z+20), mdl_player )
+	local prop = VS.CreateProp( Vector(pos.x,pos.y,pos.z+20), mdl_player )
 
-	VS.Entity.SetParent( prop, HPlayer )
+	VS.SetParent( prop, HPlayer )
 }
 
 // list of nearby cells

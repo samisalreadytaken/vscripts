@@ -16,61 +16,38 @@ IncludeScript("vs_library")
 
 SendToConsole("mp_warmup_end;mp_freezetime 0;mp_ignore_round_win_conditions 1")
 
-function OnPostSpawn() // init
+ // init
+function OnPostSpawn()
 {
-	VS.Console.CreateDisplay( 64,32,3 )
+	VS.Console.CreateDisplay( 64,32,1 )
 	VS.Console.SetPositions( Vector(1.5,-0.60,-176), 1, 1, "yz" )
 
-	VS.Console.SetModel( "models/pixel/pixel_1.mdl" )
-
-	VS.Console.Run( "Think", "OnUserUpdate", this )
+	VS.Console.Run( "Think", "OnUserUpdate" )
 }
 
-loop <- 0
 function UserInput()
 {
-	if(loop == 15) loop = 0
-	VS.Console.DrawCircle( 31, 15, loop, "." )
-	loop++
 
-	VS.Console.DrawLine( 1, 2, 60, 31, "\\" )
-	VS.Console.DrawCircle( 13, 21, 9, "o" )
 }
 
-function Think() // Main loop
+// Main loop
+function Think()
 {
 	VS.Console.Clear()
 
 	UserInput()
 
-	// VS.Console.Update()
-	VS.Console.Update2D()
+	VS.Console.Update()
+	// VS.Console.Update2D()
 }
 
 // point[1] : Vector : worldpos
-// point[2] : handle : spawned entity
-// point[3] : bool : spawned or not? - required to prevent stacked spawns
 function OnUserUpdate( pt )
 {
-	// pixel OFF
-	if( !pt[0] )
-	{
-		// prop exists
-		if( pt[3] )
-		{
-			try(pt[2].Destroy())catch(e){}
-			pt[3] = 0
-		}
-	}
 	// pixel ON
-	else
+	if( pt[0] )
 	{
-		// prop does not exist
-		if( !pt[3] )
-		{
-			pt[2] = VS.Console.CreatePixel( pt[1] )
-			pt[3] = 1
-		}
+		VS.Console.SpawnAt( pt[1] )
 	}
 }
 
@@ -83,6 +60,7 @@ function Button_rev()
 
 function Button_stp()
 {
+	// stop and clear
 	VS.Console.Stop(1)
 }
 
