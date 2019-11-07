@@ -25,10 +25,10 @@
 // Toggle aimbot and wallhack
 //
 //    script aimbot()
-// Toggle aimbot for player 1
+// Toggle aimbot
 //
 //    script trigger()
-// Toggle triggerbot for player 1.
+// Toggle triggerbot
 // Note that this isn't always ideal because of the inaccuracies,
 // it works best when the player is standing still.
 // But you are better off prefiring and wallbanging yourself.
@@ -74,11 +74,9 @@
 // For example Brandon's ID is 2, Perry's is 4
 // Sam's ID is 1, ExamplePlayer's is 11
 //
-// While setting a bot as the player 2,
-// set the second parameter of the P2 function to true (1)
 //
 //    script P2(8)
-// This sets BOT Ethan as player 2
+// This sets Ethan as player 2
 //
 //    script P2(11)
 // This sets ExamplePlayer as player 2
