@@ -21,13 +21,17 @@
 //    script_execute aimbot
 // Load the script
 //
+//    script enable()
+// Toggle aimbot and wallhack
+//
 //    script aimbot()
 // Toggle aimbot for player 1
 //
 //    script trigger()
 // Toggle triggerbot for player 1.
 // Note that this isn't always ideal because of the inaccuracies,
-// you are better off prefiring and wallbanging yourself
+// it works best when the player is standing still.
+// But you are better off prefiring and wallbanging yourself.
 //
 //    script settrigger(f)
 // Set triggerbot shooting interval
@@ -35,17 +39,21 @@
 //    script wh()
 // Toggle wallhack - show the position of player 2
 //
+//    script aim()
+// Toggle aiming at head and torso
+//
 //    script P1(i)
-//    script P2(i,bot)
+//    script P2(i)
 // Manually set players
 //
 //
 // Setting players:
 //
-// You can reload the script to set the player 1 and 2 to their default values
+// Reloading the script will set the player 1 and 2 to their default values
+// ( default : first and second players to join the server )
 //
 // Manual setup:
-// Get the player / bot's number from the status command (NOT userid)
+// Get the player's number from the status command (NOT userid)
 /*
 
 #userid name     uniqueid connected ping loss state rate adr
@@ -63,19 +71,19 @@
 #end
 
 */
-// For example Brandon's ID is 1, Perry's is 3
-// Sam's ID is 1, ExamplePlayer's is 2
+// For example Brandon's ID is 2, Perry's is 4
+// Sam's ID is 1, ExamplePlayer's is 11
 //
 // While setting a bot as the player 2,
 // set the second parameter of the P2 function to true (1)
 //
-//    script P2(7,1)
-// This sets Ethan as player 2
+//    script P2(8)
+// This sets BOT Ethan as player 2
 //
-//    script P2(2)
+//    script P2(11)
 // This sets ExamplePlayer as player 2
 //
-//    script P1(2)
+//    script P1(11)
 // This sets ExamplePlayer as player 1
 //
 //    script P1(1)
@@ -84,11 +92,11 @@
 //------------------------------
 //
 // Since it is not possible to get the position of the head bone of a player,
-// this script calculates 12 units forward from the "eye position" (which is
+// this script calculates 8 units forward from the "eye position" (which is
 // exact center of the player, it is where the camera lands and where the bullets
 // come from) to simulate the head position. For this reason, the aimbot will aim
 // at empty space at certain angles. Though is is not an issue when
-// both players are facing the same way.
+// both players are facing each other.
 //
 // This script is shared in the hope that it will be useful,
 // without any warranty of fitness for a particular purpose.
@@ -103,43 +111,36 @@ const NAME_P2 = "player2"
 
 function OnPostSpawn()
 {
-	local pb = VS.GetPlayersAndBots(),
-	      players = pb[0],
-	      bots = pb[1]
+	local i; while( i = Entc("cs_bot",i) ) VS.SetName( i, "" )
 
-	local len_p = players.len(),
-	      len_b = bots.len()
+	local players = VS.GetPlayersAndBots()[0],
+          len = players.len()
 
 	hPlayer1 <- null
 	hPlayer2 <- null
 
-	if( len_p == 0 )
+	if( len == 0 )
 	{
-		printl("No players found!")
+		printl("[][] No players found!")
 	}
-	else if( len_p == 1 )
+	else if( len == 1 )
 	{
-		printl("1 player found")
-
-		hPlayer1 <- players[0]
-
-		if( len_b > 0 )
-		{
-			printl("1 bot found")
-			hPlayer2 <- bots[0]
-		}
+		printl("[][] Only 1 player found")
 	}
-	else if( len_p >= 2 )
+	else if( len >= 2 )
 	{
+		printl("[][] "+len+" players found")
+
 		hPlayer1 <- players[0]
 		hPlayer2 <- players[1]
 	}
 
-	if( Ent(NAME_P2) ) VS.ChangeName( NAME_P2, "" )
+	local i; while( i = Ent(NAME_P2,i) ) VS.SetName( i, "" )
 	if( hPlayer2 ) VS.SetName( hPlayer2, NAME_P2 )
 
 	if( !Ent("vs_timer*") )
 	{
+		bAimHead <- true
 		fTriggerInterval <- 0.25
 		bAttacked <- false
 		bTrigger <- false
@@ -157,9 +158,11 @@ function OnPostSpawn()
 	}
 
 	if( !hPlayer2 ) EntFireHandle( hTimer, "disable" )
-	else EntFireHandle( hTimer, "enable" )
-
-	if( Ent(NAME_P2) ) VS.SetMeasure( hPlayer2Measure, NAME_P2 )
+	else
+	{
+		if( Ent("vs_timer*") ) EntFireHandle( hTimer, "enable" )
+		VS.SetMeasure( hPlayer2Measure, NAME_P2 )
+	}
 }
 
 function CMD( cmd, delay = 0.0 )
@@ -175,37 +178,28 @@ function attack()
 
 function P1( i )
 {
-	if( !Ent("vs_timer*") ) OnPostSpawn()
+	if( typeof i != "integer" ) return printl("[][P1] Invalid value")
 
 	local players = VS.GetPlayersAndBots()[0]
 
-	if( i > players.len() ) return printl("Invalid player id")
+	if( i > players.len() || i < 1 ) return printl("[][P1] Invalid player id")
 
 	hPlayer1 = players[i-1]
 }
 
-function P2( i, bot = false )
+function P2( i )
 {
-	if( !Ent("vs_timer*") ) OnPostSpawn()
+	if( typeof i != "integer" ) return printl("[][P2] Invalid value")
 
-	local pb = VS.GetPlayersAndBots(),
-	      players = pb[0],
-	      bots = pb[1]
+	local players = VS.GetPlayersAndBots()[0]
 
-	if( !bot )
-	{
-		if( i > players.len() ) return printl("Invalid player id")
+	if( i > players.len() || i < 1 ) return printl("[][P2] Invalid player id")
 
-		hPlayer2 = players[i-1]
-	}
-	else
-	{
-		if( i > bots.len() ) return printl("Invalid bot id")
+	hPlayer2 = players[i-1]
 
-		hPlayer2 = bots[i-1]
-	}
-
+	local i; while( i = Ent(NAME_P2,i) ) VS.SetName( i, "" )
 	VS.SetName( hPlayer2, NAME_P2 )
+	VS.SetMeasure( hPlayer2Measure, NAME_P2 )
 }
 
 function Think()
@@ -214,17 +208,25 @@ function Think()
 	{
 		if( bAimbot )
 		{
-			local h2 = VS.TraceDir( hPlayer2.EyePosition(), hPlayer2Eye.GetForwardVector(), 12 ),
-			      h1 = hPlayer1.EyePosition(),
+			local h2
+
+			if( bAimHead ) h2 = VS.TraceDir( hPlayer2.EyePosition(), hPlayer2Eye.GetForwardVector(), 8 )
+			else
+			{
+				h2 = hPlayer2.EyePosition()
+				h2.z -= 16
+			}
+
+			local h1  = hPlayer1.EyePosition(),
 			      ang = VS.GetAngle( h1, h2 )
 
 			hPlayer1.SetAngles( ang.x, ang.y, 0 )
 
 			if( bTrigger )
 			{
-				if( (VS.TraceLine(h1, h2) - h1).LengthSqr() == (h2 - h1).LengthSqr() )
+				if( !bAttacked )
 				{
-					if( !bAttacked )
+					if( (VS.TraceLine(h1, h2) - h1).LengthSqr() == (h2 - h1).LengthSqr() )
 					{
 						attack()
 						bAttacked = true
@@ -238,6 +240,18 @@ function Think()
 	}
 }
 
+function _B2S(b)
+{
+	return b ? "enabled" : "disabled"
+}
+
+function aim()
+{
+	bAimHead = !bAimHead
+
+	printl("[][] Aiming at " + (bAimHead ? "head" : "torso"))
+}
+
 function enable()
 {
 	aimbot()
@@ -249,6 +263,8 @@ function aimbot()
 	if( !Ent("vs_timer*") ) OnPostSpawn()
 
 	bAimbot = !bAimbot
+
+	printl("[][] Aimbot " + _B2S(bAimbot))
 }
 
 function wh()
@@ -256,6 +272,8 @@ function wh()
 	if( !Ent("vs_timer*") ) OnPostSpawn()
 
 	bWH = !bWH
+
+	printl("[][] Wallhack " + _B2S(bWH))
 }
 
 function trigger()
@@ -263,13 +281,19 @@ function trigger()
 	if( !Ent("vs_timer*") ) OnPostSpawn()
 
 	bTrigger = !bTrigger
+
+	printl("[][] Triggerbot " + _B2S(bTrigger))
 }
 
 function settrigger( f )
 {
 	if( !Ent("vs_timer*") ) OnPostSpawn()
 
+	if( f < 0.1 ) return printl("[][] Invalid value")
+
 	fTriggerInterval = f.tofloat()
+
+	printl("[][] Triggerbot shooting interval set to " + fTriggerInterval)
 }
 
 OnPostSpawn()
