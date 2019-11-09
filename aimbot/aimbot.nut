@@ -21,7 +21,7 @@
 //    script_execute aimbot
 // Load the script
 //
-//    script enable()
+//    script toggle()
 // Toggle aimbot and wallhack
 //
 //    script aimbot()
@@ -41,6 +41,9 @@
 //
 //    script aim()
 // Toggle aiming at head and torso
+//
+//    script noclip()
+// Toggle noclip and invisibility
 //
 //    script P1(i)
 //    script P2(i)
@@ -138,6 +141,7 @@ function OnPostSpawn()
 
 	if( !Ent("vs_timer*") )
 	{
+		bNoclip <- false
 		bAimHead <- true
 		fTriggerInterval <- 0.25
 		bAttacked <- false
@@ -238,9 +242,24 @@ function Think()
 	}
 }
 
-function _B2S(b)
+function noclip()
 {
-	return b ? "enabled" : "disabled"
+	bNoclip = !bNoclip
+
+	if( bNoclip )
+	{
+		VS.Entity.SetKeyInt( hPlayer1, "movetype", 8 )
+		VS.Entity.SetKeyInt( hPlayer1, "rendermode", 1 )
+		EntFireHandle( hPlayer1, "alpha", "0" )
+	}
+	else
+	{
+		VS.Entity.SetKeyInt( hPlayer1, "movetype", 2 )
+		VS.Entity.SetKeyInt( hPlayer1, "rendermode", 1 )
+		EntFireHandle( hPlayer1, "alpha", "255" )
+	}
+
+	printl("[][] Noclip and invisibility " + (bNoclip ? "enabled" : "disabled"))
 }
 
 function aim()
@@ -250,7 +269,7 @@ function aim()
 	printl("[][] Aiming at " + (bAimHead ? "head" : "torso"))
 }
 
-function enable()
+function toggle()
 {
 	aimbot()
 	wh()
@@ -262,7 +281,7 @@ function aimbot()
 
 	bAimbot = !bAimbot
 
-	printl("[][] Aimbot " + _B2S(bAimbot))
+	printl("[][] Aimbot " + (bAimbot ? "enabled" : "disabled"))
 }
 
 function wh()
@@ -271,7 +290,7 @@ function wh()
 
 	bWH = !bWH
 
-	printl("[][] Wallhack " + _B2S(bWH))
+	printl("[][] Wallhack " + (bWH ? "enabled" : "disabled"))
 }
 
 function trigger()
@@ -280,7 +299,7 @@ function trigger()
 
 	bTrigger = !bTrigger
 
-	printl("[][] Triggerbot " + _B2S(bTrigger))
+	printl("[][] Triggerbot " + (bTrigger ? "enabled" : "disabled"))
 }
 
 function settrigger( f )
