@@ -43,7 +43,7 @@
 // Toggle aiming at head and torso
 //
 //    script noclip()
-// Toggle noclip and invisibility
+// Toggle noclip
 //
 //    script P1(i)
 //    script P2(i)
@@ -180,6 +180,8 @@ function attack()
 
 function P1( i )
 {
+	if( !Ent("vs_timer*") ) OnPostSpawn()
+
 	if( typeof i != "integer" ) return printl("[][P1] Invalid value")
 
 	local players = VS.GetPlayersAndBots()[0]
@@ -191,6 +193,8 @@ function P1( i )
 
 function P2( i )
 {
+	if( !Ent("vs_timer*") ) OnPostSpawn()
+
 	if( typeof i != "integer" ) return printl("[][P2] Invalid value")
 
 	local players = VS.GetPlayersAndBots()[0]
@@ -249,17 +253,17 @@ function noclip()
 	if( bNoclip )
 	{
 		VS.Entity.SetKeyInt( hPlayer1, "movetype", 8 )
-		VS.Entity.SetKeyInt( hPlayer1, "rendermode", 1 )
-		EntFireHandle( hPlayer1, "alpha", "0" )
+		// VS.Entity.SetKeyInt( hPlayer1, "rendermode", 1 )
+		// VS.Entity.SetKeyInt( hPlayer1, "renderamt", 0 )
 	}
 	else
 	{
 		VS.Entity.SetKeyInt( hPlayer1, "movetype", 2 )
-		VS.Entity.SetKeyInt( hPlayer1, "rendermode", 1 )
-		EntFireHandle( hPlayer1, "alpha", "255" )
+		// VS.Entity.SetKeyInt( hPlayer1, "rendermode", 1 )
+		// VS.Entity.SetKeyInt( hPlayer1, "renderamt", 255 )
 	}
 
-	printl("[][] Noclip and invisibility " + (bNoclip ? "enabled" : "disabled"))
+	printl("[][] Noclip " + (bNoclip ? "enabled" : "disabled"))
 }
 
 function aim()
