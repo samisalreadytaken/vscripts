@@ -33,7 +33,7 @@ function StripWeapons()
 	EntFire( "strip", "use", "", 0.0, HPlayer )
 }
 
-VS.GetSoloPlayer()
+VS.GetLocalPlayer()
 StripWeapons()
 
 PrecacheModel(mdl_player)

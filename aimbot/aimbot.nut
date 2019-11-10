@@ -28,7 +28,7 @@
 // Toggle aimbot
 //
 //    script trigger()
-// Toggle triggerbot - weapons are 100% accurate while this is active
+// Toggle triggerbot - weapons are 100% accurate while this is active and shooting
 //
 //    script settrigger(f)
 // Set triggerbot shooting interval
@@ -112,7 +112,7 @@ function OnPostSpawn()
 	local i; while( i = Entc("cs_bot",i) ) VS.SetName( i, "" )
 
 	local players = VS.GetPlayersAndBots()[0],
-          len = players.len()
+	      len = players.len()
 
 	hPlayer1 <- null
 	hPlayer2 <- null

@@ -118,7 +118,7 @@ function StartMazeCreation()
 
 function cmd_create()
 {
-	VS.GetSoloPlayer()
+	VS.GetLocalPlayer()
 	delay( "StartMazeCreation()", 0.1 )
 }
 

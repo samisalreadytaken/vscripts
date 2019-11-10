@@ -59,7 +59,7 @@ pos_start <- Vector(-1524, 1535, 81)
 
 //------------------------------
 
-VS.GetSoloPlayer()
+VS.GetLocalPlayer()
 
 SendToConsole("mp_warmup_end;mp_freezetime 0;mp_ignore_round_win_conditions 1;sv_infinite_ammo 1;r_cleardecals")
 

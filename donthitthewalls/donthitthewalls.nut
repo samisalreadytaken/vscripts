@@ -6,7 +6,7 @@
 //
 //-----------------------------------------------------------------------
 
-// lib ver 191026
+// lib ver 191026 or above
 IncludeScript("vs_library")
 
 function OnPostSpawn()
@@ -20,7 +20,7 @@ function OnPostSpawn()
 	vStartPos <- Vector(3236.45,-26.97,1677.09)
 	fStartAngYaw <- 180
 
-	VS.GetSoloPlayer()
+	VS.GetLocalPlayer()
 
 	if( !(hThink <- Ent("gamethink")) )
 		hThink <- VS.CreateTimer( "gamethink", 0.001, 0,0,0, 1 )
