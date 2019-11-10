@@ -28,10 +28,7 @@
 // Toggle aimbot
 //
 //    script trigger()
-// Toggle triggerbot
-// Note that this isn't always ideal because of the inaccuracies,
-// it works best when the player is standing still.
-// But you are better off prefiring and wallbanging yourself.
+// Toggle triggerbot - weapons are 100% accurate while this is active
 //
 //    script settrigger(f)
 // Set triggerbot shooting interval
@@ -174,8 +171,10 @@ function CMD( cmd, delay = 0.0 )
 
 function attack()
 {
+	SendToConsoleServer("weapon_accuracy_nospread 1")
 	CMD( "+attack" )
 	CMD( "-attack", 0.002 )
+	delay( "SendToConsoleServer(\"weapon_accuracy_nospread 0\")", 0.01 )
 }
 
 function P1( i )
