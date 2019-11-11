@@ -14,6 +14,10 @@
 //
 // Players can be manually chosen with P1 and P2 functions.
 //
+// Persistent through rounds, needs to be executed only once.
+//
+// To install it, place this file in /csgo/scripts/vscripts/
+//
 //------------------------------
 //
 // Commands:
@@ -24,14 +28,18 @@
 //    script toggle()
 // Toggle aimbot and wallhack
 //
+//    script toggle2()
+// Toggle wallhack and triggerbot
+//
 //    script aimbot()
 // Toggle aimbot
+// Lock onto the enemy
 //
 //    script trigger()
-// Toggle triggerbot - weapons are 100% accurate while this is active and shooting
-//
-//    script settrigger(f)
-// Set triggerbot shooting interval
+// Toggle triggerbot - no recoil
+// weapons are 100% accurate while this is active and shooting
+// unaffected by any inaccuracies
+// Automatically aims at the enemy and shoots
 //
 //    script wh()
 // Toggle wallhack - show the position of player 2
@@ -90,11 +98,7 @@
 //------------------------------
 //
 // Since it is not possible to get the position of the head bone of a player,
-// this script calculates 8 units forward from the "eye position" (which is
-// exact center of the player, it is where the camera lands and where the bullets
-// come from) to simulate the head position. For this reason, the aimbot will aim
-// at empty space at certain angles. Though is is not an issue when
-// both players are facing each other.
+// this script calculates 4 units backwards from the front of the face (facemask attachment)
 //
 // This script is shared in the hope that it will be useful,
 // without any warranty of fitness for a particular purpose.
@@ -140,7 +144,7 @@ function OnPostSpawn()
 	{
 		bNoclip <- false
 		bAimHead <- true
-		fTriggerInterval <- 0.25
+		fTriggerInterval <- 0.02
 		bAttacked <- false
 		bTrigger <- false
 		bAimbot <- false
@@ -154,6 +158,11 @@ function OnPostSpawn()
 
 		hPlayer2Measure <- a[1]
 		hPlayer2Eye <- a[0]
+
+		VS.Entity.SetKeyString( hTimer, "classname", "info_target" )
+		VS.Entity.SetKeyString( hCMD, "classname", "info_target" )
+		VS.Entity.SetKeyString( hPlayer2Measure, "classname", "info_target" )
+		VS.Entity.SetKeyString( hPlayer2Eye, "classname", "info_target" )
 	}
 
 	if( !hPlayer2 ) EntFireHandle( hTimer, "disable" )
@@ -171,16 +180,14 @@ function CMD( cmd, delay = 0.0 )
 
 function attack()
 {
-	SendToConsoleServer("weapon_accuracy_nospread 1")
+	SendToConsoleServer("weapon_accuracy_nospread 1;weapon_recoil_scale 0.0")
 	CMD( "+attack" )
 	CMD( "-attack", 0.002 )
-	delay( "SendToConsoleServer(\"weapon_accuracy_nospread 0\")", 0.01 )
+	delay( "SendToConsoleServer(\"weapon_accuracy_nospread 0;weapon_recoil_scale 2.0\")", 0.01 )
 }
 
 function P1( i )
 {
-	if( !Ent("vs_timer*") ) OnPostSpawn()
-
 	if( typeof i != "integer" ) return printl("[][P1] Invalid value")
 
 	local players = VS.GetPlayersAndBots()[0]
@@ -192,8 +199,6 @@ function P1( i )
 
 function P2( i )
 {
-	if( !Ent("vs_timer*") ) OnPostSpawn()
-
 	if( typeof i != "integer" ) return printl("[][P2] Invalid value")
 
 	local players = VS.GetPlayersAndBots()[0]
@@ -211,32 +216,30 @@ function Think()
 {
 	if( hPlayer2.GetHealth() )
 	{
-		if( bAimbot )
+		local h2
+
+		if( bAimHead ) h2 = VS.TraceDir( hPlayer2.GetAttachmentOrigin(15), hPlayer2Eye.GetForwardVector(), -4 )
+		else
 		{
-			local h2
+			h2 = hPlayer2.EyePosition()
+			h2.z -= 16
+		}
 
-			if( bAimHead ) h2 = VS.TraceDir( hPlayer2.EyePosition(), hPlayer2Eye.GetForwardVector(), 8 )
-			else
+		local h1  = hPlayer1.EyePosition(),
+		      ang = VS.GetAngle( h1, h2 )
+
+		if( bAimbot ) hPlayer1.SetAngles( ang.x, ang.y, 0 )
+
+		if( bTrigger )
+		{
+			if( !bAttacked )
 			{
-				h2 = hPlayer2.EyePosition()
-				h2.z -= 16
-			}
-
-			local h1  = hPlayer1.EyePosition(),
-			      ang = VS.GetAngle( h1, h2 )
-
-			hPlayer1.SetAngles( ang.x, ang.y, 0 )
-
-			if( bTrigger )
-			{
-				if( !bAttacked )
+				if( (VS.TraceLine(h1, h2) - h1).LengthSqr() == (h2 - h1).LengthSqr() )
 				{
-					if( (VS.TraceLine(h1, h2) - h1).LengthSqr() == (h2 - h1).LengthSqr() )
-					{
-						attack()
-						bAttacked = true
-						delay( "bAttacked = false", fTriggerInterval )
-					}
+					hPlayer1.SetAngles( ang.x, ang.y, 0 )
+					attack()
+					bAttacked = true
+					delay( "bAttacked = false", fTriggerInterval )
 				}
 			}
 		}
@@ -278,10 +281,14 @@ function toggle()
 	wh()
 }
 
+function toggle2()
+{
+	wh()
+	trigger()
+}
+
 function aimbot()
 {
-	if( !Ent("vs_timer*") ) OnPostSpawn()
-
 	bAimbot = !bAimbot
 
 	printl("[][] Aimbot " + (bAimbot ? "enabled" : "disabled"))
@@ -289,8 +296,6 @@ function aimbot()
 
 function wh()
 {
-	if( !Ent("vs_timer*") ) OnPostSpawn()
-
 	bWH = !bWH
 
 	printl("[][] Wallhack " + (bWH ? "enabled" : "disabled"))
@@ -298,22 +303,9 @@ function wh()
 
 function trigger()
 {
-	if( !Ent("vs_timer*") ) OnPostSpawn()
-
 	bTrigger = !bTrigger
 
 	printl("[][] Triggerbot " + (bTrigger ? "enabled" : "disabled"))
-}
-
-function settrigger( f )
-{
-	if( !Ent("vs_timer*") ) OnPostSpawn()
-
-	if( f < 0.1 ) return printl("[][] Invalid value")
-
-	fTriggerInterval = f.tofloat()
-
-	printl("[][] Triggerbot shooting interval set to " + fTriggerInterval)
 }
 
 OnPostSpawn()
