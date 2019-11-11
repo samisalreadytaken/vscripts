@@ -16,7 +16,7 @@
 //
 // Persistent through rounds, needs to be executed only once.
 //
-// To install it, place this file in /csgo/scripts/vscripts/
+// To install it, place this file and vs_library in /csgo/scripts/vscripts/
 //
 //------------------------------
 //
@@ -113,6 +113,7 @@ const NAME_P2 = "player2"
 
 function OnPostSpawn()
 {
+	// make bots players
 	local i; while( i = Entc("cs_bot",i) ) VS.SetName( i, "" )
 
 	local players = VS.GetPlayersAndBots()[0],
@@ -137,9 +138,13 @@ function OnPostSpawn()
 		hPlayer2 <- players[1]
 	}
 
+	// clear previous player2's name
 	local i; while( i = Ent(NAME_P2,i) ) VS.SetName( i, "" )
+
+	// naming to get the player angles
 	if( hPlayer2 ) VS.SetName( hPlayer2, NAME_P2 )
 
+	// initiate entities
 	if( !Ent("vs_timer*") )
 	{
 		bNoclip <- false
@@ -152,13 +157,15 @@ function OnPostSpawn()
 
 		hTimer <- VS.Timer( 0, 0.001, "Think" )
 
+		// for triggerbot - to make player shoot
 		hCMD <- VS.Entity.Create("point_clientcommand")
 
+		// to calculate player2's head origin
 		local a = VS.CreateMeasure(NAME_P2)
-
 		hPlayer2Measure <- a[1]
 		hPlayer2Eye <- a[0]
 
+		// persistency through rounds
 		VS.Entity.SetKeyString( hTimer, "classname", "info_target" )
 		VS.Entity.SetKeyString( hCMD, "classname", "info_target" )
 		VS.Entity.SetKeyString( hPlayer2Measure, "classname", "info_target" )
@@ -234,7 +241,9 @@ function Think()
 		{
 			if( !bAttacked )
 			{
-				if( (VS.TraceLine(h1, h2) - h1).LengthSqr() == (h2 - h1).LengthSqr() )
+				// getting the world pos is more useful for debugging
+				// if( (VS.TraceLine(h1, h2) - h1).LengthSqr() == (h2 - h1).LengthSqr() )
+				if( ::TraceLine( h1, h2, null ) == 1 )
 				{
 					hPlayer1.SetAngles( ang.x, ang.y, 0 )
 					attack()
