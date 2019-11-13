@@ -607,7 +607,7 @@ function AIMBOT()
 
 	local bot = GetBot()
 
-	local head = VS.TraceDir( bot.EyePosition(), bot.GetForwardVector(), 14 )
+	local head = VS.TraceDir( bot.GetAttachmentOrigin(15), bot.GetForwardVector(), -4 )
 
 	local ang = VS.GetAngle( HPlayer.EyePosition(), head )
 

@@ -4,19 +4,16 @@
 //-----------------------------------------------------------------------
 //------------------------------
 //
-// Local aimbot and wallhack for 1v1 games
+// Local aimbot and wallhack
 // The server host can execute the script without sv_cheats enabled
 //
-// Player 1 has the cheats enabled against the player 2
+// Player 1 has the cheats enabled against every enemy player
 //
-// By default, the first player that has joined the server
-// is chosen as player 1, the second one as player 2.
-//
-// Players can be manually chosen with P1 and P2 functions.
+// By default, the first player that has joined the server is chosen as player 1
 //
 // Persistent through rounds, needs to be executed only once.
 //
-// To install it, place this file and vs_library in /csgo/scripts/vscripts/
+// To install it, place aimbot.nut and vs_library.nut in /csgo/scripts/vscripts/
 //
 //------------------------------
 //
@@ -36,13 +33,13 @@
 // Lock onto the enemy
 //
 //    script trigger()
-// Toggle triggerbot - no recoil
+// Toggle triggerbot
 // weapons are 100% accurate while this is active and shooting
 // unaffected by any inaccuracies
 // Automatically aims at the enemy and shoots
 //
 //    script wh()
-// Toggle wallhack - show the position of player 2
+// Toggle wallhack - show the position of player 2 (1v1 only)
 //
 //    script aim()
 // Toggle aiming at head and torso
@@ -54,11 +51,12 @@
 //    script P2(i)
 // Manually set players
 //
+//    script targets()
+// Toggle between 1v1 and all-enemies
+// All-enemies mode is more expensive
+//
 //
 // Setting players:
-//
-// Reloading the script will set the player 1 and 2 to their default values
-// ( default : first and second players to join the server )
 //
 // Manual setup:
 // Get the player's number from the status command (NOT userid)
@@ -113,30 +111,36 @@ const NAME_P2 = "player2"
 
 function OnPostSpawn()
 {
-	// make bots players
+	// make bots human
 	local i; while( i = Entc("cs_bot",i) ) VS.SetName( i, "" )
 
 	local players = VS.GetPlayersAndBots()[0],
 	      len = players.len()
 
-	hPlayer1 <- null
-	hPlayer2 <- null
+	if( !("hPlayer1" in this) )
+	{
+		hPlayer1 <- null
+		hPlayer2 <- null
 
-	if( len == 0 )
-	{
-		printl("[][] No players found!")
-	}
-	else if( len == 1 )
-	{
-		printl("[][] Only 1 player found")
-	}
-	else if( len >= 2 )
-	{
-		printl("[][] "+len+" players found")
+		if( len == 0 )
+		{
+			printl("[][] No players found!")
+		}
+		else if( len == 1 )
+		{
+			printl("[][] Only 1 player found")
+		}
+		else if( len >= 2 )
+		{
+			printl("[][] "+len+" players found")
 
-		hPlayer1 <- players[0]
-		hPlayer2 <- players[1]
+			hPlayer1 <- players[0]
+			hPlayer2 <- players[1]
+		}
 	}
+
+	nTeamP1 <- hPlayer1.GetTeam()
+	UpdateEnemyPlayers()
 
 	// clear previous player2's name
 	local i; while( i = Ent(NAME_P2,i) ) VS.SetName( i, "" )
@@ -147,15 +151,15 @@ function OnPostSpawn()
 	// initiate entities
 	if( !Ent("vs_timer*") )
 	{
+		b1v1 <- false
 		bNoclip <- false
 		bAimHead <- true
 		fTriggerInterval <- 0.02
-		bAttacked <- false
 		bTrigger <- false
 		bAimbot <- false
 		bWH <- false
 
-		hTimer <- VS.Timer( 0, 0.001, "Think" )
+		hTimer <- VS.Timer( 0, 0.001, "Think2" )
 
 		// for triggerbot - to make player shoot
 		hCMD <- VS.Entity.Create("point_clientcommand")
@@ -166,13 +170,16 @@ function OnPostSpawn()
 		hPlayer2Eye <- a[0]
 
 		// persistency through rounds
-		VS.Entity.SetKeyString( hTimer, "classname", "info_target" )
-		VS.Entity.SetKeyString( hCMD, "classname", "info_target" )
-		VS.Entity.SetKeyString( hPlayer2Measure, "classname", "info_target" )
-		VS.Entity.SetKeyString( hPlayer2Eye, "classname", "info_target" )
+		VS.MakePermanent( hTimer )
+		VS.MakePermanent( hCMD )
+		VS.MakePermanent( hPlayer2Measure )
+		VS.MakePermanent( hPlayer2Eye )
 	}
 
-	if( !hPlayer2 ) EntFireHandle( hTimer, "disable" )
+	bAttacked <- false
+	CMD("-attack")
+
+	if( !hPlayer2 || !list_enemy_players.len() ) EntFireHandle( hTimer, "disable" )
 	else
 	{
 		if( Ent("vs_timer*") ) EntFireHandle( hTimer, "enable" )
@@ -202,6 +209,8 @@ function P1( i )
 	if( i > players.len() || i < 1 ) return printl("[][P1] Invalid player id")
 
 	hPlayer1 = players[i-1]
+
+	nTeamP1 = hPlayer1.GetTeam()
 }
 
 function P2( i )
@@ -212,11 +221,36 @@ function P2( i )
 
 	if( i > players.len() || i < 1 ) return printl("[][P2] Invalid player id")
 
-	hPlayer2 = players[i-1]
+	_P2( players[i-1] )
+}
+
+function _P2(h)
+{
+	hPlayer2 = h
 
 	local i; while( i = Ent(NAME_P2,i) ) VS.SetName( i, "" )
 	VS.SetName( hPlayer2, NAME_P2 )
 	VS.SetMeasure( hPlayer2Measure, NAME_P2 )
+}
+
+function targets()
+{
+	b1v1 = !b1v1
+
+	if( b1v1 )
+	{
+		P2(2)
+		VS.OnTimer( hTimer, "Think" )
+	}
+	else
+	{
+		UpdateEnemyPlayers()
+		bWH = false
+		VS.OnTimer( hTimer, "Think2" )
+		EntFireHandle( hTimer, "enable" )
+	}
+
+	printl("[][] " + (b1v1 ? "1v1 mode" : "all enemies mode"))
 }
 
 function Think()
@@ -241,9 +275,7 @@ function Think()
 		{
 			if( !bAttacked )
 			{
-				// getting the world pos is more useful for debugging
-				// if( (VS.TraceLine(h1, h2) - h1).LengthSqr() == (h2 - h1).LengthSqr() )
-				if( ::TraceLine( h1, h2, null ) == 1 )
+				if( TraceLine( h1, h2, null ) == 1 )
 				{
 					hPlayer1.SetAngles( ang.x, ang.y, 0 )
 					attack()
@@ -254,6 +286,42 @@ function Think()
 		}
 
 		if( bWH ) DebugDrawBox( hPlayer2.EyePosition(), Vector(-2,-2,-2), Vector(2,2,2), 25, 255, 25, 255, 0.025 )
+	}
+}
+
+function Think2()
+{
+	local h1 = hPlayer1.EyePosition()
+
+	// calculate LOS to every enemy player
+	foreach( player in list_enemy_players )
+	{
+		// if alive
+		if( player.GetHealth() )
+		{
+			// if direct LOS
+			if( TraceLine( h1, player.GetAttachmentOrigin(15), null ) == 1 )
+			{
+				// set P2 if not already set
+				if( player.GetName() != NAME_P2 ) _P2( player )
+
+				// logic
+				return Think()
+			}
+		}
+	}
+}
+
+function UpdateEnemyPlayers()
+{
+	list_enemy_players <- []
+
+	foreach( player in VS.GetPlayersAndBots()[0] )
+	{
+		if( player.GetTeam() != nTeamP1 )
+		{
+			list_enemy_players.append( player )
+		}
 	}
 }
 
@@ -305,6 +373,8 @@ function aimbot()
 
 function wh()
 {
+	if( !b1v1 ) return printl("[][!] Cannot enable WH while in all-enemies mode")
+
 	bWH = !bWH
 
 	printl("[][] Wallhack " + (bWH ? "enabled" : "disabled"))
