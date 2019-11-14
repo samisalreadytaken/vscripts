@@ -87,9 +87,12 @@ function _d83d51ta4Tef()
 	else if( nTickCurr == 128 ) VS.Entity.SetKeyFloat( _d83bSlta47ef, "refiretime", 0.015 )
 
 	printl("[i] Server tickrate " + nTickCurr)
-	Chat( txt.orange + "[i] " + txt.grey +"Server tickrate " + txt.yellow + nTickCurr )
+	Chat( txt.orange + "● " + txt.grey +"Server tickrate " + txt.yellow + nTickCurr )
 	Chat( " " )
 	Chat( txt.blue+" -------------------------------- " )
+
+	if( !HPlayer ) throw "NO PLAYER FOUND"
+	if( HPlayer.GetTeam() != 2 || HPlayer.GetTeam() != 3 ) HPlayer.SetTeam(2)
 }
 
 nTickCurr <- 64
@@ -239,7 +242,7 @@ function _d83bSltaA7ef()
 	VS.OnTimer( _d83bSlta47ef, "_d83b5ltaA7ef" )
 
 	HPlayer.SetHealth(1337)
-	delay( "if(!HPlayer.IsNoclipping())SendToConsole(\"noclip\")", 3 )
+	delay( "VS.Entity.SetKeyInt(HPlayer,\"movetype\",8)", 2.9 )
 
 	delay( "printl(\"Starting in 3...\")", 0.0 )
 	delay( "printl(\"Starting in 2...\")", 1.0 )
@@ -327,7 +330,7 @@ function _d83bS1t4a7ef( r = 0 )
 
 	_d83bS174a7ef()
 	HPlayer.SetHealth(1337)
-	if( !HPlayer.IsNoclipping() ) SendToConsole( "noclip" )
+	delay( "VS.Entity.SetKeyInt(HPlayer,\"movetype\",8)", 2.9 )
 	try( this["Setup_" + m]() )catch(e){}
 
 	// bStartedPending
@@ -391,12 +394,61 @@ function _d83bSlt4a7ef( i = 0 )
 function _d8bb5ltAa7ef()
 {
 	HPlayer.EmitSound("HudChat.Message")
-
+/*
+printl(@"
+bm_rec     : Start/stop recording new path
+bm_play    : Play the recording, run benchmark
+bm_save    : Save the recording
+bm_timer   : Toggle counter
+           :
+bm_list    : Print saved setup data
+bm_clear   : Clear saved setup data
+bm_remove  : Remove the last added setup data
+           :
+bm_mdl     : Print SpawnMDL()
+bm_flash   : Print SpawnFlash()
+bm_he      : Print SpawnHE()
+bm_molo    : Print SpawnMolotov()
+bm_smoke   : Print SpawnSmoke()
+bm_expl    : Print SpawnExplosion()
+           :
+bm_mdl1    : SpawnMDL()
+bm_flash1  : SpawnFlash()
+bm_he1     : SpawnHE()
+bm_molo1   : SpawnMolotov()
+bm_smoke1  : SpawnSmoke()
+bm_expl1   : SpawnExplosion()")
+*/
 	printl("\nbm_rec     : Start/stop recording new path\nbm_play    : Play the recording, run benchmark\nbm_save    : Save the recording\nbm_timer   : Toggle counter\n           :\nbm_list    : Print saved setup data\nbm_clear   : Clear saved setup data\nbm_remove  : Remove the last added setup data\n           :\nbm_mdl     : Print SpawnMDL()\nbm_flash   : Print SpawnFlash()\nbm_he      : Print SpawnHE()\nbm_molo    : Print SpawnMolotov()\nbm_smoke   : Print SpawnSmoke()\nbm_expl    : Print SpawnExplosion()\n           :\nbm_mdl1    : SpawnMDL()\nbm_flash1  : SpawnFlash()\nbm_he1     : SpawnHE()\nbm_molo1   : SpawnMolotov()\nbm_smoke1  : SpawnSmoke()\nbm_expl1   : SpawnExplosion()\n")
 }
 
 function _d88bSlt4aTef()
 {
+/*
+printl(@"
+ Benchmark script loaded.
+
+                 github.com/samisalreadytaken/csgo-benchmark
+
+ Console commands:
+
+benchmark  : Run the benchmark
+bm_stop    : Force stop the ongoing benchmark
+           :
+           :
+bm_rec     : Start/stop recording new path
+bm_play    : Play the recording, run benchmark
+           :
+           :
+bm_setup   : Print setup related commands
+
+ ----------
+
+cl_showfps 1
+net_graph 1
+
+* The benchmark sets your fps_max to 0")
+*/
 	printl("\n\n Benchmark script loaded.\n\n                 github.com/samisalreadytaken/csgo-benchmark\n\n Console commands:\n\nbenchmark  : Run the benchmark\nbm_stop    : Force stop the ongoing benchmark\n           :\n           :\nbm_rec     : Start/stop recording new path\nbm_play    : Play the recording, run benchmark\n           :\n           :\nbm_setup   : Print setup related commands\n\n ----------\n\ncl_showfps 1\nnet_graph 1\n\n[i] The benchmark sets your fps_max to 0\n")
 }
 
