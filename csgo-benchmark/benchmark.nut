@@ -86,6 +86,7 @@ function _d83d51ta4Tef()
 	else if( nTickCurr == 64 ) VS.Entity.SetKeyFloat( _d83bSlta47ef, "refiretime", 0.01 )
 	else if( nTickCurr == 128 ) VS.Entity.SetKeyFloat( _d83bSlta47ef, "refiretime", 0.015 )
 
+	printl("[i] Map: " + GetMapName())
 	printl("[i] Server tickrate: " + nTickCurr+"\n")
 	Chat( txt.orange + "● " + txt.grey +"Server tickrate: " + txt.yellow + nTickCurr )
 	Chat( " " )
@@ -387,7 +388,16 @@ function _d83bSlt4a7ef( i = 0 )
 
 	HPlayer.EmitSound("UIPanorama.gameover_show")
 	if( i ) HPlayer.EmitSound("Buttons.snd9")
-	SendToConsole( "host_timescale 1;clear;echo;echo;echo;echo " + (i ? "Benchmark finished.;toggleconsole" : "Stopped benchmark.;mp_restartgame 1") + ";echo Ran for " + (Time() - _dB3bSlta47ef) + " seconds;echo;bench_end;echo;echo;developer " + _d8ebSlta47ef )
+	SendToConsole( "host_timescale 1;clear;echo;echo;echo;echo " + ( i ? "Benchmark finished.;echo;echo\"Map: " + GetMapName() + "\";echo\"Tickrate: "+ nTickCurr + "\";echo;toggleconsole" : "Stopped benchmark.;mp_restartgame 1" ) + ";echo Ran for " + ( Time() - _dB3bSlta47ef ) + " seconds;echo;bench_end;echo;echo;developer " + _d8ebSlta47ef )
+
+	// Benchmark finished.
+
+	// Map              : de_dust2
+	// Server tickrate  : 64
+
+	// Benchmark ran for: 49.0781 seconds
+
+	// Average framerate: 301.19
 }
 
 // bm_setup
@@ -429,6 +439,7 @@ function _d88bSlt4aTef()
 {
 /*
 printl(@"
+
  Benchmark script loaded.
 
                  github.com/samisalreadytaken/csgo-benchmark
