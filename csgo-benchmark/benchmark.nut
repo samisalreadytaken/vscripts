@@ -86,13 +86,13 @@ function _d83d51ta4Tef()
 	else if( nTickCurr == 64 ) VS.Entity.SetKeyFloat( _d83bSlta47ef, "refiretime", 0.01 )
 	else if( nTickCurr == 128 ) VS.Entity.SetKeyFloat( _d83bSlta47ef, "refiretime", 0.015 )
 
-	printl("[i] Server tickrate " + nTickCurr)
-	Chat( txt.orange + "● " + txt.grey +"Server tickrate " + txt.yellow + nTickCurr )
+	printl("[i] Server tickrate: " + nTickCurr+"\n")
+	Chat( txt.orange + "● " + txt.grey +"Server tickrate: " + txt.yellow + nTickCurr )
 	Chat( " " )
 	Chat( txt.blue+" -------------------------------- " )
 
 	if( !HPlayer ) throw "NO PLAYER FOUND"
-	if( HPlayer.GetTeam() != 2 || HPlayer.GetTeam() != 3 ) HPlayer.SetTeam(2)
+	if( HPlayer.GetTeam() != 2 && HPlayer.GetTeam() != 3 ) HPlayer.SetTeam(2)
 }
 
 nTickCurr <- 64
@@ -220,7 +220,7 @@ function _dBeb5lta47ef()
 	VS.Log.Add( "lp_" + m + "<-[" )
 	foreach( v in lp_r ) VS.Log.Add( VecToString(v) )
 	VS.Log.Add( "];" )
-	VS.Log.Add( "la_" + m + "<-[" )
+	VS.Log.Add("la_" + m + "<-[")
 	foreach( v in la_r ) VS.Log.Add( v + "," )
 	VS.Log.L.pop()
 	VS.Log.Add( la_r[la_r.len()-1] + "];\n" )
@@ -417,9 +417,12 @@ bm_flash1  : SpawnFlash()
 bm_he1     : SpawnHE()
 bm_molo1   : SpawnMolotov()
 bm_smoke1  : SpawnSmoke()
-bm_expl1   : SpawnExplosion()")
+bm_expl1   : SpawnExplosion()
+
+[!] After doing changes in the benchmark_res.nut file, reload the script to see your changes!
+")
 */
-	printl("\nbm_rec     : Start/stop recording new path\nbm_play    : Play the recording, run benchmark\nbm_save    : Save the recording\nbm_timer   : Toggle counter\n           :\nbm_list    : Print saved setup data\nbm_clear   : Clear saved setup data\nbm_remove  : Remove the last added setup data\n           :\nbm_mdl     : Print SpawnMDL()\nbm_flash   : Print SpawnFlash()\nbm_he      : Print SpawnHE()\nbm_molo    : Print SpawnMolotov()\nbm_smoke   : Print SpawnSmoke()\nbm_expl    : Print SpawnExplosion()\n           :\nbm_mdl1    : SpawnMDL()\nbm_flash1  : SpawnFlash()\nbm_he1     : SpawnHE()\nbm_molo1   : SpawnMolotov()\nbm_smoke1  : SpawnSmoke()\nbm_expl1   : SpawnExplosion()\n")
+	printl("\nbm_rec     : Start/stop recording new path\nbm_play    : Play the recording, run benchmark\nbm_save    : Save the recording\nbm_timer   : Toggle counter\n           :\nbm_list    : Print saved setup data\nbm_clear   : Clear saved setup data\nbm_remove  : Remove the last added setup data\n           :\nbm_mdl     : Print SpawnMDL()\nbm_flash   : Print SpawnFlash()\nbm_he      : Print SpawnHE()\nbm_molo    : Print SpawnMolotov()\nbm_smoke   : Print SpawnSmoke()\nbm_expl    : Print SpawnExplosion()\n           :\nbm_mdl1    : SpawnMDL()\nbm_flash1  : SpawnFlash()\nbm_he1     : SpawnHE()\nbm_molo1   : SpawnMolotov()\nbm_smoke1  : SpawnSmoke()\nbm_expl1   : SpawnExplosion()\n\n[!] After doing changes in the benchmark_res.nut file, reload the script to see your changes!\n")
 }
 
 function _d88bSlt4aTef()
@@ -447,7 +450,8 @@ bm_setup   : Print setup related commands
 cl_showfps 1
 net_graph 1
 
-* The benchmark sets your fps_max to 0")
+* The benchmark sets your fps_max to 0
+")
 */
 	printl("\n\n Benchmark script loaded.\n\n                 github.com/samisalreadytaken/csgo-benchmark\n\n Console commands:\n\nbenchmark  : Run the benchmark\nbm_stop    : Force stop the ongoing benchmark\n           :\n           :\nbm_rec     : Start/stop recording new path\nbm_play    : Play the recording, run benchmark\n           :\n           :\nbm_setup   : Print setup related commands\n\n ----------\n\ncl_showfps 1\nnet_graph 1\n\n[i] The benchmark sets your fps_max to 0\n")
 }
@@ -485,7 +489,7 @@ function _d88bSlt4a7ef()
 	HPlayer.EmitSound("UIPanorama.XP.Ticker")
 	if( !_d8BdSlt4a7ef.len() && !_d8BbSlt4a7ef.len() ) return printl("No saved data found.")
 
-	printl("//------------------------\n// Copy the lines below:\n\n");printl("function Spawn_"+GetMapName()+"()\n{");foreach(k in _d8BbSlt4a7ef)print("\t"+k);print("\n");foreach(k in _d8BdSlt4a7ef)print("\t"+k);printl("}\n");printl("\n//------------------------")
+	printl("//------------------------\n// Copy the lines below:\n\n");printl("function Setup_"+GetMapName()+"()\n{");foreach(k in _d8BbSlt4a7ef)print("\t"+k);print("\n");foreach(k in _d8BdSlt4a7ef)print("\t"+k);printl("}\n");printl("\n//------------------------")
 }
 
 // bm_mdl
