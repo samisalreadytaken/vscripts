@@ -15,6 +15,9 @@
 //
 // To install it, place aimbot.nut and vs_library.nut in /csgo/scripts/vscripts/
 //
+// Video:
+//  	https://www.youtube.com/watch?v=j3sOgjRgoJ0
+//
 //------------------------------
 //
 // Commands:
