@@ -9,10 +9,11 @@
 //  		https://steamcommunity.com/sharedfiles/filedetails/?id=1880365804
 //
 //  		https://www.youtube.com/watch?v=WoJlC__oBqo
+//  		https://www.youtube.com/watch?v=XJFO22K5aiw
 //
 //------------------------------
 
-// require vs_library v191026 or above
+// require vs_library v191212 or above
 
 enum weapon{glock="glock",hkp2000="hkp2000",usp_silencer="usp_silencer",elite="elite",p250="p250",tec9="tec9",fn57="fn57",deagle="deagle",galilar="galilar",famas="famas",ak47="ak47",m4a1="m4a1",m4a1_silencer="m4a1_silencer",ssg08="ssg08",aug="aug",sg556="sg556",awp="awp",scar20="scar20",g3sg1="g3sg1",nova="nova",xm1014="xm1014",mag7="mag7",m249="m249",negev="negev",mac10="mac10",mp9="mp9",mp7="mp7",ump45="ump45",p90="p90",bizon="bizon",mp5sd="mp5sd",sawedoff="sawedoff",cz75a="cz75a"}
 
@@ -407,8 +408,7 @@ function SetInterval_set(d)
 
 function ThinkButton()
 {
-	nThinkCount++
-	if( nThinkCount > 9 ) nThinkCount = 0
+	if( ++nThinkCount > 6 ) nThinkCount = 0
 	else return
 
 	if( !nCtrlIntvl ) return
@@ -451,7 +451,7 @@ function _Start()
 
 function Stop()
 {
-	if( !bStarted ) return
+	if( !bStarted ) if( bSettingUp ) return SetInterval(false); else return
 
 	Ent("d").EmitSound("Doors.Metal.Move1")
 
@@ -620,7 +620,7 @@ function EnableAimbot()
 {
 	EntFireHandle( hAIMBOT, "enable" )
 	Chat( ChatPrefix() + txt.green + "Aimbot enabled" )
-	caller.EmitSound("UIPanorama.container_weapon_ticker")
+	HPlayer.EmitSound("UIPanorama.container_weapon_ticker")
 }
 
 //-----------------------------------------------------------------------
@@ -628,7 +628,7 @@ function EnableAimbot()
 //-----------------------------------------------------------------------
 //-----------------------------------------------------------------------
 
-enum Music {
+Music <- {
 	valve_csgo_01 = "Valve 01",
 	valve_csgo_02 = "Valve 02",
 	feedme_01 = "Feed Me, High Noon",
@@ -668,6 +668,7 @@ enum Music {
 	neckdeep_01 = "Neck Deep, Life's Not Out To Get You",
 	blitzkids_01 = "Blitz Kids, The Good Youth",
 	theverkkars_01 = "The Verkkars, EZ4ENCE",
+	halo_01 = "Halo, The Master Chief Collection"
 }
 
 MusicI <- [
@@ -709,7 +710,8 @@ MusicI <- [
 	"twinatlantic_01",
 	"neckdeep_01",
 	"blitzkids_01",
-	"theverkkars_01"
+	"theverkkars_01",
+	"halo_01"
 ]
 
 // I should've made this into one table but
@@ -719,10 +721,10 @@ MusicI <- [
 // Access ID ("valve_csgo_01") from index (38)
 //    MusicI[ idx ]
 // Access the description from index
-//    getconsttable()["Music"][ MusicI[ idx ] ]
+//    Music[ MusicI[ idx ] ]
 
 sMusicKitCurrID <- MusicI[0]
-sMusicKitCurr <- getconsttable()["Music"][sMusicKitCurrID]
+sMusicKitCurr <- Music[sMusicKitCurrID]
 sMusicKitSoundCurr <- ""
 hCurrMusicKit <- Ent("m0")
 nMusicType <- 0
@@ -731,15 +733,12 @@ fCountdown <- 10.0
 nCounterLook <- 0
 
 foreach( i, v in MusicI )
-{
-	VS.Entity.AddOutput2( Ent("m"+i), "OnPressed", "s.PickMusicKit(" + i + ")", null, true )
-	i++
-}
+	VS.Entity.AddOutput2( Ent("m"+i), "OnPressed", "s.PickMusicKit(" + i++ + ")", null, true )
 
 function PickMusicKit( idx )
 {
 	sMusicKitCurrID = MusicI[idx]
-	sMusicKitCurr = getconsttable()["Music"][sMusicKitCurrID]
+	sMusicKitCurr = Music[sMusicKitCurrID]
 
 	hCurrMusicKit = Ent("m"+idx)
 
@@ -824,12 +823,12 @@ function Tick()
 {
 	fCountdown -= fFrameTime
 
-	VS.Entity.SetKeyString( hMsgTen, "message", fCountdown )
+	VS.Entity.SetKeyString( hMsgTen, "message", VS.FormatPrecision( fCountdown, 5 ) )
 
 	if( fCountdown <= 0.0 )
 	{
 		EntFireHandle( hTimer10, "disable" )
-		VS.Entity.SetKeyString( hMsgTen, "message", "0.0000" )
+		VS.Entity.SetKeyString( hMsgTen, "message", "0.00000" )
 	}
 }
 
@@ -837,21 +836,20 @@ function Looking()
 {
 	local ent = Entities.FindByClassnameNearest( "func_button", VS.TraceDir( HPlayer.EyePosition(), HPlayerEye.GetForwardVector() ), 24 )
 
+	// if found func_button
 	if( ent )
 	{
 		local n = ent.GetName()
 
-		// if entity is named "n*"
+		// if entity is named "m*"
 		if( n.len() && n[0] == 109 )
 		{
-			nCounterLook++
-
 			// Look time
-			if( nCounterLook == 1 )
+			if( ++nCounterLook == 1 )
 			{
 				nCounterLook = 0
 				VS.DrawEntityBBox( 0.15, ent )
-				VS.ShowHudHint( hHudhint, HPlayer, getconsttable()["Music"][MusicI[n.slice(1).tointeger()]] )
+				VS.ShowHudHint( hHudhint, HPlayer, Music[MusicI[n.slice(1).tointeger()]] )
 			}
 		}
 	}

@@ -392,7 +392,7 @@ function _d83bSlt4a7ef( i = 0 )
 
 	// Benchmark finished.
 
-	// Map              : de_dust2
+	// Server map       : de_dust2
 	// Server tickrate  : 64
 
 	// Benchmark ran for: 49.0781 seconds
@@ -507,7 +507,7 @@ function _d88bSlt4a7ef()
 function _d8Bb51t4a7ef( i = 0 )
 {
 	HPlayer.EmitSound("UIPanorama.XP.Ticker")
-	local a = "SpawnMDL( "+VecToString(HPlayer.GetOrigin())+","+HPlayer.GetAngles().y+", MDL.H_T )\n"
+	local a = "SpawnMDL( "+VecToString(HPlayer.GetOrigin())+","+HPlayer.GetAngles().y+", MDL."+sCurrMDL+" )\n"
 
 	if(i)
 	{
@@ -639,4 +639,12 @@ function SpawnMDL( v, a, m )
 		h.SetAngles( 0, a, 0 )
 		VS.Entity.SetKeyInt( h, "solid", 2 )
 	}
+}
+
+sCurrMDL <- "BALKg"
+
+function SetMDL(s)
+{
+	if( typeof s != "string" ) return printl("Invalid input")
+	sCurrMDL = s
 }
