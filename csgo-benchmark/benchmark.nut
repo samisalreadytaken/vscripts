@@ -6,7 +6,7 @@ IncludeScript("vs_library")
 
 IncludeScript("benchmark_res")
 
-SendToConsole("alias benchmark\"script _d83bS1t4a7ef()\";alias bm_stop\"script _d83bSlt4a7ef()\";alias bm_rec\"script _db3b51t4a7ef()\";alias bm_play\"script _d83bS1t4a7ef(1)\";alias bm_rec_pos\"script _d83bS1taA7ef()\";alias bm_play_pos\"script _d83bSltaA7ef()\";alias bm_save\"script _dBeb5lta47ef()\";alias bm_setup\"script _d8bb5ltAa7ef()\";alias bm_timer\"script _dBebSlt4a73f()\";alias bm_list\"script _d88bSlt4a7ef()\";alias bm_clear\"script _dB8d5lt4a7ef()\";alias bm_remove\"script _dB8b5lt4a7ef()\";alias bm_mdl\"script _d8Bb51t4a7ef()\";alias bm_mdl1\"script _d8Bb51t4a7ef(1)\";alias bm_flash\"script _d8Bp51t4a7ef()\";alias bm_flash1\"script _d8Bp51t4a7ef(1)\";alias bm_he\"script _dB8d51t4a7ef()\";alias bm_he1\"script _dB8d51t4a7ef(1)\";alias bm_molo\"script _dBBb5lt4a7ef()\";alias bm_molo1\"script _dBBb5lt4a7ef(1)\";alias bm_smoke\"script _d88b5lt4a7ef()\";alias bm_smoke1\"script _d88b5lt4a7ef(1)\";alias bm_expl\"script _d88b51t4aTef()\";alias bm_expl1\"script _d88b51t4aTef(1)\";alias bm_tick\"script ToggleTickrate()\"")
+SendToConsole("alias benchmark\"script _d83bS1t4a7ef()\";alias bm_stop\"script _d83bSlt4a7ef()\";alias bm_rec\"script _db3b51t4a7ef()\";alias bm_play\"script _d83bS1t4a7ef(1)\";alias bm_rec_pos\"script _d83bS1taA7ef()\";alias bm_play_pos\"script _d83bSltaA7ef()\";alias bm_save\"script _dBeb5lta47ef()\";alias bm_setup\"script _d8bb5ltAa7ef()\";alias bm_timer\"script _dBebSlt4a73f()\";alias bm_list\"script _d88bSlt4a7ef()\";alias bm_clear\"script _dB8d5lt4a7ef()\";alias bm_remove\"script _dB8b5lt4a7ef()\";alias bm_mdl\"script _d8Bb51t4a7ef()\";alias bm_mdl1\"script _d8Bb51t4a7ef(1)\";alias bm_flash\"script _d8Bp51t4a7ef()\";alias bm_flash1\"script _d8Bp51t4a7ef(1)\";alias bm_he\"script _dB8d51t4a7ef()\";alias bm_he1\"script _dB8d51t4a7ef(1)\";alias bm_molo\"script _dBBb5lt4a7ef()\";alias bm_molo1\"script _dBBb5lt4a7ef(1)\";alias bm_smoke\"script _d88b5lt4a7ef()\";alias bm_smoke1\"script _d88b5lt4a7ef(1)\";alias bm_expl\"script _d88b51t4aTef()\";alias bm_expl1\"script _d88b51t4aTef(1)\"")
 SendToConsole("clear;script _d88bSlt4aTef();script _d83d51ta4Tef()")
 
 ClearChat()
@@ -62,7 +62,7 @@ if( !("_d8ebS1ta4Tef" in this) || !Ent("_d8ebS1ta4Tef") )
 
 if( !("_d83bSlta47ef" in this) || !Ent("_d83bSlta47ef") )
 {
-	_d83bSlta47ef <- VS.CreateTimer( "_d83bSlta47ef", 0.01, 0, 0, 0, 1 )
+	_d83bSlta47ef <- VS.CreateTimer( "_d83bSlta47ef", 0.015625, 0, 0, 0, 1 )
 	VS.MakePermanent( _d83bSlta47ef )
 }
 
@@ -78,41 +78,22 @@ if( !("_d83bSlta4lef" in this) || !Ent("_d83bSlta4lef") )
 EntFireHandle( _d83bSlta47ef, "disable" )
 EntFire( "_d83b5l7a4Tef", "disable" )
 
+fTickCurr <- -1.0
+
 function _d83d51ta4Tef()
 {
-	nTickCurr = VS.GetTickrate()
+	fTickCurr = VS.GetTickrate()
 
-	if( nTickCurr == -1 ) return printl("[!] Invalid tickrate! Try manually toggling between 64 and 128 with 'bm_tick'")
-	else if( nTickCurr == 64 ) VS.Entity.SetKeyFloat( _d83bSlta47ef, "refiretime", 0.01 )
-	else if( nTickCurr == 128 ) VS.Entity.SetKeyFloat( _d83bSlta47ef, "refiretime", 0.015 )
+	if( !VS.IsInteger( 128.0 / fTickCurr ) ) return printl("[!] Invalid tickrate ( " + fTickCurr + " )! Only 128 and 64 ticks are supported.")
 
 	printl("[i] Map: " + GetMapName())
-	printl("[i] Server tickrate: " + nTickCurr+"\n")
-	Chat( txt.orange + "● " + txt.grey +"Server tickrate: " + txt.yellow + nTickCurr )
+	printl("[i] Server tickrate: " + fTickCurr+"\n")
+	Chat( txt.orange + "● " + txt.grey +"Server tickrate: " + txt.yellow + fTickCurr )
 	Chat( " " )
 	Chat( txt.blue+" -------------------------------- " )
 
 	if( !HPlayer ) throw "NO PLAYER FOUND"
 	if( HPlayer.GetTeam() != 2 && HPlayer.GetTeam() != 3 ) HPlayer.SetTeam(2)
-}
-
-nTickCurr <- 64
-function ToggleTickrate()
-{
-	if( nTickCurr == 64 )
-	{
-		nTickCurr = 128
-		VS.Entity.SetKeyFloat( _d83bSlta47ef, "refiretime", 0.015 )
-
-		printl("\n[!] Current tickrate set to 128")
-	}
-	else if( nTickCurr == 128 )
-	{
-		nTickCurr = 64
-		VS.Entity.SetKeyFloat( _d83bSlta47ef, "refiretime", 0.01 )
-
-		printl("\n[!] Current tickrate set to 64")
-	}
 }
 
 function Alert(s){ VS.ShowHudHint( _d83bSlta4lef, HPlayer, s ) }
@@ -388,7 +369,7 @@ function _d83bSlt4a7ef( i = 0 )
 
 	HPlayer.EmitSound("UIPanorama.gameover_show")
 	if( i ) HPlayer.EmitSound("Buttons.snd9")
-	SendToConsole( "host_timescale 1;clear;echo;echo;echo;echo " + ( i ? "Benchmark finished.;echo;echo\"Map: " + GetMapName() + "\";echo\"Tickrate: "+ nTickCurr + "\";echo;toggleconsole" : "Stopped benchmark.;mp_restartgame 1" ) + ";echo Ran for " + ( Time() - _dB3bSlta47ef ) + " seconds;echo;bench_end;echo;echo;developer " + _d8ebSlta47ef )
+	SendToConsole( "host_timescale 1;clear;echo;echo;echo;echo " + ( i ? "Benchmark finished.;echo;echo\"Map: " + GetMapName() + "\";echo\"Tickrate: "+ fTickCurr + "\";echo;toggleconsole" : "Stopped benchmark.;mp_restartgame 1" ) + ";echo Ran for " + ( Time() - _dB3bSlta47ef ) + " seconds;echo;bench_end;echo;echo;developer " + _d8ebSlta47ef )
 
 	// Benchmark finished.
 
