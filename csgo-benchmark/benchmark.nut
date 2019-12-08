@@ -56,7 +56,7 @@ if( !("_d83b5lta47ef" in this) ) _d83b5lta47ef <- false
 
 if( !("_d8ebS1ta4Tef" in this) || !Ent("_d8ebS1ta4Tef") )
 {
-	_d8ebS1ta4Tef <- VS.Entity.Create( "game_player_equip", "_d8ebS1ta4Tef", {spawnflags = 2} )
+	_d8ebS1ta4Tef <- VS.CreateEntity( "game_player_equip", "_d8ebS1ta4Tef", {spawnflags = 2} )
 	VS.MakePermanent( _d8ebS1ta4Tef )
 }
 
@@ -67,7 +67,7 @@ if( !("_d83bSlta47ef" in this) || !Ent("_d83bSlta47ef") )
 }
 
 if( !("_d83bSlta41ef" in this) || !Ent("_d83bSlta41ef") )
-	_d83bSlta41ef <- VS.Entity.Create( "info_target", "_d83bSlta41ef" )
+	_d83bSlta41ef <- VS.CreateEntity( "info_target", "_d83bSlta41ef" )
 
 if( !("_d83bSlta4lef" in this) || !Ent("_d83bSlta4lef") )
 {
@@ -198,11 +198,11 @@ function _dBeb5lta47ef()
 	VS.Log.filePrefix = "benchmark_rec"
 	VS.Log.condition = true
 	VS.Log.export = true
+	VS.Log.filter = "L "
 	local m = GetMapName()
 	VS.Log.Add( "lp_" + m + "<-[" )
 	foreach( v in lp_r ) VS.Log.Add( VecToString(v) )
-	VS.Log.Add( "];" )
-	VS.Log.Add("la_" + m + "<-[")
+	VS.Log.Add("];la_" + m + "<-[")
 	foreach( v in la_r ) VS.Log.Add( v + "," )
 	VS.Log.L.pop()
 	VS.Log.Add( la_r[la_r.len()-1] + "];\n" )
@@ -224,7 +224,7 @@ function _d83bSltaA7ef()
 	VS.OnTimer( _d83bSlta47ef, "_d83b5ltaA7ef" )
 
 	HPlayer.SetHealth(1337)
-	delay( "VS.Entity.SetKeyInt(HPlayer,\"movetype\",8)", 2.9 )
+	delay( "VS.SetKeyInt(HPlayer,\"movetype\",8)", 2.9 )
 
 	delay( "printl(\"Starting in 3...\")", 0.0 )
 	delay( "printl(\"Starting in 2...\")", 1.0 )
@@ -312,7 +312,7 @@ function _d83bS1t4a7ef( r = 0 )
 
 	_d83bS174a7ef()
 	HPlayer.SetHealth(1337)
-	delay( "VS.Entity.SetKeyInt(HPlayer,\"movetype\",8)", 2.9 )
+	delay( "VS.SetKeyInt(HPlayer,\"movetype\",8)", 2.9 )
 	try( this["Setup_" + m]() )catch(e){}
 
 	// bStartedPending
@@ -618,7 +618,7 @@ function SpawnMDL( v, a, m )
 		PrecacheModel( m )
 		local h = VS.CreateProp( v, m )
 		h.SetAngles( 0, a, 0 )
-		VS.Entity.SetKeyInt( h, "solid", 2 )
+		VS.SetKeyInt( h, "solid", 2 )
 	}
 }
 

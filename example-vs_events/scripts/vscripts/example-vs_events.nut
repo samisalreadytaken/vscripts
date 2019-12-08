@@ -180,6 +180,8 @@ function BizonHeal(data)
 //
 // Spawn a watermelon on impact, kill it after 2 seconds
 //
+// // Not the most ideal method.
+//
 //------------------------------
 
 PrecacheModel("models/props_junk/watermelon01.mdl")
@@ -188,9 +190,14 @@ PrecacheModel("models/props_junk/watermelon01.mdl")
 {
 	local pos = Vector(data.x,data.y,data.z)
 
-	SMain.SpawnMelon( pos, SMain.nMelonCount )
-	delay( "SMain.KillMelon("+SMain.nMelonCount+")", 2.0 )
-	SMain.nMelonCount++
+	SMain.OnImpact( pos )
+}
+
+function OnImpact( pos )
+{
+	SpawnMelon( pos, nMelonCount )
+	delay( "KillMelon(" + nMelonCount + ")", 2.0 )
+	nMelonCount++
 }
 
 nMelonCount <- 0

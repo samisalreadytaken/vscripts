@@ -29,7 +29,7 @@ function OnPostSpawn()
 		hIncr <- VS.CreateTimer( "incrementer", fIncrementInterval, 0,0,0, 1 )
 
 	if( !(hSpeed <- Ent("speed")) )
-		hSpeed <- VS.Entity.Create("player_speedmod","speed",{speed=0})
+		hSpeed <- VS.CreateEntity("player_speedmod","speed",{speed=0})
 
 	VS.OnTimer( hThink, "Think" )
 	VS.OnTimer( hIncr, "IncrementSpeed" )
@@ -59,7 +59,7 @@ function Start()
 
 	HPlayer.SetOrigin(vStartPos)
 	HPlayer.SetAngles(0,vStartAngYaw,0)
-	VS.Entity.SetKeyInt( HPlayer, "movetype", 8 )
+	VS.SetKeyInt( HPlayer, "movetype", 8 )
 	EntFireHandle( hSpeed, "modifyspeed", fSpeed, 0.0, HPlayer )
 
 	HPlayer.EmitSound("UI.CounterBeep")

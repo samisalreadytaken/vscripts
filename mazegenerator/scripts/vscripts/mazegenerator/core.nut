@@ -29,7 +29,7 @@
 
 function StripWeapons()
 {
-	if(!Entities.FindByName(null,"strip")) VS.Entity.Create("game_player_equip","strip",{spawnflags=2})
+	if(!Entities.FindByName(null,"strip")) VS.CreateEntity("game_player_equip","strip",{spawnflags=2})
 	EntFire( "strip", "use", "", 0.0, HPlayer )
 }
 
@@ -422,7 +422,7 @@ function Create_core(pos, type)
 	}
 
 	// make sure it's solid for the 3rd time
-	VS.Entity.SetKey(ent, "solid", 6)
+	VS.SetKey(ent, "solid", 6)
 }
 
 // An better method would be spawning
@@ -432,7 +432,7 @@ function Create_core(pos, type)
 function CreateSolidProp(vec, mdl)
 {
 	local ent = VS.CreateProp( vec, mdl )
-	VS.Entity.SetKeyInt(ent, "solid", 6)
+	VS.SetKeyInt(ent, "solid", 6)
 	return ent
 }
 
@@ -440,7 +440,7 @@ function GetPropAt(vec)
 {
 	local ent = Entities.FindByClassnameNearest("prop_*", vec, 1)
 	// make sure it's solid, again!
-	VS.Entity.SetKeyInt(ent, "solid", 6)
+	VS.SetKeyInt(ent, "solid", 6)
 	return ent
 }
 
@@ -689,7 +689,7 @@ function DS_GetPlayer()
 
 function DS_SetPlayer()
 {
-	EntFireHandle(VS.Entity.Create("player_speedmod",null,{speed=0}),"modifyspeed","3",0,HPlayer)
+	EntFireHandle(VS.CreateEntity("player_speedmod",null,{speed=0}),"modifyspeed","3",0,HPlayer)
 
 	HPlayer.SetOrigin(Vector(c_start.point()[5].x,c_start.point()[5].y+CELL_DIST,c_start.point()[5].z))
 	ds_currnt = [_POS_START_X,_POS_START_Y]

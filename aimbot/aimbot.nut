@@ -25,12 +25,6 @@
 //    script_execute aimbot
 // Load the script
 //
-//    script toggle()
-// Toggle aimbot and wallhack
-//
-//    script toggle2()
-// Toggle wallhack and triggerbot
-//
 //    script aimbot()
 // Toggle aimbot
 // Lock onto the enemy
@@ -117,7 +111,7 @@ function OnPostSpawn()
 	// make bots human
 	local i; while( i = Entc("cs_bot",i) ) VS.SetName( i, "" )
 
-	local players = VS.GetPlayersAndBots()[0],
+	local players = VS.GetAllPlayers(),
 	      len = players.len()
 
 	if( !("hPlayer1" in this) )
@@ -162,10 +156,12 @@ function OnPostSpawn()
 		bAimbot <- false
 		bWH <- false
 
+		fT2 <- FrameTime()*2
+
 		hTimer <- VS.Timer( 0, 0.001, "Think2" )
 
 		// for triggerbot - to make player shoot
-		hCMD <- VS.Entity.Create("point_clientcommand")
+		hCMD <- VS.CreateEntity("point_clientcommand")
 
 		// to calculate player2's head origin
 		local a = VS.CreateMeasure(NAME_P2)
@@ -199,15 +195,15 @@ function attack()
 {
 	SendToConsoleServer("weapon_accuracy_nospread 1;weapon_recoil_scale 0.0")
 	CMD( "+attack" )
-	CMD( "-attack", 0.002 )
-	delay( "SendToConsoleServer(\"weapon_accuracy_nospread 0;weapon_recoil_scale 2.0\")", 0.01 )
+	CMD( "-attack", fT2 )
+	delay( "SendToConsoleServer(\"weapon_accuracy_nospread 0;weapon_recoil_scale 2.0\")", fT2 )
 }
 
 function P1( i )
 {
 	if( typeof i != "integer" ) return printl("[][P1] Invalid value")
 
-	local players = VS.GetPlayersAndBots()[0]
+	local players = VS.GetAllPlayers()
 
 	if( i > players.len() || i < 1 ) return printl("[][P1] Invalid player id")
 
@@ -220,7 +216,7 @@ function P2( i )
 {
 	if( typeof i != "integer" ) return printl("[][P2] Invalid value")
 
-	local players = VS.GetPlayersAndBots()[0]
+	local players = VS.GetAllPlayers()
 
 	if( i > players.len() || i < 1 ) return printl("[][P2] Invalid player id")
 
@@ -319,7 +315,7 @@ function UpdateEnemyPlayers()
 {
 	list_enemy_players <- []
 
-	foreach( player in VS.GetPlayersAndBots()[0] )
+	foreach( player in VS.GetAllPlayers() )
 	{
 		if( player.GetTeam() != nTeamP1 )
 		{
@@ -334,15 +330,15 @@ function noclip()
 
 	if( bNoclip )
 	{
-		VS.Entity.SetKeyInt( hPlayer1, "movetype", 8 )
-		// VS.Entity.SetKeyInt( hPlayer1, "rendermode", 1 )
-		// VS.Entity.SetKeyInt( hPlayer1, "renderamt", 0 )
+		VS.SetKeyInt( hPlayer1, "movetype", 8 )
+		// VS.SetKeyInt( hPlayer1, "rendermode", 1 )
+		// VS.SetKeyInt( hPlayer1, "renderamt", 0 )
 	}
 	else
 	{
-		VS.Entity.SetKeyInt( hPlayer1, "movetype", 2 )
-		// VS.Entity.SetKeyInt( hPlayer1, "rendermode", 1 )
-		// VS.Entity.SetKeyInt( hPlayer1, "renderamt", 255 )
+		VS.SetKeyInt( hPlayer1, "movetype", 2 )
+		// VS.SetKeyInt( hPlayer1, "rendermode", 1 )
+		// VS.SetKeyInt( hPlayer1, "renderamt", 255 )
 	}
 
 	printl("[][] Noclip " + (bNoclip ? "enabled" : "disabled"))
@@ -353,18 +349,6 @@ function aim()
 	bAimHead = !bAimHead
 
 	printl("[][] Aiming at " + (bAimHead ? "head" : "torso"))
-}
-
-function toggle()
-{
-	aimbot()
-	wh()
-}
-
-function toggle2()
-{
-	wh()
-	trigger()
 }
 
 function aimbot()

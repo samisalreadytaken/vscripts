@@ -69,7 +69,7 @@ function Init()
 	// alternatively the bot's origin could be used,
 	// but using an external entity allows playing the sound
 	// even when the bot is not placed.
-	if( !(hTarget <- Ent("t")) ) hTarget <- VS.Entity.Create("info_target","t")
+	if( !(hTarget <- Ent("t")) ) hTarget <- VS.CreateEntity("info_target","t")
 
 	// play sound
 	hTimerSnd <- VS.Timer( 1, fIntvlCurr, "PlaySound" )
@@ -85,7 +85,7 @@ function Init()
 
 	// Music kit 10 second countdown timer
 	hTimer10 <- VS.Timer( 1, fFrameTime, "Tick" )
-	hMsgTen <- VS.Entity.Create( "point_worldtext", null, { origin = "-179 -172 100", angles = "0 -120 0", message = "10.0000" } )
+	hMsgTen <- VS.CreateEntity( "point_worldtext", null, { origin = "-179 -172 100", angles = "0 -120 0", message = "10.0000" } )
 
 	VS.SetParent( hMsgTen, Ent("d") )
 
@@ -100,10 +100,10 @@ function Init()
 
 	// game_ui for sound-interval setting
 	hGameUI <- Ent("u")
-	VS.Entity.AddOutput( hGameUI, "PressedForward",  "SetInterval_add" )
-	VS.Entity.AddOutput( hGameUI, "PressedBack",     "SetInterval_sub" )
-	VS.Entity.AddOutput( hGameUI, "UnpressedForward","SetInterval_rel" )
-	VS.Entity.AddOutput( hGameUI, "UnpressedBack",   "SetInterval_rel" )
+	VS.AddOutput( hGameUI, "PressedForward",  "SetInterval_add" )
+	VS.AddOutput( hGameUI, "PressedBack",     "SetInterval_sub" )
+	VS.AddOutput( hGameUI, "UnpressedForward","SetInterval_rel" )
+	VS.AddOutput( hGameUI, "UnpressedBack",   "SetInterval_rel" )
 
 	// "You killed X"
 	hGametext <- VS.CreateGameText(null,{
@@ -160,7 +160,7 @@ function SetRange( b, m = true )
 		_MAX = 896
 		_MIN = 384
 
-		VS.Entity.SetKeyString( Ent("t2"),"color",CL_WHITE )
+		VS.SetKeyString( Ent("t2"),"color",CL_WHITE )
 		if(m)Chat( ChatPrefix() + txt.yellow + "Enemies can now spawn everywhere")
 	}
 	else
@@ -169,7 +169,7 @@ function SetRange( b, m = true )
 		_MAX = 384
 		_MIN = 384
 
-		VS.Entity.SetKeyString( Ent("t2"),"color",CL_GREEN )
+		VS.SetKeyString( Ent("t2"),"color",CL_GREEN )
 		if(m)Chat( ChatPrefix() + txt.yellow + "Enemies will only spawn around you")
 	}
 
@@ -301,21 +301,21 @@ function SetSoundType( i, m = true )
 	nSoundsLen = list_sounds.len()
 
 	for( local j = 0; j <= 7; j++ )
-		try(VS.Entity.SetKeyString( Ent("s"+j), "color", CL_WHITE ))catch(e){/*("s"+j+" doesn't exist, I know.")*/}
+		try(VS.SetKeyString( Ent("s"+j), "color", CL_WHITE ))catch(e){/*("s"+j+" doesn't exist, I know.")*/}
 
-	VS.Entity.SetKeyString( Ent("s"+i), "color", CL_GREEN )
+	VS.SetKeyString( Ent("s"+i), "color", CL_GREEN )
 }
 
 function ToggleBlindMode( b )
 {
 	if( !b )
 	{
-		VS.Entity.SetKeyString( Ent("t1"),"color",CL_WHITE )
+		VS.SetKeyString( Ent("t1"),"color",CL_WHITE )
 		Chat( ChatPrefix() + txt.yellow + "Blind mode " + txt.lightred + "disabled" )
 	}
 	else
 	{
-		VS.Entity.SetKeyString( Ent("t1"),"color",CL_GREEN )
+		VS.SetKeyString( Ent("t1"),"color",CL_GREEN )
 		Chat( ChatPrefix() + txt.yellow + "Blind mode " + txt.lightgreen + "enabled" )
 		if(!bAimHelper)Chat( ChatPrefix() + txt.lightblue + "Suggested: " + txt.yellow + "enabling aim helper" )
 	}
@@ -328,13 +328,13 @@ function ToggleAimHelper( b )
 {
 	if( b )
 	{
-		VS.Entity.SetKeyString( Ent("t0"),"color",CL_GREEN )
+		VS.SetKeyString( Ent("t0"),"color",CL_GREEN )
 		Chat( ChatPrefix() + txt.yellow + "Vertical aim helper " + txt.lightgreen + "enabled" )
 		EntFireHandle( hTimerAim,"enable" )
 	}
 	else
 	{
-		VS.Entity.SetKeyString( Ent("t0"),"color",CL_WHITE )
+		VS.SetKeyString( Ent("t0"),"color",CL_WHITE )
 		Chat( ChatPrefix() + txt.yellow + "Vertical aim helper " + txt.lightred + "disabled" )
 		VS.HideHudHint( hHudhint,HPlayer )
 		EntFireHandle( hTimerAim,"disable" )
@@ -357,7 +357,7 @@ function SetInterval(b)
 		Chat( ChatPrefix() + txt.yellow + "Hold "+txt.lightgreen+"S"+txt.yellow+" to decrease" )
 
 		VS.ShowHudHint( hHudhint,HPlayer,fIntvlCurr )
-		VS.Entity.SetKeyString( Ent("t3"),"color",CL_GREEN )
+		VS.SetKeyString( Ent("t3"),"color",CL_GREEN )
 
 		VS.OnTimer( hTimerThink,"ThinkButton" )
 		EntFireHandle( hTimerThink,"enable" )
@@ -366,7 +366,7 @@ function SetInterval(b)
 	else
 	{
 		VS.HideHudHint( hHudhint,HPlayer )
-		VS.Entity.SetKeyString( Ent("t3"),"color",CL_WHITE )
+		VS.SetKeyString( Ent("t3"),"color",CL_WHITE )
 
 		EntFireHandle( hTimerThink,"disable" )
 		EntFireHandle( hGameUI,"deactivate","",0.0,HPlayer )
@@ -403,7 +403,7 @@ function SetInterval_mod(f)
 function SetInterval_set(d)
 {
 	fIntvlCurr = d
-	VS.Entity.SetKeyFloat( hTimerSnd, "refiretime", d )
+	VS.SetKeyFloat( hTimerSnd, "refiretime", d )
 }
 
 function ThinkButton()
@@ -522,7 +522,7 @@ function OnKill( ent )
 	if( !bStarted ) return
 
 	// "You killed X"
-	VS.Entity.SetKeyString( hGametext, "message", "You killed " + ent.GetScriptScope().name )
+	VS.SetKeyString( hGametext, "message", "You killed " + ent.GetScriptScope().name )
 	EntFireHandle( hGametext, "display", "", 0.0, HPlayer )
 
 	if( bBlindMode ) SendToConsole("r_screenoverlay\"\"")
@@ -588,7 +588,7 @@ function ToggleTeam()
 
 function Equip( input )
 {
-	if( !Ent( "equip_"+input) ) VS.Entity.SetKeyInt(VS.Entity.Create( "game_player_equip", "equip_"+input, {spawnflags = 3, weapon_knife = 1} ), "weapon_"+input, 1)
+	if( !Ent( "equip_"+input) ) VS.SetKeyInt(VS.CreateEntity( "game_player_equip", "equip_"+input, {spawnflags = 3, weapon_knife = 1} ), "weapon_"+input, 1)
 
 	if(input==weapon.hkp2000||input==weapon.usp_silencer||input==weapon.fn57||input==weapon.famas||input==weapon.m4a1||input==weapon.m4a1_silencer||input==weapon.aug||input==weapon.scar20||input==weapon.mag7||input==weapon.mp9)
 		SetTeam(CT)
@@ -600,7 +600,7 @@ function Equip( input )
 function SetTeam(i)
 {
 	TextureToggle("c", i-1)
-	VS.Entity.SetKeyInt( HPlayer, "teamnumber", i )
+	VS.SetKeyInt( HPlayer, "teamnumber", i )
 }
 
 // See the standalone aimbot script for a more advanced version
@@ -733,7 +733,7 @@ fCountdown <- 10.0
 nCounterLook <- 0
 
 foreach( i, v in MusicI )
-	VS.Entity.AddOutput2( Ent("m"+i), "OnPressed", "s.PickMusicKit(" + i++ + ")", null, true )
+	VS.AddOutput2( Ent("m"+i), "OnPressed", "s.PickMusicKit(" + i++ + ")", null, true )
 
 function PickMusicKit( idx )
 {
@@ -776,7 +776,7 @@ function StopMusicKit()
 	printl( txt.lightred + "■ " + txt.yellow + "Stopped playing" )
 
 	EntFireHandle( hTimer10, "disable" )
-	VS.Entity.SetKeyString( hMsgTen, "message", "10.0000" )
+	VS.SetKeyString( hMsgTen, "message", "10.0000" )
 
 	HPlayer.StopSound( sMusicKitSoundCurr )
 	SendToConsole("r_cleardecals")
@@ -789,7 +789,7 @@ function StopMusicKitAll()
 {
 	foreach( k in MusicI ) HPlayer.StopSound( "Musix.HalfTime." + k )
 	EntFireHandle( hTimer10, "disable" )
-	VS.Entity.SetKeyString( hMsgTen, "message", "10.0000" )
+	VS.SetKeyString( hMsgTen, "message", "10.0000" )
 }
 
 function SetMusicType()
@@ -803,17 +803,17 @@ function SetMusicType()
 		Chat( ChatPrefix() + "Music type: " + txt.yellow + "Bomb 10 second count" )
 		printl( ChatPrefix() + "Music type: " + txt.yellow + "Bomb 10 second count" )
 
-		VS.Entity.SetKeyString( hMsgTen, "textsize", 10 )
-		VS.Entity.SetKeyString( hMsgTen, "message", "10.0000" )
+		VS.SetKeyString( hMsgTen, "textsize", 10 )
+		VS.SetKeyString( hMsgTen, "message", "10.0000" )
 	}
 	else if( nMusicType == 1 )
 	{
 		Chat( ChatPrefix() + "Music type: " + txt.yellow + "Main menu" )
 		printl( ChatPrefix() + "Music type: " + txt.yellow + "Main menu" )
 
-		VS.Entity.SetKeyString( hMsgTen, "textsize", 0 )
+		VS.SetKeyString( hMsgTen, "textsize", 0 )
 		EntFireHandle( hTimer10, "disable" )
-		VS.Entity.SetKeyString( hMsgTen, "message", "10.0000" )
+		VS.SetKeyString( hMsgTen, "message", "10.0000" )
 	}
 
 	SendToConsole("r_cleardecals")
@@ -823,12 +823,12 @@ function Tick()
 {
 	fCountdown -= fFrameTime
 
-	VS.Entity.SetKeyString( hMsgTen, "message", VS.FormatPrecision( fCountdown, 5 ) )
+	VS.SetKeyString( hMsgTen, "message", VS.FormatPrecision( fCountdown, 5 ) )
 
 	if( fCountdown <= 0.0 )
 	{
 		EntFireHandle( hTimer10, "disable" )
-		VS.Entity.SetKeyString( hMsgTen, "message", "0.00000" )
+		VS.SetKeyString( hMsgTen, "message", "0.00000" )
 	}
 }
 
