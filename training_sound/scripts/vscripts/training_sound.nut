@@ -610,7 +610,7 @@ function AIMBOT()
 	if( !bSpawned ) return
 
 	local bot  = GetBot(),
-	      head = VS.TraceDir( bot.EyePosition(), bot.GetForwardVector(), 14 ),
+	      head = VS.TraceDir( bot.EyePosition(), bot.GetForwardVector(), 14 ).GetPos(),
 	      ang  = VS.GetAngle( HPlayer.EyePosition(), head )
 
 	HPlayer.SetAngles(ang.x,ang.y,0)
@@ -834,7 +834,7 @@ function Tick()
 
 function Looking()
 {
-	local ent = Entities.FindByClassnameNearest( "func_button", VS.TraceDir( HPlayer.EyePosition(), HPlayerEye.GetForwardVector() ), 24 )
+	local ent = VS.TraceDir( HPlayer.EyePosition(), HPlayerEye.GetForwardVector() ).GetEnt( 24 )
 
 	// if found func_button
 	if( ent )

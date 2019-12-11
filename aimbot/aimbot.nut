@@ -151,14 +151,14 @@ function OnPostSpawn()
 		b1v1 <- false
 		bNoclip <- false
 		bAimHead <- true
-		fTriggerInterval <- 0.02
+		fTriggerInterval <- 0.046875
 		bTrigger <- false
 		bAimbot <- false
 		bWH <- false
 
 		fT2 <- FrameTime()*2
 
-		hTimer <- VS.Timer( 0, 0.001, "Think2" )
+		hTimer <- VS.Timer( 0, FrameTime(), "Think2" )
 
 		// for triggerbot - to make player shoot
 		hCMD <- VS.CreateEntity("point_clientcommand")
@@ -258,7 +258,7 @@ function Think()
 	{
 		local h2
 
-		if( bAimHead ) h2 = VS.TraceDir( hPlayer2.GetAttachmentOrigin(15), hPlayer2Eye.GetForwardVector(), -4 )
+		if( bAimHead ) h2 = VS.TraceDir( hPlayer2.GetAttachmentOrigin(15), hPlayer2Eye.GetForwardVector(), -4 ).GetPos()
 		else
 		{
 			h2 = hPlayer2.EyePosition()
@@ -274,7 +274,7 @@ function Think()
 		{
 			if( !bAttacked )
 			{
-				if( TraceLine( h1, h2, null ) == 1 )
+				if( VS.TraceLine( h1, h2 ).GetFraction() == 1.0 )
 				{
 					hPlayer1.SetAngles( ang.x, ang.y, 0 )
 					attack()
@@ -299,7 +299,7 @@ function Think2()
 		if( player.GetHealth() )
 		{
 			// if direct LOS
-			if( TraceLine( h1, player.GetAttachmentOrigin(15), null ) == 1 )
+			if( VS.TraceLine( h1, player.GetAttachmentOrigin(15) ).GetFraction() == 1.0 )
 			{
 				// set P2 if not already set
 				if( player.GetName() != NAME_P2 ) _P2( player )

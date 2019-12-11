@@ -6,7 +6,7 @@
 //
 //-----------------------------------------------------------------------
 
-// lib ver 191026 or above
+// lib ver 191212 or above
 IncludeScript("vs_library")
 
 function OnPostSpawn()
@@ -23,7 +23,7 @@ function OnPostSpawn()
 	VS.GetLocalPlayer()
 
 	if( !(hThink <- Ent("gamethink")) )
-		hThink <- VS.CreateTimer( "gamethink", 0.001, 0,0,0, 1 )
+		hThink <- VS.CreateTimer( "gamethink", FrameTime(), 0,0,0, 1 )
 
 	if( !(hIncr <- Ent("incrementer")) )
 		hIncr <- VS.CreateTimer( "incrementer", fIncrementInterval, 0,0,0, 1 )
@@ -91,9 +91,11 @@ function Think()
 {
 	local e = HPlayer.EyePosition()
 
-	local a = VS.TraceDir( e, HPlayerEye.GetForwardVector() )
+	local t = VS.TraceDir( e, HPlayerEye.GetForwardVector() )
 
-	local d = VS.Dist( e,a )
+	local a = t.GetPos()
+
+	local d = t.GetDist()
 
 	// DebugDrawBox( a, Vector(-2,-2,-2), Vector(2,2,2), 255, 255, 255, 128, 0.1 )
 
