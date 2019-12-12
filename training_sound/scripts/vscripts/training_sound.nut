@@ -834,7 +834,7 @@ function Tick()
 
 function Looking()
 {
-	local ent = VS.TraceDir( HPlayer.EyePosition(), HPlayerEye.GetForwardVector() ).GetEnt( 24 )
+	local ent = VS.TraceDir( HPlayer.EyePosition(), HPlayerEye.GetForwardVector() ).GetEntByClassname( "func_button", 24 )
 
 	// if found func_button
 	if( ent )

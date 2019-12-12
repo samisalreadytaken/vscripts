@@ -4,10 +4,26 @@
 //-----------------------------------------------------------------------
 IncludeScript("vs_library")
 
+class V
+{
+	constructor(x=0,y=0,z=0)
+	{
+		this.x = x
+		this.y = y
+		this.z = z
+	}
+
+	function V(dx=0,dy=0,dz=0){ return::Vector(this.x+dx,this.y+dy,this.z+dz) }
+
+	x = 0.0
+	y = 0.0
+	z = 0.0
+}
+
 IncludeScript("benchmark_res")
 
 SendToConsole("alias benchmark\"script _d83bS1t4a7ef()\";alias bm_stop\"script _d83bSlt4a7ef()\";alias bm_rec\"script _db3b51t4a7ef()\";alias bm_play\"script _d83bS1t4a7ef(1)\";alias bm_rec_pos\"script _d83bS1taA7ef()\";alias bm_play_pos\"script _d83bSltaA7ef()\";alias bm_save\"script _dBeb5lta47ef()\";alias bm_setup\"script _d8bb5ltAa7ef()\";alias bm_timer\"script _dBebSlt4a73f()\";alias bm_list\"script _d88bSlt4a7ef()\";alias bm_clear\"script _dB8d5lt4a7ef()\";alias bm_remove\"script _dB8b5lt4a7ef()\";alias bm_mdl\"script _d8Bb51t4a7ef()\";alias bm_mdl1\"script _d8Bb51t4a7ef(1)\";alias bm_flash\"script _d8Bp51t4a7ef()\";alias bm_flash1\"script _d8Bp51t4a7ef(1)\";alias bm_he\"script _dB8d51t4a7ef()\";alias bm_he1\"script _dB8d51t4a7ef(1)\";alias bm_molo\"script _dBBb5lt4a7ef()\";alias bm_molo1\"script _dBBb5lt4a7ef(1)\";alias bm_smoke\"script _d88b5lt4a7ef()\";alias bm_smoke1\"script _d88b5lt4a7ef(1)\";alias bm_expl\"script _d88b51t4aTef()\";alias bm_expl1\"script _d88b51t4aTef(1)\"")
-SendToConsole("clear;script _d88bSlt4aTef();script _d83d51ta4Tef()")
+SendToConsole("-duck;clear;script OnPostSpawn()")
 
 ClearChat()
 ClearChat()
@@ -80,11 +96,25 @@ EntFire( "_d83b5l7a4Tef", "disable" )
 
 fTickCurr <- -1.0
 
+function OnPostSpawn()
+{
+	_d88bSlt4aTef();_d83d51ta4Tef();_ProcessData()
+}
+
+function _ProcessData()
+{
+	local l = this["lp_"+GetMapName()]
+
+	foreach( i, v in l )
+		VS.ReplaceArrayIndex( l, i, v.V() )
+}
+
 function _d83d51ta4Tef()
 {
 	fTickCurr = VS.GetTickrate()
 
-	if( !VS.IsInteger( 128.0 / fTickCurr ) ) return printl("[!] Invalid tickrate ( " + fTickCurr + " )! Only 128 and 64 ticks are supported.")
+	if( !VS.IsInteger( 128.0 / fTickCurr ) )
+		return printl("[!] Invalid tickrate ( " + fTickCurr + " )! Only 128 and 64 ticks are supported.")
 
 	printl("[i] Map: " + GetMapName())
 	printl("[i] Server tickrate: " + fTickCurr+"\n")
@@ -201,12 +231,12 @@ function _dBeb5lta47ef()
 	VS.Log.filter = "L "
 	local m = GetMapName()
 	VS.Log.Add( "lp_" + m + "<-[" )
-	foreach( v in lp_r ) VS.Log.Add( VecToString(v) )
+	foreach( v in lp_r ) VS.Log.Add( VecToString(v,"V(") )
 	VS.Log.Add("];la_" + m + "<-[")
 	foreach( v in la_r ) VS.Log.Add( v + "," )
 	VS.Log.L.pop()
 	VS.Log.Add( la_r[la_r.len()-1] + "];\n" )
-	delay( "VS.Log.Run()", 0.5 )
+	VS.Log.Run()
 	HPlayer.PrecacheScriptSound("Survival.TabletUpgradeSuccess")
 	HPlayer.EmitSound("Survival.TabletUpgradeSuccess")
 	printl("\n* Recorded data is exported in /csgo/ with the prefix 'benchmark_rec_'.\n")
@@ -225,6 +255,7 @@ function _d83bSltaA7ef()
 
 	HPlayer.SetHealth(1337)
 	delay( "VS.SetKeyInt(HPlayer,\"movetype\",8)", 2.9 )
+	SendToConsole("+duck")
 
 	delay( "printl(\"Starting in 3...\")", 0.0 )
 	delay( "printl(\"Starting in 2...\")", 1.0 )
@@ -261,7 +292,14 @@ function _d83bS1taA7ef()
 }
 
 // rec pos
-function _d83bSlta4Tef(){ lp_r.append( HPlayer.GetOrigin() ) }
+function _d83bSlta4Tef()
+{
+	local v = HPlayer.GetOrigin()
+	v.z += 18.02
+
+	lp_r.append( v )
+}
+
 // set pos
 function _d83b5ltaA7ef()
 {
@@ -276,7 +314,10 @@ function _d83b5ltaA7ef()
 // rec add
 function _d83b5lT4a9ef()
 {
-	lp_r.append( HPlayer.GetOrigin() )
+	local v = HPlayer.GetOrigin()
+	v.z += 18.02
+
+	lp_r.append( v )
 	la_r.append( HPlayer.GetAngles().y )
 }
 
@@ -322,7 +363,7 @@ function _d83bS1t4a7ef( r = 0 )
 	HPlayer.EmitSound("Weapon_AWP.BoltBack")
 	delay( "HPlayer.EmitSound(\"Weapon_AWP.BoltForward\")", 0.5 )
 
-	SendToConsole( "r_cleardecals;clear;developer 0;toggleconsole;fadeout" )
+	SendToConsole( "+duck;r_cleardecals;clear;developer 0;toggleconsole;fadeout" )
 
 	local _1 = "SendToConsole(\"+quickinv\")",_0 = "SendToConsole(\"-quickinv\")"
 	delay( _1, 0.0 )
@@ -369,7 +410,7 @@ function _d83bSlt4a7ef( i = 0 )
 
 	HPlayer.EmitSound("UIPanorama.gameover_show")
 	if( i ) HPlayer.EmitSound("Buttons.snd9")
-	SendToConsole( "host_timescale 1;clear;echo;echo;echo;echo " + ( i ? "Benchmark finished.;echo;echo\"Map: " + GetMapName() + "\";echo\"Tickrate: "+ fTickCurr + "\";echo;toggleconsole" : "Stopped benchmark.;mp_restartgame 1" ) + ";echo Ran for " + ( Time() - _dB3bSlta47ef ) + " seconds;echo;bench_end;echo;echo;developer " + _d8ebSlta47ef )
+	SendToConsole( "-duck;host_timescale 1;clear;echo;echo;echo;echo " + ( i ? "Benchmark finished.;echo;echo\"Map: " + GetMapName() + "\";echo\"Tickrate: "+ fTickCurr + "\";echo;toggleconsole" : "Stopped benchmark.;mp_restartgame 1" ) + ";echo Ran for " + ( Time() - _dB3bSlta47ef ) + " seconds;echo;bench_end;echo;echo;developer " + _d8ebSlta47ef )
 
 	// Benchmark finished.
 
@@ -588,17 +629,17 @@ function _d88b51t4aTef( i = 0 )
 
 function SpawnFlash( v, d )
 {
-	delay("SendToConsole(\"ent_create flashbang_projectile;ent_fire flashbang_projectile setlocalorigin\\\"" + v.x + " " + v.y + " " + v.z + "\\\"\")", d)
+	delay("SendToConsole(\"ent_create flashbang_projectile;ent_fire flashbang_projectile setlocalorigin\\\"" + VecToString( v, "", " ", "" ) + "\\\"\")", d)
 }
 
 function SpawnHE( v, d )
 {
-	delay("SendToConsole(\"ent_create hegrenade_projectile;ent_fire hegrenade_projectile setlocalorigin\\\"" + v.x + " " + v.y + " " + v.z + "\\\";ent_fire hegrenade_projectile initializespawnfromworld\")", d)
+	delay("SendToConsole(\"ent_create hegrenade_projectile;ent_fire hegrenade_projectile setlocalorigin\\\"" + VecToString( v, "", " ", "" ) + "\\\";ent_fire hegrenade_projectile initializespawnfromworld\")", d)
 }
 
 function SpawnMolotov( v, d )
 {
-	delay("SendToConsole(\"ent_create molotov_projectile;ent_fire molotov_projectile setlocalorigin\\\"" + v.x + " " + v.y + " " + v.z + "\\\";ent_fire molotov_projectile initializespawnfromworld\")", d)
+	delay("SendToConsole(\"ent_create molotov_projectile;ent_fire molotov_projectile setlocalorigin\\\"" + VecToString( v, "", " ", "" ) + "\\\";ent_fire molotov_projectile initializespawnfromworld\")", d)
 }
 
 function SpawnSmoke( v, d )
@@ -627,5 +668,18 @@ sCurrMDL <- "BALKg"
 function SetMDL(s)
 {
 	if( typeof s != "string" ) return printl("Invalid input")
-	sCurrMDL = s
+
+	local t = ""
+
+	for( local i = 0; i < s.len(); i++ )
+	{
+		local c = s[i].tochar()
+
+		if( i == (s.len() - 1) ) c = c.tolower()
+		else c = c.toupper()
+
+		t += c
+	}
+
+	sCurrMDL = t
 }
