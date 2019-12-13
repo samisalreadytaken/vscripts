@@ -109,23 +109,6 @@ function _ProcessData()
 		VS.ReplaceArrayIndex( l, i, v.V() )
 }
 
-function _d83d51ta4Tef()
-{
-	fTickCurr = VS.GetTickrate()
-
-	if( !VS.IsInteger( 128.0 / fTickCurr ) )
-		return printl("[!] Invalid tickrate ( " + fTickCurr + " )! Only 128 and 64 ticks are supported.")
-
-	printl("[i] Map: " + GetMapName())
-	printl("[i] Server tickrate: " + fTickCurr+"\n")
-	Chat( txt.orange + "● " + txt.grey +"Server tickrate: " + txt.yellow + fTickCurr )
-	Chat( " " )
-	Chat( txt.blue+" -------------------------------- " )
-
-	if( !HPlayer ) throw "NO PLAYER FOUND"
-	if( HPlayer.GetTeam() != 2 && HPlayer.GetTeam() != 3 ) HPlayer.SetTeam(2)
-}
-
 function Alert(s){ VS.ShowHudHint( _d83bSlta4lef, HPlayer, s ) }
 
 // strip
@@ -162,6 +145,7 @@ function _db3b51t4a7ef()
 	// bRecording
 	if( _d83bS1ta47ef ) return _db3b5lt4a7ef()
 
+	// not necessary anymore
 	if( !("_d83bSlta47ef" in this) || !Ent("_d83bSlta47ef") )
 		return SendToConsole( "exec benchmark;bm_rec" )
 
@@ -254,8 +238,7 @@ function _d83bSltaA7ef()
 	VS.OnTimer( _d83bSlta47ef, "_d83b5ltaA7ef" )
 
 	HPlayer.SetHealth(1337)
-	delay( "VS.SetKeyInt(HPlayer,\"movetype\",8)", 2.9 )
-	SendToConsole("+duck")
+	delay( "VS.SetKeyInt(HPlayer,\"movetype\",8);SendToConsole(\"+duck\")", 2.9 )
 
 	delay( "printl(\"Starting in 3...\")", 0.0 )
 	delay( "printl(\"Starting in 2...\")", 1.0 )
@@ -335,6 +318,8 @@ function _d83bS1t4a7ef( r = 0 )
 {
 	if( _d83bSl7a4Tef ) return printl("Benchmark hasn't started yet!")
 	if( _d83bS1ta4Tef ) return printl("Benchmark is already running!\nTo stop it: bm_stop")
+
+	// not necessary anymore
 	if( !("_d83bSlta47ef" in this) || !Ent("_d83bSlta47ef") )
 		return SendToConsole( "exec benchmark;" + ( r ? "bm_play" : "benchmark" ) )
 
@@ -363,7 +348,7 @@ function _d83bS1t4a7ef( r = 0 )
 	HPlayer.EmitSound("Weapon_AWP.BoltBack")
 	delay( "HPlayer.EmitSound(\"Weapon_AWP.BoltForward\")", 0.5 )
 
-	SendToConsole( "+duck;r_cleardecals;clear;developer 0;toggleconsole;fadeout" )
+	SendToConsole( "r_cleardecals;clear;echo;echo;echo;echo\"   Starting in 3 seconds.\";echo;echo\"   Keep the console closed for higher FPS\";echo;echo;echo;developer 0;toggleconsole;fadeout" )
 
 	local _1 = "SendToConsole(\"+quickinv\")",_0 = "SendToConsole(\"-quickinv\")"
 	delay( _1, 0.0 )
@@ -389,7 +374,7 @@ function _d83b51T4a9ef( r )
 	_d83b51ta47ef = 0
 	_dB3bSlta47ef = Time()
 	EntFireHandle( _d83bSlta47ef, "enable" )
-	SendToConsole( "fadein;fps_max 0;bench_start;bench_end;clear;echo;echo;echo;echo\"   Benchmark has started\";echo;echo\"   Keep the console closed for higher FPS\";echo;echo" )
+	SendToConsole( "+duck;fadein;fps_max 0;bench_start;bench_end;clear;echo;echo;echo;echo\"   Benchmark has started\";echo;echo\"   Keep the console closed for higher FPS\";echo;echo" )
 }
 
 // stop
@@ -410,17 +395,75 @@ function _d83bSlt4a7ef( i = 0 )
 
 	HPlayer.EmitSound("UIPanorama.gameover_show")
 	if( i ) HPlayer.EmitSound("Buttons.snd9")
-	SendToConsole( "-duck;host_timescale 1;clear;echo;echo;echo;echo " + ( i ? "Benchmark finished.;echo;echo\"Map: " + GetMapName() + "\";echo\"Tickrate: "+ fTickCurr + "\";echo;toggleconsole" : "Stopped benchmark.;mp_restartgame 1" ) + ";echo Ran for " + ( Time() - _dB3bSlta47ef ) + " seconds;echo;bench_end;echo;echo;developer " + _d8ebSlta47ef )
 
-	// Benchmark finished.
+	SendToConsole( "-duck;host_timescale 1;clear;echo;echo;echo;echo\"----------------------------\";echo;echo " + ( i ? "Benchmark finished.;echo;echo\"Map: " + GetMapName() + "\";echo\"Tickrate: "+ fTickCurr + "\";echo;toggleconsole" : "Stopped benchmark.;echo;mp_restartgame 1" ) + ";echo\"Time: " + ( Time() - _dB3bSlta47ef ) + " seconds\";echo;bench_end;echo;echo\"----------------------------\";echo;echo;developer " + _d8ebSlta47ef )
 
-	// Server map       : de_dust2
-	// Server tickrate  : 64
+/*
+	   ----------
 
-	// Benchmark ran for: 49.0781 seconds
+	Benchmark finished.
 
-	// Average framerate: 301.19
+	Map: de_dust2
+	Tickrate: 64
+
+	Time: 49.0781 seconds
+
+	Average framerate: 301.19
+
+	   ----------
+*/
+
+/*
+	----------------------------
+
+	Benchmark finished.
+
+	Map : de_dust2
+	Tick: 64
+
+	Time: 49.0781 seconds
+
+	Average framerate: 301.19
+
+	----------------------------
+*/
+
+/*
+	----------------------------
+
+	Benchmark finished.
+
+	Map              : de_dust2
+	Tickrate         : 64
+
+	Benchmark ran for: 49.0781 seconds
+
+	Average framerate: 301.19
+
+	----------------------------
+*/
+
+	// SendToConsole( "-duck;host_timescale 1;clear;echo;echo;echo;echo\"   ------------\";echo;echo " + ( i ? "Benchmark finished.;echo;echo\"" + OutputFormat("Map: ") + GetMapName() + "\";echo\"" + OutputFormat("Tickrate: ") + fTickCurr + "\";echo;toggleconsole" : "Stopped benchmark.;echo;mp_restartgame 1" ) + ";echo\""+ OutputFormat("Benchmark time: ") + ( Time() - _dB3bSlta47ef ) + " seconds\";echo;bench_end;echo;echo\"   ------------\";echo;echo;developer " + _d8ebSlta47ef )
+
+/*
+	----------------------------
+
+	Benchmark finished.
+
+				  Map: de_dust2
+			 Tickrate: 64
+
+	   Benchmark time: 49.0781 seconds
+
+	Average framerate: 301.19
+
+	----------------------------
+*/
 }
+
+// function OutputFormat( s ) { return VS.FormatWidth( " ", s, 19 ) }
+
+// function Echo( s = "" ) { SendToConsole("echo\""+s+"\"") }
 
 // bm_setup
 function _d8bb5ltAa7ef()
@@ -428,6 +471,10 @@ function _d8bb5ltAa7ef()
 	HPlayer.EmitSound("HudChat.Message")
 /*
 printl(@"
+[i] See README.md for details.
+
+                 github.com/samisalreadytaken/csgo-benchmark
+
 bm_rec     : Start/stop recording new path
 bm_play    : Play the recording, run benchmark
 bm_save    : Save the recording
@@ -450,11 +497,9 @@ bm_he1     : SpawnHE()
 bm_molo1   : SpawnMolotov()
 bm_smoke1  : SpawnSmoke()
 bm_expl1   : SpawnExplosion()
-
-[!] After doing changes in the benchmark_res.nut file, reload the script to see your changes!
 ")
 */
-	printl("\nbm_rec     : Start/stop recording new path\nbm_play    : Play the recording, run benchmark\nbm_save    : Save the recording\nbm_timer   : Toggle counter\n           :\nbm_list    : Print saved setup data\nbm_clear   : Clear saved setup data\nbm_remove  : Remove the last added setup data\n           :\nbm_mdl     : Print SpawnMDL()\nbm_flash   : Print SpawnFlash()\nbm_he      : Print SpawnHE()\nbm_molo    : Print SpawnMolotov()\nbm_smoke   : Print SpawnSmoke()\nbm_expl    : Print SpawnExplosion()\n           :\nbm_mdl1    : SpawnMDL()\nbm_flash1  : SpawnFlash()\nbm_he1     : SpawnHE()\nbm_molo1   : SpawnMolotov()\nbm_smoke1  : SpawnSmoke()\nbm_expl1   : SpawnExplosion()\n\n[!] After doing changes in the benchmark_res.nut file, reload the script to see your changes!\n")
+	printl("\n[i] See README for details.\n\n                 github.com/samisalreadytaken/csgo-benchmark\n\nbm_rec     : Start/stop recording new path\nbm_play    : Play the recording, run benchmark\nbm_save    : Save the recording\nbm_timer   : Toggle counter\n           :\nbm_list    : Print saved setup data\nbm_clear   : Clear saved setup data\nbm_remove  : Remove the last added setup data\n           :\nbm_mdl     : Print SpawnMDL()\nbm_flash   : Print SpawnFlash()\nbm_he      : Print SpawnHE()\nbm_molo    : Print SpawnMolotov()\nbm_smoke   : Print SpawnSmoke()\nbm_expl    : Print SpawnExplosion()\n           :\nbm_mdl1    : SpawnMDL()\nbm_flash1  : SpawnFlash()\nbm_he1     : SpawnHE()\nbm_molo1   : SpawnMolotov()\nbm_smoke1  : SpawnSmoke()\nbm_expl1   : SpawnExplosion()\n\n")
 }
 
 function _d88bSlt4aTef()
@@ -480,13 +525,34 @@ bm_setup   : Print setup related commands
 
  ----------
 
+ Commands to display FPS:
+
 cl_showfps 1
 net_graph 1
 
-* The benchmark sets your fps_max to 0
+ ----------
+
+[i] The benchmark sets your fps_max to 0
 ")
 */
-	printl("\n\n Benchmark script loaded.\n\n                 github.com/samisalreadytaken/csgo-benchmark\n\n Console commands:\n\nbenchmark  : Run the benchmark\nbm_stop    : Force stop the ongoing benchmark\n           :\n           :\nbm_rec     : Start/stop recording new path\nbm_play    : Play the recording, run benchmark\n           :\n           :\nbm_setup   : Print setup related commands\n\n ----------\n\ncl_showfps 1\nnet_graph 1\n\n[i] The benchmark sets your fps_max to 0\n")
+	printl("\n\n\n Benchmark script loaded.\n\n                 github.com/samisalreadytaken/csgo-benchmark\n\n Console commands:\n\nbenchmark  : Run the benchmark\nbm_stop    : Force stop the ongoing benchmark\n           :\n           :\nbm_rec     : Start/stop recording new path\nbm_play    : Play the recording, run benchmark\n           :\n           :\nbm_setup   : Print setup related commands\n\n ----------\n\n Commands to display FPS:\n\ncl_showfps 1\nnet_graph 1\n\n ----------\n\n[i] The benchmark sets your fps_max to 0\n")
+}
+
+function _d83d51ta4Tef()
+{
+	fTickCurr = VS.GetTickrate()
+
+	if( !VS.IsInteger( 128.0 / fTickCurr ) )
+		return printl("[!] Invalid tickrate ( " + fTickCurr + " )! Only 128 and 64 ticks are supported.")
+
+	printl("[i] Map: " + GetMapName())
+	printl("[i] Server tickrate: " + fTickCurr+"\n\n")
+	Chat( txt.orange + "● " + txt.grey +"Server tickrate: " + txt.yellow + fTickCurr )
+	Chat( " " )
+	Chat( txt.blue+" -------------------------------- " )
+
+	if( !HPlayer ) throw "NO PLAYER FOUND"
+	if( HPlayer.GetTeam() != 2 && HPlayer.GetTeam() != 3 ) HPlayer.SetTeam(2)
 }
 
 // bm_clear
