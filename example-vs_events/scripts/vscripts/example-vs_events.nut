@@ -53,7 +53,7 @@ SendToConsole("mp_warmup_pausetimer 1;bot_stop 1;mp_autoteambalance 0;mp_limitte
 	local id = data.userid
 
 	// get the player handle
-	local player = VS.GetHandleByUserid( id )
+	local player = VS.GetPlayerByUserid( id )
 
 	// execute
 	SMain.say_cmd( msg.slice(1), player )
@@ -138,12 +138,12 @@ function BizonHeal(data)
 {
 	local prevHP = data.health + data.dmg_health
 	local add = 2
-	local player = VS.GetHandleByUserid(data.userid)
+	local player = VS.GetPlayerByUserid(data.userid)
 
 	player.SetHealth( prevHP+add )
 
 	// do the same to the attacker to debug
-	local attacker = VS.GetHandleByUserid(data.attacker)
+	local attacker = VS.GetPlayerByUserid(data.attacker)
 	attacker.SetHealth( prevHP+add )
 }
 
@@ -162,13 +162,13 @@ function BizonHeal(data)
 	// VS.DumpScope(data)
 	printl(" --- ")
 	printl("Flash banged @ "+data.x+","+data.y+","+data.z)
-	printl("Thrown by " + VS.GetHandleByUserid(data.userid))
+	printl("Thrown by " + VS.GetPlayerByUserid(data.userid))
 }
 
 ::OnGameEvent_player_blind <- function(data)
 {
 	// VS.DumpScope(data)
-	local player = VS.GetHandleByUserid(data.userid)
+	local player = VS.GetPlayerByUserid(data.userid)
 	local name = player.GetScriptScope().name
 
 	printl(name+" is blind for "+data.blind_duration+" seconds.")

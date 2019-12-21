@@ -13,8 +13,6 @@
 //
 //------------------------------
 
-// require vs_library v191212 or above
-
 enum weapon{glock="glock",hkp2000="hkp2000",usp_silencer="usp_silencer",elite="elite",p250="p250",tec9="tec9",fn57="fn57",deagle="deagle",galilar="galilar",famas="famas",ak47="ak47",m4a1="m4a1",m4a1_silencer="m4a1_silencer",ssg08="ssg08",aug="aug",sg556="sg556",awp="awp",scar20="scar20",g3sg1="g3sg1",nova="nova",xm1014="xm1014",mag7="mag7",m249="m249",negev="negev",mac10="mac10",mp9="mp9",mp7="mp7",ump45="ump45",p90="p90",bizon="bizon",mp5sd="mp5sd",sawedoff="sawedoff",cz75a="cz75a"}
 
 const T = 2
@@ -46,7 +44,7 @@ nSoundsLen <- 0
 function Init()
 {
 	// if a bot is CT
-	foreach( b in VS.GetPlayersAndBots()[1] ) if( activator == b )
+	if( VS.FindInArray( activator, VS.GetPlayersAndBots()[1] ) != null )
 	{
 		printl(" !!! WRONG TEAM\nWhat have you done?!")
 		throw "WRONG TEAM"
@@ -510,7 +508,7 @@ function OnSpawn( data )
 
 	if( data.teamnum == 2 )
 	{
-		local e = VS.GetHandleByUserid( data.userid )
+		local e = VS.GetPlayerByUserid( data.userid )
 		if(!e)return; // can't be bothered to fix
 		e.SetHealth(1)
 		list_bots.append( e )
@@ -545,7 +543,7 @@ function OnKill( ent )
 
 ::OnGameEvent_player_jump<-function(){ s.Stop() }
 ::OnGameEvent_player_spawn<-function(data){ s.OnSpawn(data) }
-::OnGameEvent_player_death<-function(data){ s.OnKill(VS.GetHandleByUserid(data.userid)) }
+::OnGameEvent_player_death<-function(data){ s.OnKill(VS.GetPlayerByUserid(data.userid)) }
 
 function PlaySound()
 {
