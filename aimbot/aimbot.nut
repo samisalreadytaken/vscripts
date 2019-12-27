@@ -1,5 +1,5 @@
 //-----------------------------------------------------------------------
-//------------ Copyright (C) 2019 Sam - STEAM_0:1:26669608 --------------
+//----------------------- Copyright (C) 2019 Sam ------------------------
 //                     github.com/samisalreadytaken
 //-----------------------------------------------------------------------
 //------------------------------
@@ -274,7 +274,7 @@ function Think()
 		{
 			if( !bAttacked )
 			{
-				if( VS.TraceLine( h1, h2 ).GetFraction() == 1.0 )
+				if( !VS.TraceLine( h1, h2 ).DidHit() )
 				{
 					hPlayer1.SetAngles( ang.x, ang.y, 0 )
 					attack()
@@ -299,7 +299,7 @@ function Think2()
 		if( player.GetHealth() )
 		{
 			// if direct LOS
-			if( VS.TraceLine( h1, player.GetAttachmentOrigin(15) ).GetFraction() == 1.0 )
+			if( !VS.TraceLine( h1, player.GetAttachmentOrigin(15) ).DidHit() )
 			{
 				// set P2 if not already set
 				if( player.GetName() != NAME_P2 ) _P2( player )

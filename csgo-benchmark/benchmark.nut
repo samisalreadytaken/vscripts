@@ -1,5 +1,5 @@
 //-----------------------------------------------------------------------
-//------------ Copyright (C) 2019 Sam - STEAM_0:1:26669608 --------------
+//----------------------- Copyright (C) 2019 Sam ------------------------
 //                     github.com/samisalreadytaken
 //-----------------------------------------------------------------------
 IncludeScript("vs_library")
@@ -13,7 +13,7 @@ class V
 		this.z = z
 	}
 
-	function V(dx=0,dy=0,dz=0){ return::Vector(this.x+dx,this.y+dy,this.z+dz) }
+	function V(dx=0,dy=0,dz=0){ return::Vector(x+dx,y+dy,z+dz) }
 
 	x = 0.0
 	y = 0.0
@@ -289,10 +289,10 @@ function _dBeb5lta47ef()
 	foreach( v in la_r ) VS.Log.Add( v + "," )
 	VS.Log.L.pop()
 	VS.Log.Add( la_r[la_r.len()-1] + "];\n" )
-	VS.Log.Run()
+	local file = VS.Log.Run()
 	HPlayer.PrecacheScriptSound("Survival.TabletUpgradeSuccess")
 	PlaySound("Survival.TabletUpgradeSuccess")
-	printl("\n* Recorded data is exported in /csgo/ with the prefix 'benchmark_rec_'.\n")
+	printl("\n* Recorded data is exported: /csgo/"+file+".log\n")
 }
 
 // play only pos

@@ -1,0 +1,7 @@
+"VertexLitGeneric"
+{
+$basetexture "lights/white002"
+$selfillum 1
+$selfillummask "lights/white002"
+//$selfillumtint "[ 100 100 100 ]"
+}
