@@ -10,7 +10,7 @@
 IncludeScript("vs_library")
 IncludeScript("vs_library/vs_collision")
 
-SendToConsole("mp_roundtime 60;mp_freezetime 0;mp_ignore_round_win_conditions 1;mp_respawn_on_death_t 1;mp_warmup_end")
+SendToConsole("sv_cheats 1;mp_roundtime 60;mp_freezetime 0;mp_ignore_round_win_conditions 1;mp_respawn_on_death_t 1;mp_warmup_end")
 
 ::s <- this
 
@@ -34,6 +34,7 @@ function _Button()
 {
 	Chat("Completed in " + txt.yellow + VS.FormatPrecision( Time()-fTimeStart, 5 ) + txt.white + " seconds" )
 
+	// abrupt ending, random
 	activator.EmitSound("BaseGrenade.Explode")
 	activator.SetVelocity( Vector(0,0,1700) )
 	SendToConsole("kill")
@@ -64,8 +65,8 @@ function OnPostSpawn()
 		::HPlayerEye <- VS.CreateMeasure("player")[0]
 		::hBuffer <- VS.CreateEntity("logic_script")
 		::hHudHint <- VS.CreateHudHint()
-		hThink <- VS.Timer( 0, FrameTime(), "Think" )
-		hThinkObj <- VS.Timer( 0, FrameTime()*10, "ThinkObj" )
+		hThink <- VS.Timer( 0, 0.015625, "Think" )
+		hThinkObj <- VS.Timer( 0, 0.15625, "ThinkBombs" )
 
 		VS.MakePermanent( HPlayerEye )
 		VS.MakePermanent( hBuffer )
@@ -126,16 +127,15 @@ function ProcessChildren()
 
 function ChangeLevel( i )
 {
+	local list_bombs
+
 	switch(i)
 	{
 		case 0:
 			vStartPos = Vector(-1896.596191,6.483833,12)
 
-			local a = [ Ent("obj_01"),
-			            Ent("obj_02") ]
-
-			foreach( ent in a )
-				obj_bombs[ent] <- false
+			list_bombs = [ Ent("obj_01"),
+			               Ent("obj_02") ]
 
 			break
 
@@ -145,6 +145,8 @@ function ChangeLevel( i )
 		case 4:
 		default: printl("Invalid level!")
 	}
+
+	foreach( ent in list_bombs ) obj_bombs[ent] <- false
 
 	vCheckpoint = vStartPos
 	CloseDoors()
@@ -185,7 +187,7 @@ function GetType( ent )
 
 function Think()
 {
-	trace <- VS.TraceDir( HPlayer.EyePosition(), HPlayerEye.GetForwardVector() )
+	trace = VS.TraceDir( HPlayer.EyePosition(), HPlayerEye.GetForwardVector() )
 
 	// DebugDrawBox( trace.GetPos(), Vector(-2,-2,-2), Vector(2,2,2), 255, 138, 0, 128, 0.1 )
 
@@ -222,19 +224,18 @@ function ThinkLook(tr)
 
 	if( ent )
 	{
-		ent = ent.GetMoveParent()
-		VS.DrawEntityBBox( fT2, ent )
+		VS.DrawEntityBBox( fT2, ent.GetMoveParent() )
 	}
 }
 
-function ThinkObj()
+function ThinkBombs()
 {
-	foreach( obj, jammed in obj_bombs )
+	foreach( bomb, jammed in obj_bombs )
 	{
 		if( !jammed )
 		{
 			// if player is closer than 128 units
-			if( (HPlayer.GetOrigin()-obj.GetOrigin()).LengthSqr() < 16384 ) // 128 * 128
+			if( (HPlayer.GetOrigin()-bomb.GetOrigin()).LengthSqr() < 16384 ) // 128 * 128
 			{
 				// fixme: use env_fade
 				SendToConsole("fadein")
@@ -269,6 +270,7 @@ function OnJump(data)
 
 const TARGET_TYPE = "info_teleport_destination"
 
+trace <- null
 fT2 <- FrameTime() * 2
 fTimeStart <- 0.0
 vCheckpoint <- null
@@ -393,16 +395,16 @@ function PickupJammer( input = null )
 	local jammer = input ? input : hEntBase
 
 	// if the jammer is jamming an object
-	if( hEntBase in links )
+	if( jammer in links )
 	{
 		// do nothing if there's another jammer jamming the same object
 		foreach( k, v in links )
-			if( k != hEntBase )
-				if( v == links[hEntBase] )
-					return delete links[hEntBase] // break the link
+			if( k != jammer )
+				if( v == links[jammer] )
+					return delete links[jammer] // break the link
 
 		// break the link
-		local ent = delete links[hEntBase]
+		local ent = delete links[jammer]
 		local typ = GetType( ent )
 
 		if( typ == "wall" )
