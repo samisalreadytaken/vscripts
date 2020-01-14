@@ -2,130 +2,231 @@
 //----------------------- Copyright (C) 2019 Sam ------------------------
 //                     github.com/samisalreadytaken
 //-----------------------------------------------------------------------
-IncludeScript("vs_library")
+IncludeScript("vs_library");
 
 class V
 {
-	constructor(x=0,y=0,z=0)
+	constructor(_x=0,_y=0,_z=0)
 	{
-		this.x = x
-		this.y = y
-		this.z = z
+		x = _x;
+		y = _y;
+		z = _z;
 	}
 
 	function V(dx=0,dy=0,dz=0){ return::Vector(x+dx,y+dy,z+dz) }
 
-	x = 0.0
-	y = 0.0
-	z = 0.0
+	x = 0.0;
+	y = 0.0;
+	z = 0.0;
 }
 
-const FTIME = 0.015625
+IncludeScript("benchmark_res");
 
-IncludeScript("benchmark_res")
+if(!("__R"in::getroottable()))::__R<-false;;if(::__R)delete::__R;else{local _=function(){};::__R=true;return::DoIncludeScript(_.getinfos().src,this)};;
 
-SendToConsole("alias benchmark\"script _d83bS1t4a7ef()\";alias bm_stop\"script _d83bSlt4a7ef()\";alias bm_rec\"script _db3b51t4a7ef()\";alias bm_play\"script _d83bS1t4a7ef(1)\";alias bm_rec_pos\"script _d83bS1taA7ef()\";alias bm_play_pos\"script _d83bSltaA7ef()\";alias bm_save\"script _dBeb5lta47ef()\";alias bm_trim\"script _db3b51tAa7ef()\";alias bm_trim_undo\"script _db3b51tAa7ef(1)\";alias bm_setup\"script _d8bb5ltAa7ef()\";alias bm_timer\"script _dBebSlt4a73f()\";alias bm_list\"script _d88bSlt4a7ef()\";alias bm_clear\"script _dB8d5lt4a7ef()\";alias bm_remove\"script _dB8b5lt4a7ef()\";alias bm_mdl\"script _d8Bb51t4a7ef()\";alias bm_mdl1\"script _d8Bb51t4a7ef(1)\";alias bm_flash\"script _d8Bp51t4a7ef()\";alias bm_flash1\"script _d8Bp51t4a7ef(1)\";alias bm_he\"script _dB8d51t4a7ef()\";alias bm_he1\"script _dB8d51t4a7ef(1)\";alias bm_molo\"script _dBBb5lt4a7ef()\";alias bm_molo1\"script _dBBb5lt4a7ef(1)\";alias bm_smoke\"script _d88b5lt4a7ef()\";alias bm_smoke1\"script _d88b5lt4a7ef(1)\";alias bm_expl\"script _d88b51t4aTef()\";alias bm_expl1\"script _d88b51t4aTef(1)\"")
-SendToConsole("-duck;clear;script OnPostSpawn()")
+const FTIME = 0.015625;;
 
-VS.GetLocalPlayer()
+SendToConsole("alias benchmark\"script _d83bS1t4a7ef()\";alias bm_stop\"script _d83bSlt4a7ef()\";alias bm_rec\"script _db3b51t4a7ef()\";alias bm_play\"script _d83bS1t4a7ef(1)\";alias bm_show\"script show(10)\";alias bm_save\"script _dBeb5lta47ef(0)\";alias bm_trim\"script _db3b51tAa7ef(0,0)\";alias bm_trim_undo\"script _db3b51tAa7ef(1,0)\";alias bm_setup\"script _d8bb5ltAa7ef()\";alias bm_timer\"script _dBebSlt4a73f()\";alias bm_list\"script _d88bSlt4a7ef()\";alias bm_clear\"script _dB8d5lt4a7ef()\";alias bm_remove\"script _dB8b5lt4a7ef()\"");
+
+SendToConsole("alias bm_mdl\"script _d8Bb51t4a7ef()\";alias bm_mdl1\"script _d8Bb51t4a7ef(1)\";alias bm_flash\"script _d8Bp51t4a7ef()\";alias bm_flash1\"script _d8Bp51t4a7ef(1)\";alias bm_he\"script _dB8d51t4a7ef()\";alias bm_he1\"script _dB8d51t4a7ef(1)\";alias bm_molo\"script _dBBb5lt4a7ef()\";alias bm_molo1\"script _dBBb5lt4a7ef(1)\";alias bm_smoke\"script _d88b5lt4a7ef()\";alias bm_smoke1\"script _d88b5lt4a7ef(1)\";alias bm_expl\"script _d88b51t4aTef()\";alias bm_expl1\"script _d88b51t4aTef(1)\";alias bm_add\"script _dbBbSlt4aT3f()\";alias bm_pop\"script _dbBbSlt4aTef()\";alias bm_popall\"script _db3bSlt4aTef()\";alias bm_compile\"script _db3bSlt4a7ef()\";alias bm_play2\"script _d83bS1t4a7ef(2)\";alias bm_save2\"script _dBeb5lta47ef(1)\";alias bm_trim2\"script _db3b51tAa7ef(0,1)\";alias bm_trim2_undo\"script _db3b51tAa7ef(1,1)\";alias bm_show2\"script show2(10)\";alias bm_roll\"script bm_roll()\"");
+
+SendToConsole("clear;script OnPostSpawn()");
+
+VS.GetLocalPlayer();
 
 // bRecording
-_d83bS1ta47ef <- false
+_d83bS1ta47ef <- false;
 
 // bRecordingPending
-_d83bS1t4a73f <- false
+_d83bS1t4a73f <- false;
 
 // sec timer enabled
-_d8bb5lta47ef <- false
+_d8bb5lta47ef <- false;
 
 // bStarted
-_d83bS1ta4Tef <- false
+_d83bS1ta4Tef <- false;
 
 // bStartedPending
-_d83bSl7a4Tef <- false
+_d83bSl7a4Tef <- false;
 
 // bRecordingPos Only
-_d83b5lta4Tef <- false
+_d83b5lta4Tef <- false;
 
 // trimmed
-if( !("_d83Bb517a47ef" in this) ) _d83Bb517a47ef <- false
+if( !("_d83Bb517a47ef" in this) ) _d83Bb517a47ef <- false;;
 
-_dB3bS1ta47ef <- null
-_dB3b5lta47ef <- null
-_dBebS1t4a7ef <- 0
-_d83b51ta47ef <- 0
-_d8ebSlta4Tef <- 0
-_d8ebSlta47ef <- 0
-_dB3bSlta47ef <- 0.0
+_dB3bS1ta47ef <- null;
+_dB3b5lta47ef <- null;
+_dBebS1t4a7ef <- 0;
+_d83b51ta47ef <- 0;
+_d8ebSlta4Tef <- 0;
+_d8ebSlta47ef <- 0;
+_dB3bSlta47ef <- 0.0;
 
-fTickrate <- -1.0
-sMapName <- GetMapName()
+fTickrate <- -1.0;
+sMapName <- GetMapName();
 
 // lists
-if( !("_d8BbSlt4a7ef" in this) ) _d8BbSlt4a7ef <- []
-if( !("_d8BdSlt4a7ef" in this) ) _d8BdSlt4a7ef <- []
+if( !("_d8BbSlt4a7ef" in this) ) _d8BbSlt4a7ef <- [];;
+if( !("_d8BdSlt4a7ef" in this) ) _d8BdSlt4a7ef <- [];;
 // nRecLast
-if( !("_d8Bd5lt4a7ef" in this) ) _d8Bd5lt4a7ef <- -1
+if( !("_d8Bd5lt4a7ef" in this) ) _d8Bd5lt4a7ef <- -1;;
 
-if( !("_d83b5lta47ef" in this) ) _d83b5lta47ef <- false
+if( !("_d83b5lta47ef" in this) ) _d83b5lta47ef <- false;;
 
 if( !("_d8ebS1ta4Tef" in this) || !Ent("_d8ebS1ta4Tef") )
 {
-	_d8ebS1ta4Tef <- VS.CreateEntity( "game_player_equip", "_d8ebS1ta4Tef", {spawnflags = 2} )
-	VS.MakePermanent( _d8ebS1ta4Tef )
-}
+	_d8ebS1ta4Tef <- VS.CreateEntity( "game_player_equip", "_d8ebS1ta4Tef", {spawnflags = 2} );
+	VS.MakePermanent( _d8ebS1ta4Tef );
+};;
 
 if( !("_d83bSlta47ef" in this) || !Ent("_d83bSlta47ef") )
 {
-	_d83bSlta47ef <- VS.CreateTimer( "_d83bSlta47ef", FTIME, 0, 0, 0, 1 )
-	VS.MakePermanent( _d83bSlta47ef )
-}
+	_d83bSlta47ef <- VS.CreateTimer( "_d83bSlta47ef", FTIME, 0, 0, 0, 1 );
+	VS.MakePermanent( _d83bSlta47ef );
+};;
 
 if( !("_d83bSlta41ef" in this) || !Ent("_d83bSlta41ef") )
-	_d83bSlta41ef <- VS.CreateEntity( "info_target", "_d83bSlta41ef" )
+	_d83bSlta41ef <- VS.CreateEntity( "info_target", "_d83bSlta41ef" );;
 
 if( !("_d83bSlta4lef" in this) || !Ent("_d83bSlta4lef") )
 {
-	_d83bSlta4lef <- VS.CreateHudHint( "_d83bSlta4lef" )
-	VS.MakePermanent( _d83bSlta4lef )
-}
+	_d83bSlta4lef <- VS.CreateHudHint( "_d83bSlta4lef" );
+	VS.MakePermanent( _d83bSlta4lef );
+};;
 
-EntFireHandle( _d83bSlta47ef, "disable" )
-EntFire( "_d83b5l7a4Tef", "disable" )
+if( !("HPlayerEye" in this) || !Ent("vs_ref*") )
+{
+	local a = VS.CreateMeasure(HPlayer.GetName());
+	HPlayerEye <- a[0];
+	VS.MakePermanent( HPlayerEye );
+	VS.MakePermanent( a[1] );
+};;
+
+if( !("_d83b5lt4a7ef" in this) || !Ent("_d83b5lt4a7ef") )
+{
+	_d83b5lt4a7ef <- VS.CreateEntity( "point_viewcontrol", "_d83b5lt4a7ef", { spawnflags = 8 } );
+};;
+
+EntFireHandle( _d83b5lt4a7ef, "disable", "", 0, HPlayer );
+EntFireHandle( _d83bSlta47ef, "disable" );
+EntFire( "_d83b5l7a4Tef", "disable" );
+
+::Msg <-::printl;
 
 function OnPostSpawn()
 {
-	if( !HPlayer ) throw "NO PLAYER FOUND"
-	if( HPlayer.GetTeam() != 2 && HPlayer.GetTeam() != 3 ) HPlayer.SetTeam(2)
+	if( !HPlayer ) throw "NO PLAYER FOUND";
+	if( HPlayer.GetTeam() != 2 && HPlayer.GetTeam() != 3 ) HPlayer.SetTeam(2);
 
-	PlaySound("Player.DrownStart")
+	PlaySound("Player.DrownStart");
 
-	ClearChat()
-	ClearChat()
-	Chat( txt.blue+" -------------------------------- " )
-	Chat( " " )
-	Chat( txt.lightgreen + "[Benchmark Script] "+txt.lightblue+"Loaded" )
-	Chat( txt.orange + "● "+txt.grey+"Instructions are printed onto the console." )
+	fTickrate = VS.GetTickrate();
 
-	_d88bSlt4aTef();_d83d51ta4Tef();_ProcessData()
+	_ProcessData();
+
+	ClearChat();
+	ClearChat();
+	Chat( txt.blue+" -------------------------------- " );
+	Chat( " " );
+	Chat( txt.lightgreen + "[Benchmark Script] "+txt.lightblue+"Loaded" );
+	Chat( txt.orange + "● "+txt.grey+"Instructions are printed onto the console." );
+	Chat( txt.orange + "● " + txt.grey +"Server tickrate: " + txt.yellow + fTickrate );
+	Chat( " " );
+	Chat( txt.blue+" -------------------------------- " );
+
+	// print after Steamworks Msg
+	if( GetDeveloperLevel() > 0 ) delay("SendToConsole(\"clear;script _d88bSlt4aTef();script _d83d51ta4Tef()\")", 0.75);
+	else
+	{
+		_d88bSlt4aTef();
+		_d83d51ta4Tef();
+	};
 }
 
 function PlaySound(s)
 {
-	HPlayer.EmitSound(s)
+	HPlayer.EmitSound(s);
 }
 
 function _ProcessData()
 {
-	local m = "lp_"+sMapName
+	lp_p <- "lp_"+sMapName,
+	la_p <- "la_"+sMapName;
 
-	if( m in this )
+	if( lp_p in this )
 	{
-		local l = this[m]
+		lp_p = this[lp_p];
 
-		foreach( i, v in l )
-			VS.ReplaceArrayIndex( l, i, v.V() )
-	}
+		if( type(lp_p[0]) == "instance" )
+			if( lp_p[0] instanceof V )
+			{
+				::_d8ebSltA4Tef <- lp_p.len();
+				::_d8eBSltA4Tef <- 2000;
+				::_d8eBS1tA4Tef <- 0;
+				::_d8ebS1tA4Tef <- clamp( _d8eBSltA4Tef, 0, _d8ebSltA4Tef );
+
+				_ProcessData_p();
+			};
+	};
+	if( la_p in this )
+	{
+		la_p = this[la_p];
+
+		if( type(la_p[0]) == "instance" )
+			if( la_p[0] instanceof V )
+				if( IsKeyframeRecording( sMapName ) )
+				{
+					::_dBebS1t4aTeF <- la_p.len();
+					::_dBebS1t4aTef <- 2000;
+					::_dBebSlt4aTef <- 0;
+					::_d8ebSlt4aTef <- clamp( _dBebS1t4aTef, 0, _dBebS1t4aTeF );
+
+					_ProcessData_a();
+				};
+	};
+}
+
+function _ProcessData_p()
+{
+	if( _d8eBS1tA4Tef >= _d8ebS1tA4Tef )
+	{
+		delete ::_d8ebSltA4Tef;
+		delete ::_d8eBSltA4Tef;
+		delete ::_d8eBS1tA4Tef;
+		delete ::_d8ebS1tA4Tef;
+		delete ::lp_p;
+		return;
+	};
+
+	for( local i = _d8eBS1tA4Tef; i < _d8ebS1tA4Tef; i++ )
+		VS.ReplaceArrayIndex( lp_p, i, lp_p[i].V() );
+
+	_d8eBS1tA4Tef += _d8eBSltA4Tef;
+	_d8ebS1tA4Tef = clamp( _d8ebS1tA4Tef + _d8eBSltA4Tef, 0, _d8ebSltA4Tef );
+
+	return delay( "_ProcessData_p()", FTIME );
+}
+
+function _ProcessData_a()
+{
+	if( _dBebSlt4aTef >= _d8ebSlt4aTef )
+	{
+		delete ::_dBebS1t4aTeF;
+		delete ::_dBebS1t4aTef;
+		delete ::_dBebSlt4aTef;
+		delete ::_d8ebSlt4aTef;
+		delete ::la_p;
+		return;
+	};
+
+	for( local i = _dBebSlt4aTef; i < _d8ebSlt4aTef; i++ )
+		VS.ReplaceArrayIndex( la_p, i, la_p[i].V() );
+
+	_dBebSlt4aTef += _dBebS1t4aTef;
+	_d8ebSlt4aTef = clamp( _d8ebSlt4aTef + _dBebS1t4aTef, 0, _dBebS1t4aTeF );
+
+	return delay( "_ProcessData_a()", FTIME );
 }
 
 function Alert(s){ VS.ShowHudHint( _d83bSlta4lef, HPlayer, s ) }
@@ -136,411 +237,720 @@ function _d83bS174a7ef(){ EntFireHandle( _d8ebS1ta4Tef, "use", "", 0.0, HPlayer 
 // sec timer
 function _dBebSlt4a73f()
 {
-	_dBebS1t4a7ef = 0
+	_dBebS1t4a7ef = 0;
 
 	// sec timer enabled
-	_d8bb5lta47ef = !_d8bb5lta47ef
+	_d8bb5lta47ef = !_d8bb5lta47ef;
 	EntFire( "_d83b5l7a4Tef", _d8bb5lta47ef ? "enable" : "disable" )
 }
 
 // sec counter
 function _dBebSlt4a7ef()
 {
-	Alert( ++_dBebS1t4a7ef )
-	PlaySound("UIPanorama.container_countdown")
+	Alert( ++_dBebS1t4a7ef );
+	PlaySound("UIPanorama.container_countdown");
 }
 
 if( !Ent("_d83b5l7a4Tef") )
 {
-	VS.OnTimer( VS.CreateTimer( "_d83b5l7a4Tef", 1, 0, 0, 0, 1 ), "_dBebSlt4a7ef" )
-	VS.MakePermanent( Ent("_d83b5l7a4Tef") )
-}
+	VS.OnTimer( VS.CreateTimer( "_d83b5l7a4Tef", 1, 0, 0, 0, 1 ), "_dBebSlt4a7ef" );
+	VS.MakePermanent( Ent("_d83b5l7a4Tef") );
+};;
 
 // trim
-function _db3b51tAa7ef( i = 0 )
+function _db3b51tAa7ef( i = 0, k = 0 )
 {
-	if( !_d83b5lta47ef ) return printl("No recording found.")
+	local lpt, lat, lp, la;
 
-	if( !i )
+	if( !k )
 	{
-		local full = lp_r.len() * FTIME,
-			  dec = full - floor(full),
-			  unit = dec / FTIME
+		if( !("lp_r" in this) || !("la_r" in this) )
+			return Msg("No recording found.");
 
-		if( !VS.IsInteger(unit) ) return printl("An error occured while trimming! ["+lp_r.len()+","+full+","+dec+","+unit+"]\n")
+		lp = lp_r;
+		la = la_r;
 
-		if( unit == lp_r.len() ) return printl("The recording is too short! " + full + " seconds\n")
-
-		if( unit == 0.0 ) return printl("Cannot trim, recording is already at an integer length! [" + full + " seconds]\n")
-
-		lp_r_trim <- []
-		la_r_trim <- []
-
-		for( local i = 0; i < unit; i++ )
+		if( !("lp_r_trim" in this) )
 		{
-			lp_r_trim.append(lp_r.pop())
-			la_r_trim.append(la_r.pop())
-		}
+			lp_r_trim <- [];
+			la_r_trim <- [];
+		};
 
-		// trimmed
-		_d83Bb517a47ef = true
-
-		printl("Trimmed "+dec+" seconds. New: "+lp_r.len() * FTIME+" seconds.")
-		printl("* Undo this trimming action: bm_trim_undo\n")
+		lpt = lp_r_trim;
+		lat = la_r_trim;
 	}
 	else
 	{
-		if( !_d83Bb517a47ef ) return printl("Could not find trimmed data.\n")
-		lp_r_trim.reverse()
-		la_r_trim.reverse()
-		lp_r.extend(lp_r_trim)
-		la_r.extend(la_r_trim)
-		lp_r_trim.clear()
-		la_r_trim.clear()
+		if( !("lp_k" in this) || !("la_k" in this) )
+			return Msg("No compiled keyframes found.");
 
-		_d83Bb517a47ef = false
+		lp = lp_k;
+		la = la_k;
 
-		printl("Undone trimming. New: " + lp_r.len() * FTIME + " seconds.")
+		if( !("lp_k_trim" in this) )
+		{
+			lp_k_trim <- [];
+			la_k_trim <- [];
+		};
+
+		lpt = lp_k_trim;
+		lat = la_k_trim;
+	};
+
+	if( !i )
+	{
+		local full = lp.len() * FTIME,
+			  dec = full - floor(full),
+			  unit = dec / FTIME;
+
+		if( !VS.IsInteger(unit) ) return Msg("An error occured while trimming! ["+lp.len()+","+full+","+dec+","+unit+"]\n");
+
+		if( unit == lp.len() ) return Msg("The recording is too short! " + full + " seconds\n");
+
+		if( unit == 0.0 ) return Msg("Cannot trim, recording is already at an integer length! [" + full + " seconds]\n");
+
+		for( local i = 0; i < unit; i++ )
+		{
+			lpt.append(lp.pop());
+			lat.append(la.pop());
+		};
+
+		// trimmed
+		_d83Bb517a47ef = true;
+
+		Msg("Trimmed "+dec+" seconds. New: "+lp.len() * FTIME+" seconds.");
+		Msg("* Undo this trimming action: " + (k ? "bm_trim2_undo\n" : "bm_trim_undo\n"));
 	}
+	else
+	{
+		if( !_d83Bb517a47ef ) return Msg("Could not find trimmed data.\n");
+		lpt.reverse();
+		lat.reverse();
+		lp.extend(lpt);
+		la.extend(lat);
+		lpt.clear();
+		lat.clear();
+
+		_d83Bb517a47ef = false;
+
+		Msg("Undone trimming. New: " + lp.len() * FTIME + " seconds.");
+	};
+}
+
+function replace(i)
+{
+	if( !("lp_c" in this) || !("la_c" in this) )
+		return Msg("No keyframes found.");
+
+	i = i.tointeger();
+	if( i < 0 || i >= lp_c.len() )
+		return Msg("Invalid index value.");
+
+	local pos = HPlayer.GetOrigin(),
+	      dir = HPlayerEye.GetForwardVector();
+	pos.z += 64.0;
+
+	VS.ReplaceArrayIndex( lp_c, i, pos );
+	VS.ReplaceArrayIndex( la_c, i, dir );
+	VS.ReplaceArrayIndex( la_q, i, VS.AngleQuaternion(HPlayerEye.GetAngles(), Quaternion()) );
+
+	DebugDrawLine( pos, pos + dir * 64, 138, 255, 0, true, 10 );
+	DebugDrawBox( pos, Vector(-4,-4,-4), Vector(4,4,4), 138, 255, 0, 127, 10 );
+
+	Msg("Replaced keyframe #" + i);
+	PlaySound("UIPanorama.container_countdown");
+}
+
+function insert(i)
+{
+	if( !("lp_c" in this) || !("la_c" in this) )
+	{
+		lp_c <- [];
+		la_c <- [];
+		la_q <- [];
+	};
+
+	i = i.tointeger();
+	if( i < 0 || i >= lp_c.len() )
+		return Msg("Invalid index value.");
+
+	local pos = HPlayer.GetOrigin(),
+	      dir = HPlayerEye.GetForwardVector();
+	pos.z += 64.0;
+
+	lp_c.insert( i, pos );
+	la_c.insert( i, dir );
+	la_q.append( VS.AngleQuaternion(HPlayerEye.GetAngles(), Quaternion()) );
+
+	DebugDrawLine( pos, pos + dir * 64, 138, 255, 0, true, 10 );
+	DebugDrawBox( pos, Vector(-4,-4,-4), Vector(4,4,4), 138, 255, 0, 127, 10 );
+
+	Msg("Inserted keyframe #" + i);
+	PlaySound("UIPanorama.container_countdown");
+}
+
+// Add Keyframe
+function _dbBbSlt4aT3f()
+{
+	if( !("lp_c" in this) || !("la_c" in this) || !("la_q" in this) )
+	{
+		lp_c <- [];
+		la_c <- [];
+		la_q <- [];
+	};
+
+	local pos = HPlayer.GetOrigin(),
+	      dir = HPlayerEye.GetForwardVector();
+	pos.z += 64.0;
+
+	lp_c.append( pos );
+	la_c.append( dir );
+	la_q.append( VS.AngleQuaternion(HPlayerEye.GetAngles(), Quaternion()) );
+
+	DebugDrawLine( pos, pos + dir * 64, 138, 255, 0, true, 10 );
+	DebugDrawBox( pos, Vector(-4,-4,-4), Vector(4,4,4), 138, 255, 0, 127, 10 );
+
+	Msg("Added keyframe #" + (lp_c.len()-1));
+	PlaySound("UIPanorama.container_countdown");
+}
+
+// pop keyframe
+function _dbBbSlt4aTef()
+{
+	if( !("lp_c" in this) || !("la_c" in this) )
+		return Msg("No keyframes found.");
+
+	if( !lp_c.len() )
+		return Msg("No keyframes found.");
+
+	local pos = lp_c.pop(),
+	      dir = la_c.pop();
+	la_q.pop();
+
+	DebugDrawLine( pos, pos + dir * 64, 255, 64, 0, true, 10 );
+	DebugDrawBox( pos, Vector(-4,-4,-4), Vector(4,4,4), 255, 64, 0, 127, 10 );
+
+	Msg("Removed keyframe #" + lp_c.len());
+	PlaySound("UIPanorama.container_countdown");
+}
+
+// pop all
+function _db3bSlt4aTef()
+{
+	if( !("lp_c" in this) || !("la_c" in this) )
+		return Msg("No keyframes found.");
+
+	if( !lp_c.len() )
+		return Msg("No keyframes found.");
+
+	Msg("Cleared "+lp_c.len()+" keyframes.");
+
+	lp_c.clear();
+	la_c.clear();
+	la_q.clear();
+
+	PlaySound("UIPanorama.container_countdown");
+}
+
+if( !("fInterpResolution" in this) ) fInterpResolution <- 0.01;;
+
+function res(f)
+{
+	if( f < 0.001 || f > 0.5 )
+		return Msg("Invalid resolution range. [0.001, 0.5]");
+
+	fInterpResolution = f.tofloat();
+	Msg("Interpolation resolution set to: " + fInterpResolution);
+	PlaySound("UIPanorama.container_countdown");
+}
+
+// Compile Keyframes
+// TODO: Implement consistent speed
+function _db3bSlt4a7ef()
+{
+	if( !("lp_c" in this) || !("la_c" in this) )
+		return Msg("No keyframes found.");
+
+	if( !lp_c.len() )
+		return Msg("No keyframes found.");
+
+	Msg("\nPreparing..." + "\nResolution: " + fInterpResolution + "\nInterp algorithm: "+(bUsingQuats?"alternative":"default")+"\n");
+
+	lp_k <- array(lp_c.len());
+	la_k <- array(la_c.len());
+
+	RTIME <- FTIME;
+	_db36SltAaTef <- 10;
+	if( fInterpResolution <= 0.025 )
+	{
+		_db36SltAaTef <- 2;
+		RTIME *= 2;
+	};
+	_db36Slt4aTef <- 0;
+	_db36Slt4ATef <- floor(1.0/fInterpResolution);
+	_db36SltA4T3f <- 0;
+	_db36SltA473f <- clamp( _db36SltAaTef, 0, _db36Slt4ATef );
+
+	delay( "print(\"Compiling (1/3) \");_db365ltA4T3f()", 0.25 );
+}
+
+// spline origin
+function _db365ltA4T3f()
+{
+	// complete
+	if( _db36SltA4T3f >= _db36SltA473f )
+	{
+		print("\n");
+		lp_k.pop();
+		lp_k.pop();
+		lp_k.remove(0);
+
+		// next process
+		_db36SltA4T3f = 0;
+		_db36SltA473f = clamp( _db36SltAaTef, 0, _db36Slt4ATef );
+		delay( "print(\"Compiling (2/3) \");_db365ltA473f()", RTIME );
+
+		return true;
+	};
+
+	if(!(_db36SltA4T3f % 25)) print(".");
+
+	for( local j = _db36SltA4T3f, f = fInterpResolution * _db36SltA4T3f; j < _db36SltA473f; j++, f += fInterpResolution )
+		for( local i = 0; i < lp_c.len()-4; i++ )
+			lp_k.insert( (j+2)+(i*(j+2)), VS.Catmull_Rom_Spline( lp_c[i], lp_c[i+1], lp_c[i+2], lp_c[i+3], f, Vector()) );
+
+	_db36SltA4T3f += _db36SltAaTef;
+	_db36SltA473f = clamp( _db36SltA473f + _db36SltAaTef, 0, _db36Slt4ATef );
+
+	return delay( "_db365ltA4T3f()", RTIME );
+}
+
+bUsingQuats <- false;
+
+function bm_roll()
+{
+	bUsingQuats = !bUsingQuats;
+
+	if( bUsingQuats )
+	{
+		Msg("\nNow using alternative algorithm.")
+	}
+	else
+	{
+		Msg("\nNow using the default algorithm.")
+	};
+
+	Msg("Recompile to see the changes.");
+}
+
+// spline angles
+function _db365ltA473f()
+{
+	// complete
+	if( _db36SltA4T3f >= _db36SltA473f )
+	{
+		print("\n");
+		la_k.pop();
+		la_k.pop();
+		la_k.remove(0);
+
+		// next process
+		_db36SltA4T3f = 0;
+		_db36SltA473f = clamp( _db36SltAaTef, 0, _db36Slt4ATef );
+		delay( "print(\"Compiling (3/3) \");_db365ltA47Ef()", RTIME );
+
+		return true;
+	};
+
+	if(!(_db36SltA4T3f % 25)) print(".");
+
+	if( !bUsingQuats )
+		for( local j = _db36SltA4T3f, f = fInterpResolution * _db36SltA4T3f; j < _db36SltA473f; j++, f += fInterpResolution )
+			for( local i = 0; i < lp_c.len()-4; i++ )
+				la_k.insert( (j+2)+(i*(j+2)), VS.QAngleNormalize(VS.VectorAngles(VS.Catmull_Rom_Spline( la_c[i], la_c[i+1], la_c[i+2], la_c[i+3], f, Vector()))) );
+
+	// FIXME: is this broken again??
+	else
+		for( local j = _db36SltA4T3f, f = fInterpResolution * _db36SltA4T3f; j < _db36SltA473f; j++, f += fInterpResolution )
+			for( local i = 0; i < lp_c.len()-4; i++ )
+				la_k.insert( (j+2)+(i*(j+2)), VS.QAngleNormalize(VS.QuaternionAngles(VS.Hermite_Spline3Q(la_q[i], la_q[i+1], la_q[i+2], f, Quaternion()),Vector())) );
+
+	_db36SltA4T3f += _db36SltAaTef;
+	_db36SltA473f = clamp( _db36SltA473f + _db36SltAaTef, 0, _db36Slt4ATef );
+
+	return delay( "_db365ltA473f()", RTIME );
+}
+
+// clear up keyframes
+function _db365ltA47Ef()
+{
+	if(!(_db36Slt4aTef % 50)) print(".");
+
+	for( local i = _db36Slt4aTef; i < lp_k.len(); i++ )
+		if( lp_k[i] == null )
+		{
+			lp_k.remove(i);
+			la_k.remove(i);
+
+			_db36Slt4aTef = i;
+			return delay( "_db365ltA47Ef()", RTIME );
+		};
+
+	// complete
+	print("\n");
+
+	Msg("\nCompiled keyframes: "+lp_k.len() * FTIME+" seconds\n\n* Trim the data to the nearest integer: bm_trim2\n* Playback the compiled data:           bm_play2\n* Save the compiled data:               bm_save2\n");
+	PlaySound("UIPanorama.container_countdown");
+}
+
+// show keyframes
+function show2( t = 10 )
+{
+	if( !("lp_c" in this) || !("la_c" in this) )
+		return Msg("No keyframes found.");
+
+	foreach( v in lp_c )
+		DebugDrawBox( v, Vector(-8,-8,-8), Vector(8,8,8), 255, 64, 0, 16, t );
+
+	local f,j = _db36Slt4ATef / 10;
+
+	if( !IsKeyframeRecording("k") )
+		f = function(i){return i};
+	else if( IsKeyframeRecording("k") )
+		f = VS.AngleVectors;;
+
+	for( local i = 0; i < lp_k.len()-j; i+=j )
+	{
+		DebugDrawLine( lp_k[i], lp_k[i] + f(la_k[i]) * 16, 255, 128, 255, true, t );
+		DebugDrawLine( lp_k[i], lp_k[i+j], 138, 255, 0, true, t );
+	}
+}
+
+// show pos recording
+function show( t = 10 )
+{
+	if( !("lp_r" in this) || !("la_r" in this) )
+		return Msg("No recording found.");
+
+	for( local i = 0; i < lp_r.len()-5; i+=5 )
+	{
+		DebugDrawLine( lp_r[i], lp_r[i] + VS.YawToVector(la_r[i]) * 16, 255, 128, 255, true, t );
+		DebugDrawLine( lp_r[i], lp_r[i+5], 138, 255, 0, true, t );
+	}
+
+	for( local i = 31; i < lp_r.len()-64; i+=64 )
+		DebugDrawBox( lp_r[i], Vector(-8,-8,-8), Vector(8,8,8), 255, 64, 0, 16, t );
+}
+
+// IsKeyframeRecording
+function IsKeyframeRecording(m)
+{
+	if( type(this["la_" + m][0]) == "instance" )
+			return true;
+	return false;
 }
 
 // record
 function _db3b51t4a7ef()
 {
 	// bRecordingPending
-	if( _d83bS1t4a73f ) return printl("Recording hasn't started yet!")
+	if( _d83bS1t4a73f ) return Msg("Recording hasn't started yet!");
 	// bRecording
-	if( _d83bS1ta47ef ) return _db3b5lt4a7ef()
+	if( _d83bS1ta47ef ) return _db3b5lt4a7ef();
 
 	// not necessary anymore
 	if( !("_d83bSlta47ef" in this) || !Ent("_d83bSlta47ef") )
-		return SendToConsole( "exec benchmark;bm_rec" )
+		return SendToConsole( "exec benchmark;bm_rec" );
 
-	HPlayer.SetHealth(1337)
-	_dBebS1t4a7ef = 0
+	HPlayer.SetHealth(1337);
+	_dBebS1t4a7ef = 0;
 
 	// recording exists
-	_d83b5lta47ef = true
+	_d83b5lta47ef = true;
 
 	// bRecording
-	_d83bS1ta47ef = true
+	_d83bS1ta47ef = true;
 
 	// bRecordingPending
-	_d83bS1t4a73f = true
+	_d83bS1t4a73f = true;
 
 	// trimmed
-	_d83Bb517a47ef = false
+	_d83Bb517a47ef = false;
 
-	VS.OnTimer( _d83bSlta47ef, "_d83b5lT4a9ef" )
-	lp_r <- []
-	la_r <- []
+	VS.OnTimer( _d83bSlta47ef, "_d83b5lT4a9ef" );
+	lp_r <- [];
+	la_r <- [];
 
-	_d8ebSlta47ef = GetDeveloperLevel()
-	PlaySound("UIPanorama.popup_accept_match_person")
-	PlaySound("UIPanorama.tab_mainmenu_overwatch")
-	SendToConsole( "developer 0;echo Starting recording in 3 seconds..." )
+	_d8ebSlta47ef = GetDeveloperLevel();
+	PlaySound("UIPanorama.popup_accept_match_person");
+	PlaySound("UIPanorama.tab_mainmenu_overwatch");
+	SendToConsole( "developer 0;echo Starting recording in 3 seconds..." );
 
-	        Alert( "Starting recording in 3..." );PlaySound( "Alert.WarmupTimeoutBeep")
-	delay( "Alert(\"Starting recording in 2...\");PlaySound(\"Alert.WarmupTimeoutBeep\")", 1 )
-	delay( "Alert(\"Starting recording in 1...\");PlaySound(\"Alert.WarmupTimeoutBeep\")", 2 )
-	delay( "Alert(\"Recording...\");printl(\"Recording...\")", 2.9 )
+	        Alert( "Starting recording in 3..." );PlaySound( "Alert.WarmupTimeoutBeep");
+	delay( "Alert(\"Starting recording in 2...\");PlaySound(\"Alert.WarmupTimeoutBeep\")", 1 );
+	delay( "Alert(\"Starting recording in 1...\");PlaySound(\"Alert.WarmupTimeoutBeep\")", 2 );
+	delay( "Alert(\"Recording...\");Msg(\"Recording...\")", 2.9 );
 
 	// bRecordingPending
-	delay( "_d83bS1t4a73f=false", 3 )
+	delay( "_d83bS1t4a73f=false", 3 );
 
-	EntFireHandle( _d83bSlta47ef, "enable", "", 3 )
-	EntFire( "_d83b5l7a4Tef", "enable", "", 3 )
+	EntFireHandle( _d83bSlta47ef, "enable", "", 3 );
+	EntFire( "_d83b5l7a4Tef", "enable", "", 3 );
 }
 
 // record end
 function _db3b5lt4a7ef()
 {
-	if( !_d83bS1ta47ef ) return printl("Not recording.")
+	if( !_d83bS1ta47ef ) return Msg("Not recording.");
 
-	_dBebS1t4a7ef = 0
+	_dBebS1t4a7ef = 0;
 
 	// recording exists
-	_d83b5lta47ef = true
+	_d83b5lta47ef = true;
 
 	// bRecording
-	_d83bS1ta47ef = false
+	_d83bS1ta47ef = false;
 
-	EntFireHandle( _d83bSlta47ef, "disable" )
-	EntFire( "_d83b5l7a4Tef", "disable" )
-	PlaySound("UIPanorama.gameover_show")
-	SendToConsole( "developer " + _d8ebSlta47ef )
-	Chat( txt.orange + "● "+txt.grey+"Stopped recording." )
-	printl("\nStopped recording: "+lp_r.len() * FTIME+" seconds.\n\n* Trim the data to the nearest integer: bm_trim\n* Playback the recorded data:           bm_play\n* Save the recorded data:               bm_save\n")
+	EntFireHandle( _d83bSlta47ef, "disable" );
+	EntFire( "_d83b5l7a4Tef", "disable" );
+	PlaySound("UIPanorama.gameover_show");
+	SendToConsole( "developer " + _d8ebSlta47ef );
+	Chat( txt.orange + "● "+txt.grey+"Stopped recording." );
+	Msg("\nStopped recording: "+lp_r.len() * FTIME+" seconds.\n\n* Trim the data to the nearest integer: bm_trim\n* Playback the recorded data:           bm_play\n* Save the recorded data:               bm_save\n");
 }
 
 // record save
-function _dBeb5lta47ef()
+function _dBeb5lta47ef( k = 0 )
 {
+	// FIXME: simplify
 	// recording exists
-	if( !_d83b5lta47ef ) return printl("No recording found.")
-	VS.Log.Clear()
-	VS.Log.filePrefix = "benchmark_rec"
-	VS.Log.condition = true
-	VS.Log.export = true
-	VS.Log.filter = "L "
-	VS.Log.Add( "lp_" + sMapName + "<-[" )
-	foreach( v in lp_r ) VS.Log.Add( VecToString(v,"V(") )
-	VS.Log.Add("];la_" + sMapName + "<-[")
-	foreach( v in la_r ) VS.Log.Add( v + "," )
-	VS.Log.L.pop()
-	VS.Log.Add( la_r[la_r.len()-1] + "];\n" )
-	local file = VS.Log.Run()
-	HPlayer.PrecacheScriptSound("Survival.TabletUpgradeSuccess")
-	PlaySound("Survival.TabletUpgradeSuccess")
-	printl("\n* Recorded data is exported: /csgo/"+file+".log\n")
+	if( !k ) { if( !_d83b5lta47ef ) return Msg("No recording found."); }
+	else if( !("lp_k" in this) ) return Msg("No compiled keyframes found.");;
+
+	VS.Log.Clear();
+	VS.Log.filePrefix = "benchmark_rec";
+	VS.Log.condition = true;
+	VS.Log.export = true;
+	VS.Log.filter = "L ";
+	VS.Log.Add( "lp_" + sMapName + "<-[" );
+
+	lp_s <- k ? lp_k : lp_r;
+	la_s <- k ? la_k : la_r;
+
+	_dBebSlTa4T3F <- lp_s.len();
+	_dBebSlTa4t3F <- 2000;
+	_dBebSlTa4tef <- 0;
+	_dBebSlTa4teF <- clamp( _dBebSlTa4t3F, 0, _dBebSlTa4T3F );
+
+	_dBeb5lta47ef2();
 }
 
-// play only pos
-function _d83bSltaA7ef()
+// run
+function _dBeb5lta47ef4()
 {
-	if( !("lp_r" in this) || !lp_r.len() ) return printl("No recording found.")
-
-	printl("\n[!] No safety implemented, do not execute any other code!\n[!] Reload the script to stop.\n")
-
-	_d8ebSlta4Tef = lp_r.len()
-	_d83b51ta47ef = 0
-	VS.OnTimer( _d83bSlta47ef, "_d83b5ltaA7ef" )
-
-	HPlayer.SetHealth(1337)
-	delay( "VS.SetKeyInt(HPlayer,\"movetype\",8);SendToConsole(\"+duck\")", 2.9 )
-
-	delay( "printl(\"Starting in 3...\")", 0.0 )
-	delay( "printl(\"Starting in 2...\")", 1.0 )
-	delay( "printl(\"Starting in 1...\")", 2.0 )
-	delay( "printl(\"Started...\")", 3.0 )
-	EntFireHandle( _d83bSlta47ef, "enable", "", 3.0 )
+	local file = VS.Log.Run();
+	HPlayer.PrecacheScriptSound("Survival.TabletUpgradeSuccess");
+	PlaySound("Survival.TabletUpgradeSuccess");
+	Msg("\n* Recorded data is exported: /csgo/"+file+".log\n");
 }
 
-// rec only pos
-function _d83bS1taA7ef()
+// save pos
+function _dBeb5lta47ef2()
 {
-	// bRecordingPosOnly
-	if( _d83b5lta4Tef )
+	if( _dBebSlTa4tef >= _dBebSlTa4teF )
 	{
-		_d83b5lta4Tef = false
-		EntFireHandle( _d83bSlta47ef, "disable" )
-		Chat( txt.orange + "● "+txt.grey+"Stopped recording." )
-		return printl("Stopped recording.")
-	}
+		VS.Log.Add("];la_" + sMapName + "<-[");
+		_dBebSlTa4tef = 0;
+		_dBebSlTa4teF = clamp( _dBebSlTa4t3F, 0, _dBebSlTa4T3F );
+		return delay( "_dBeb5lta47ef3()", FTIME );
+	};
 
-	printl("\n[!] No safety implemented, do not execute any other code!\n")
+	local Add = VS.Log.Add;
 
-	// bRecordingPos Only
-	_d83b5lta4Tef = true
-	VS.OnTimer( _d83bSlta47ef, "_d83bSlta4Tef" )
-	lp_r <- []
+	for( local i = _dBebSlTa4tef; i < _dBebSlTa4teF; i++ )
+		Add( VecToString(lp_s[i],"V(") );
 
-	        Alert( "Starting recording in 3..." );printl( "Starting recording in 3..." );PlaySound( "Alert.WarmupTimeoutBeep" )
-	delay( "Alert(\"Starting recording in 2...\");printl(\"Starting recording in 2...\");PlaySound(\"Alert.WarmupTimeoutBeep\")", 1 )
-	delay( "Alert(\"Starting recording in 1...\");printl(\"Starting recording in 1...\");PlaySound(\"Alert.WarmupTimeoutBeep\")", 2 )
-	delay( "Alert(\"Recording...\");printl(\"Recording...\")", 2.9 )
+	_dBebSlTa4tef += _dBebSlTa4t3F;
+	_dBebSlTa4teF = clamp( _dBebSlTa4teF + _dBebSlTa4t3F, 0, _dBebSlTa4T3F );
 
-	EntFireHandle( _d83bSlta47ef, "enable", "", 3 )
+	return delay( "_dBeb5lta47ef2()", FTIME );
 }
 
-// rec pos
-function _d83bSlta4Tef()
+// save ang
+function _dBeb5lta47ef3()
 {
-	local v = HPlayer.GetOrigin()
-	v.z += 18.02
-
-	lp_r.append( v )
-}
-
-// set pos
-function _d83b5ltaA7ef()
-{
-	HPlayer.SetOrigin( lp_r[_d83b51ta47ef] )
-	if( ++_d83b51ta47ef >= _d8ebSlta4Tef )
+	if( _dBebSlTa4tef >= _dBebSlTa4teF )
 	{
-		EntFireHandle( _d83bSlta47ef, "disable" )
-		SendToConsole("-duck")
-		printl("[!] Finished.")
-	}
+		VS.Log.L.pop();
+		if( type(la_s[0]) == "instance" )
+			VS.Log.Add( VecToString(la_s[la_s.len()-1],"V(") + "];\n" );
+		else
+			VS.Log.Add( la_s[la_s.len()-1] + "];\n" );
+		return delay( "_dBeb5lta47ef4()", FTIME );
+	};
+
+	local Add = VS.Log.Add;
+
+	if( type(la_s[0]) == "instance" )
+		for( local i = _dBebSlTa4tef; i < _dBebSlTa4teF; i++ )
+			Add( VecToString(la_s[i],"V(") );
+	else
+		for( local i = _dBebSlTa4tef; i < _dBebSlTa4teF; i++ )
+			Add( v + "," );
+
+	_dBebSlTa4tef += _dBebSlTa4t3F;
+	_dBebSlTa4teF = clamp( _dBebSlTa4teF + _dBebSlTa4t3F, 0, _dBebSlTa4T3F );
+
+	return delay( "_dBeb5lta47ef3()", FTIME );
+}
+
+function IsCrouching()
+{
+	return HPlayer.GetBoundingMaxs().z == 54 ? true : false;
 }
 
 // rec add
 function _d83b5lT4a9ef()
 {
-	local v = HPlayer.GetOrigin()
-	v.z += 18.02
+	local v = HPlayer.GetOrigin();
+	v.z += IsCrouching() ? 45.98 : 64.0;
 
-	lp_r.append( v )
-	la_r.append( HPlayer.GetAngles().y )
+	lp_r.append( v );
+	la_r.append( VS.AngleNormalize(HPlayerEye.GetAngles().y) );
 }
 
 // set
 function _d83bS1T4a9ef()
 {
-	HPlayer.SetOrigin( _dB3bS1ta47ef[_d83b51ta47ef] )
-	HPlayer.SetAngles( 0, _dB3b5lta47ef[_d83b51ta47ef], 0 )
+	_d83b5lt4a7ef.SetAbsOrigin( _dB3bS1ta47ef[_d83b51ta47ef] );
+	_d83b5lt4a7ef.SetAngles( 0, _dB3b5lta47ef[_d83b51ta47ef], 0 );
 	if( ++_d83b51ta47ef >= _d8ebSlta4Tef )
-		_d83bSlt4a7ef(1)
+		_d83bSlt4a7ef(1);
+}
+
+// set_keyframes
+function _d83bS1TAabef()
+{
+	_d83b5lt4a7ef.SetAbsOrigin( _dB3bS1ta47ef[_d83b51ta47ef] );
+	VS.SetAngles( _d83b5lt4a7ef, _dB3b5lta47ef[_d83b51ta47ef] );
+	if( ++_d83b51ta47ef >= _d8ebSlta4Tef )
+		_d83bSlt4a7ef(1);
 }
 
 // start
 function _d83bS1t4a7ef( r = 0 )
 {
-	if( _d83bSl7a4Tef ) return printl("Benchmark hasn't started yet!")
-	if( _d83bS1ta4Tef ) return printl("Benchmark is already running!\nTo stop it: bm_stop")
+	if( _d83bSl7a4Tef ) return Msg("Benchmark hasn't started yet!");
+	if( _d83bS1ta4Tef ) return Msg("Benchmark is already running!\nTo stop it: bm_stop");
 
 	// not necessary anymore
 	if( !("_d83bSlta47ef" in this) || !Ent("_d83bSlta47ef") )
-		return SendToConsole( "exec benchmark;" + ( r ? "bm_play" : "benchmark" ) )
+		return SendToConsole( "exec benchmark;" + ( r ? "bm_play" : "benchmark" ) );
 
-	VS.OnTimer( _d83bSlta47ef, "_d83bS1T4a9ef" )
+	local m;
 
-	local m = r ? "r" : sMapName
+	// default
+	if( r == 0 )
+	{
+		m = sMapName;
+	}
+	// rec playback
+	else if( r == 1 )
+	{
+		m = "r";
+	}
+	// keyframe playback
+	else if( r == 2 )
+	{
+		m = "k";
+	};;;
+
 	if( !("lp_" + m in this) || !("la_" + m in this) )
-		return printl( r ? "No recording found." : (" *** Data not available for this map: " + m) )
+		return Msg( r ? "No recording found." : (" *** Data not available for this map: " + m) );
 
-	_dB3bS1ta47ef = this["lp_" + m]
-	_dB3b5lta47ef = this["la_" + m]
-	_d8ebSlta4Tef = _dB3bS1ta47ef.len()
+	_dB3bS1ta47ef = this["lp_" + m];
+	_dB3b5lta47ef = this["la_" + m];
+	_d8ebSlta4Tef = _dB3bS1ta47ef.len();
 
 	if( !_d8ebSlta4Tef || _d8ebSlta4Tef != _dB3b5lta47ef.len() )
-		return printl(" *** Map data is corrupted!")
+		return Msg(" *** Map data is corrupted! [" + _dB3bS1ta47ef.len() + "," + _dB3b5lta47ef.len() + "]");
 
-	_d83bS174a7ef()
-	HPlayer.SetHealth(1337)
-	delay( "VS.SetKeyInt(HPlayer,\"movetype\",8)", 2.9 )
+	// IsKeyframeRecording
+	if( IsKeyframeRecording(m) )
+		VS.OnTimer( _d83bSlta47ef, "_d83bS1TAabef" );
+	else
+		VS.OnTimer( _d83bSlta47ef, "_d83bS1T4a9ef" );
+
+	_d83bS174a7ef();
+	HPlayer.SetHealth(1337);
 	try( this["Setup_" + m]() )catch(e){}
 
 	// bStartedPending
-	_d83bSl7a4Tef = true
+	_d83bSl7a4Tef = true;
 
-	_d8ebSlta47ef = GetDeveloperLevel()
-	PlaySound("Weapon_AWP.BoltBack")
-	delay( "PlaySound(\"Weapon_AWP.BoltForward\")", 0.5 )
+	_d8ebSlta47ef = GetDeveloperLevel();
+	PlaySound("Weapon_AWP.BoltBack");
+	delay( "PlaySound(\"Weapon_AWP.BoltForward\")", 0.5 );
 
-	SendToConsole( "r_cleardecals;clear;echo;echo;echo;echo\"   Starting in 3 seconds.\";echo;echo\"   Keep the console closed for higher FPS\";echo;echo;echo;developer 0;toggleconsole;fadeout" )
+	SendToConsole( "r_cleardecals;clear;echo;echo;echo;echo\"   Starting in 3 seconds.\";echo;echo\"   Keep the console closed for higher FPS\";echo;echo;echo;developer 0;toggleconsole;fadeout" );
 
-	local _1 = "SendToConsole(\"+quickinv\")",_0 = "SendToConsole(\"-quickinv\")"
-	delay( _1, 0.0 )
-	delay( _0, 0.1 )
-	delay( _1, 0.2 )
-	delay( _0, 0.3 )
-	delay( _1, 0.4 )
-	delay( _0, 0.5 )
+	local _1 = "SendToConsole(\"+quickinv\")",_0 = "SendToConsole(\"-quickinv\")";
+	delay( _1, 0.0 );
+	delay( _0, 0.1 );
+	delay( _1, 0.2 );
+	delay( _0, 0.3 );
+	delay( _1, 0.4 );
+	delay( _0, 0.5 );
 
-	delay( "Alert(\"Starting in 3...\");PlaySound(\"Alert.WarmupTimeoutBeep\")", 0.5 )
-	delay( "Alert(\"Starting in 2...\");PlaySound(\"Alert.WarmupTimeoutBeep\")", 1.5 )
-	delay( "Alert(\"Starting in 1...\");PlaySound(\"Alert.WarmupTimeoutBeep\")", 2.5 )
-	delay( "Alert(\"Started...\")", 3.5 )
+	delay( "Alert(\"Starting in 3...\");PlaySound(\"Alert.WarmupTimeoutBeep\")", 0.5 );
+	delay( "Alert(\"Starting in 2...\");PlaySound(\"Alert.WarmupTimeoutBeep\")", 1.5 );
+	delay( "Alert(\"Starting in 1...\");PlaySound(\"Alert.WarmupTimeoutBeep\")", 2.5 );
+	delay( "Alert(\"Started...\")", 3.5 );
 	// bStartedPending
-	delay( "_d83bSl7a4Tef=false;_d83b51T4a9ef(" + r + ")", 3.5 )
+	delay( "_d83bSl7a4Tef=false;_d83b51T4a9ef(" + r + ")", 3.5 );
 }
 
 // start core
-function _d83b51T4a9ef( r )
+function _d83b51T4a9ef(r)
 {
 	// bStarted
-	_d83bS1ta4Tef = true
-	_d83b51ta47ef = 0
-	_dB3bSlta47ef = Time()
-	EntFireHandle( _d83bSlta47ef, "enable" )
-	SendToConsole( "+duck;fadein;fps_max 0;bench_start;bench_end;clear;echo;echo;echo;echo\"   Benchmark has started\";echo;echo\"   Keep the console closed for higher FPS\";echo;echo" )
+	_d83bS1ta4Tef = true;
+	_d83b51ta47ef = 0;
+	_dB3bSlta47ef = Time();
+	EntFireHandle( _d83b5lt4a7ef, "enable", "", 0, HPlayer );
+	EntFireHandle( _d83bSlta47ef, "enable" );
+	SendToConsole( "fadein;fps_max 0;bench_start;bench_end;clear;echo;echo;echo;echo\"   Benchmark has started\";echo;echo\"   Keep the console closed for higher FPS\";echo;echo" );
 }
 
 // stop
 function _d83bSlt4a7ef( i = 0 )
 {
 	// bStarted
-	if( !_d83bS1ta4Tef ) return printl("Benchmark not running.")
+	if( !_d83bS1ta4Tef ) return Msg("Benchmark not running.");
 
 	// bStarted
-	_d83bS1ta4Tef = false
+	_d83bS1ta4Tef = false;
 
-	Chat( txt.orange + "● "+txt.grey + "Results are printed onto the console." )
-	Alert( "Results are printed onto the console." )
+	Chat( txt.orange + "● "+txt.grey + "Results are printed onto the console." );
+	Alert( "Results are printed onto the console." );
 
-	EntFireHandle( _d83bSlta47ef, "disable" )
+	EntFireHandle( _d83b5lt4a7ef, "disable", "", 0, HPlayer );
+	EntFireHandle( _d83bSlta47ef, "disable" );
 
-	if( _d8bb5lta47ef ) EntFire( "_d83b5l7a4Tef", "disable" )
+	if( _d8bb5lta47ef ) EntFire( "_d83b5l7a4Tef", "disable" );
 
-	PlaySound("UIPanorama.gameover_show")
-	if( i ) PlaySound("Buttons.snd9")
+	PlaySound("UIPanorama.gameover_show");
+	if( i ) PlaySound("Buttons.snd9");
 
-	SendToConsole( "-duck;host_timescale 1;clear;echo;echo;echo;echo\"----------------------------\";echo;echo " + ( i ? "Benchmark finished.;echo;echo\"Map: " + sMapName + "\";echo\"Tickrate: "+ fTickrate + "\";echo;toggleconsole" : "Stopped benchmark.;echo;mp_restartgame 1" ) + ";echo\"Time: " + ( Time() - _dB3bSlta47ef ) + " seconds\";echo;bench_end;echo;echo\"----------------------------\";echo;echo;developer " + _d8ebSlta47ef )
-
-/*
-	   ----------
-
-	Benchmark finished.
-
-	Map: de_dust2
-	Tickrate: 64
-
-	Time: 49.0781 seconds
-
-	Average framerate: 301.19
-
-	   ----------
-*/
-
-/*
-	----------------------------
-
-	Benchmark finished.
-
-	Map : de_dust2
-	Tick: 64
-
-	Time: 49.0781 seconds
-
-	Average framerate: 301.19
-
-	----------------------------
-*/
-
-/*
-	----------------------------
-
-	Benchmark finished.
-
-	Map              : de_dust2
-	Tickrate         : 64
-
-	Benchmark ran for: 49.0781 seconds
-
-	Average framerate: 301.19
-
-	----------------------------
-*/
-
-	// SendToConsole( "-duck;host_timescale 1;clear;echo;echo;echo;echo\"   ------------\";echo;echo " + ( i ? "Benchmark finished.;echo;echo\"" + OutputFormat("Map: ") + sMapName + "\";echo\"" + OutputFormat("Tickrate: ") + fTickrate + "\";echo;toggleconsole" : "Stopped benchmark.;echo;mp_restartgame 1" ) + ";echo\""+ OutputFormat("Benchmark time: ") + ( Time() - _dB3bSlta47ef ) + " seconds\";echo;bench_end;echo;echo\"   ------------\";echo;echo;developer " + _d8ebSlta47ef )
-
-/*
-	----------------------------
-
-	Benchmark finished.
-
-	              Map: de_dust2
-	         Tickrate: 64
-
-	   Benchmark time: 49.0781 seconds
-
-	Average framerate: 301.19
-
-	----------------------------
-*/
+	SendToConsole( "host_timescale 1;clear;echo;echo;echo;echo\"----------------------------\";echo;echo " + ( i ? "Benchmark finished.;echo;echo\"Map: " + sMapName + "\";echo\"Tickrate: "+ fTickrate + "\";echo;toggleconsole" : "Stopped benchmark.;echo;" ) + ";echo\"Time: " + ( Time() - _dB3bSlta47ef ) + " seconds\";echo;bench_end;echo;echo\"----------------------------\";echo;echo;developer " + _d8ebSlta47ef );
 }
-
-// function OutputFormat( s ) { return VS.FormatWidth( " ", s, 19 ) }
-
-// function Echo( s = "" ) { SendToConsole("echo\""+s+"\"") }
 
 // bm_setup
 function _d8bb5ltAa7ef()
 {
-	PlaySound("HudChat.Message")
+	PlaySound("HudChat.Message");
 /*
-printl(@"
+Msg(@"
 [i] See README.md for details.
 
                  github.com/samisalreadytaken/csgo-benchmark
@@ -569,13 +979,13 @@ bm_smoke1  : SpawnSmoke()
 bm_expl1   : SpawnExplosion()
 ")
 */
-	printl("\n[i] See README for details.\n\n                 github.com/samisalreadytaken/csgo-benchmark\n\nbm_rec     : Start/stop recording new path\nbm_play    : Play the recording, run benchmark\nbm_save    : Save the recording\nbm_timer   : Toggle counter\n           :\nbm_list    : Print saved setup data\nbm_clear   : Clear saved setup data\nbm_remove  : Remove the last added setup data\n           :\nbm_mdl     : Print SpawnMDL()\nbm_flash   : Print SpawnFlash()\nbm_he      : Print SpawnHE()\nbm_molo    : Print SpawnMolotov()\nbm_smoke   : Print SpawnSmoke()\nbm_expl    : Print SpawnExplosion()\n           :\nbm_mdl1    : SpawnMDL()\nbm_flash1  : SpawnFlash()\nbm_he1     : SpawnHE()\nbm_molo1   : SpawnMolotov()\nbm_smoke1  : SpawnSmoke()\nbm_expl1   : SpawnExplosion()\n\n")
+	Msg("\n[i] See README for details.\n\n                 github.com/samisalreadytaken/csgo-benchmark\n\nbm_rec     : Start/stop recording new path\nbm_play    : Play the recording, run benchmark\nbm_save    : Save the recording\nbm_timer   : Toggle counter\n           :\nbm_list    : Print saved setup data\nbm_clear   : Clear saved setup data\nbm_remove  : Remove the last added setup data\n           :\nbm_mdl     : Print SpawnMDL()\nbm_flash   : Print SpawnFlash()\nbm_he      : Print SpawnHE()\nbm_molo    : Print SpawnMolotov()\nbm_smoke   : Print SpawnSmoke()\nbm_expl    : Print SpawnExplosion()\n           :\nbm_mdl1    : SpawnMDL()\nbm_flash1  : SpawnFlash()\nbm_he1     : SpawnHE()\nbm_molo1   : SpawnMolotov()\nbm_smoke1  : SpawnSmoke()\nbm_expl1   : SpawnExplosion()\n\n");
 }
 
 function _d88bSlt4aTef()
 {
 /*
-printl(@"
+Msg(@"
 
  Benchmark script loaded.
 
@@ -605,159 +1015,157 @@ net_graph 1
 [i] The benchmark sets your fps_max to 0
 ")
 */
-	printl("\n\n\n Benchmark script loaded.\n\n                 github.com/samisalreadytaken/csgo-benchmark\n\n Console commands:\n\nbenchmark  : Run the benchmark\nbm_stop    : Force stop the ongoing benchmark\n           :\n           :\nbm_rec     : Start/stop recording new path\nbm_play    : Play the recording, run benchmark\n           :\n           :\nbm_setup   : Print setup related commands\n\n ----------\n\n Commands to display FPS:\n\ncl_showfps 1\nnet_graph 1\n\n ----------\n\n[i] The benchmark sets your fps_max to 0\n")
+	Msg("\n\n\n Benchmark script loaded.\n\n                 github.com/samisalreadytaken/csgo-benchmark\n\n Console commands:\n\nbenchmark  : Run the benchmark\nbm_stop    : Force stop the ongoing benchmark\n           :\n           :\nbm_rec     : Start/stop recording new path\nbm_play    : Play the recording, run benchmark\n           :\n           :\nbm_setup   : Print setup related commands\n\n ----------\n\n Commands to display FPS:\n\ncl_showfps 1\nnet_graph 1\n\n ----------\n\n[i] The benchmark sets your fps_max to 0\n");
+	Msg("[i] Map: " + sMapName);
+	Msg("[i] Server tickrate: " + fTickrate + "\n\n");
 }
 
 function _d83d51ta4Tef()
 {
-	fTickrate = VS.GetTickrate()
-
 	if( !VS.IsInteger( 128.0 / fTickrate ) )
-		return printl("[!] Invalid tickrate ( " + fTickrate + " )! Only 128 and 64 ticks are supported.")
-
-	printl("[i] Map: " + sMapName)
-	printl("[i] Server tickrate: " + fTickrate + "\n\n")
-	Chat( txt.orange + "● " + txt.grey +"Server tickrate: " + txt.yellow + fTickrate )
-	Chat( " " )
-	Chat( txt.blue+" -------------------------------- " )
+	{
+		local s = "[!] Invalid tickrate ( " + fTickrate + " )! Only 128 and 64 ticks are supported.";
+		Chat(s);
+		Msg(s);
+	};
 }
 
 // bm_clear
 function _dB8d5lt4a7ef()
 {
-	PlaySound("UIPanorama.XP.Ticker")
-	_d8BbSlt4a7ef.clear()
-	_d8BdSlt4a7ef.clear()
-	printl("Cleared saved setup data.")
+	PlaySound("UIPanorama.XP.Ticker");
+	_d8BbSlt4a7ef.clear();
+	_d8BdSlt4a7ef.clear();
+	Msg("Cleared saved setup data.");
 }
 
 // bm_remove
 function _dB8b5lt4a7ef()
 {
-	PlaySound("UIPanorama.XP.Ticker")
+	PlaySound("UIPanorama.XP.Ticker");
 	if( !_d8Bd5lt4a7ef )
 	{
-		if( !_d8BbSlt4a7ef.len() ) return printl("No saved data found.")
-		_d8BbSlt4a7ef.pop()
-		printl("Removed the last added setup data. (model)")
+		if( !_d8BbSlt4a7ef.len() ) return Msg("No saved data found.");
+		_d8BbSlt4a7ef.pop();
+		Msg("Removed the last added setup data. (model)");
 	}
 	else
 	{
-		if( !_d8BdSlt4a7ef.len() ) return printl("No saved data found.")
-		_d8BdSlt4a7ef.pop()
-		printl("Removed the last added setup data. (nade)")
-	}
+		if( !_d8BdSlt4a7ef.len() ) return Msg("No saved data found.");
+		_d8BdSlt4a7ef.pop();
+		Msg("Removed the last added setup data. (nade)");
+	};
 }
 
 // bm_list
 function _d88bSlt4a7ef()
 {
-	PlaySound("UIPanorama.XP.Ticker")
-	if( !_d8BdSlt4a7ef.len() && !_d8BbSlt4a7ef.len() ) return printl("No saved data found.")
+	PlaySound("UIPanorama.XP.Ticker");
+	if( !_d8BdSlt4a7ef.len() && !_d8BbSlt4a7ef.len() ) return Msg("No saved data found.");
 
-	printl("//------------------------\n// Copy the lines below:\n\n");printl("function Setup_"+sMapName+"()\n{");foreach(k in _d8BbSlt4a7ef)print("\t"+k);print("\n");foreach(k in _d8BdSlt4a7ef)print("\t"+k);printl("}\n");printl("\n//------------------------")
+	Msg("//------------------------\n// Copy the lines below:\n\n");Msg("function Setup_"+sMapName+"()\n{");foreach(k in _d8BbSlt4a7ef)print("\t"+k);print("\n");foreach(k in _d8BdSlt4a7ef)print("\t"+k);Msg("}\n");Msg("\n//------------------------");
 }
 
 // bm_mdl
 function _d8Bb51t4a7ef( i = 0 )
 {
-	PlaySound("UIPanorama.XP.Ticker")
-	local a = "SpawnMDL( "+VecToString(HPlayer.GetOrigin())+","+HPlayer.GetAngles().y+", MDL."+sCurrMDL+" )\n"
+	PlaySound("UIPanorama.XP.Ticker");
+	local a = "SpawnMDL( "+VecToString(HPlayer.GetOrigin())+","+HPlayer.GetAngles().y+", MDL."+sCurrMDL+" )\n";
 
 	if(i)
 	{
-		local p = HPlayer.GetOrigin()
-		p.z += 72
-		HPlayer.SetOrigin(p)
-		return compilestring(a)()
-	}
+		local p = HPlayer.GetOrigin();
+		p.z += 72;
+		HPlayer.SetOrigin(p);
+		return compilestring(a)();
+	};
 
-	_d8BbSlt4a7ef.append(a)
-	printl("\n"+a)
-	_d8Bd5lt4a7ef = 0
+	_d8BbSlt4a7ef.append(a);
+	Msg("\n"+a);
+	_d8Bd5lt4a7ef = 0;
 }
 
 // bm_flash
 function _d8Bp51t4a7ef( i = 0 )
 {
-	PlaySound("UIPanorama.XP.Ticker")
-	local a = "SpawnFlash( "+VecToString(HPlayer.GetOrigin())+", 0.0 )\n"
+	PlaySound("UIPanorama.XP.Ticker");
+	local a = "SpawnFlash( "+VecToString(HPlayer.GetOrigin())+", 0.0 )\n";
 
 	if(i)
 	{
-		local p = HPlayer.GetOrigin()
-		if( !HPlayer.IsNoclipping() ) p.z += 32
-		HPlayer.SetOrigin(p)
-		return compilestring(a)()
-	}
+		local p = HPlayer.GetOrigin();
+		if( !HPlayer.IsNoclipping() ) p.z += 32;
+		HPlayer.SetOrigin(p);
+		return compilestring(a)();
+	};
 
-	_d8BdSlt4a7ef.append(a)
-	printl("\n"+a)
-	_d8Bd5lt4a7ef = 1
+	_d8BdSlt4a7ef.append(a);
+	Msg("\n"+a);
+	_d8Bd5lt4a7ef = 1;
 }
 
 // bm_he
 function _dB8d51t4a7ef( i = 0 )
 {
-	PlaySound("UIPanorama.XP.Ticker")
-	local a = "SpawnHE( "+VecToString(HPlayer.GetOrigin())+", 0.0 )\n"
+	PlaySound("UIPanorama.XP.Ticker");
+	local a = "SpawnHE( "+VecToString(HPlayer.GetOrigin())+", 0.0 )\n";
 
 	if(i)
 	{
-		local p = HPlayer.GetOrigin()
-		if( !HPlayer.IsNoclipping() ) p.z += 32
-		HPlayer.SetOrigin(p)
-		return compilestring(a)()
-	}
+		local p = HPlayer.GetOrigin();
+		if( !HPlayer.IsNoclipping() ) p.z += 32;
+		HPlayer.SetOrigin(p);
+		return compilestring(a)();
+	};
 
-	_d8BdSlt4a7ef.append(a)
-	printl("\n"+a)
-	_d8Bd5lt4a7ef = 1
+	_d8BdSlt4a7ef.append(a);
+	Msg("\n"+a);
+	_d8Bd5lt4a7ef = 1;
 }
 
 // bm_molo
 function _dBBb5lt4a7ef( i = 0 )
 {
-	PlaySound("UIPanorama.XP.Ticker")
-	local a = "SpawnMolotov( "+VecToString(HPlayer.GetOrigin())+", 0.0 )\n"
+	PlaySound("UIPanorama.XP.Ticker");
+	local a = "SpawnMolotov( "+VecToString(HPlayer.GetOrigin())+", 0.0 )\n";
 
 	if(i)
 	{
-		local p = HPlayer.GetOrigin()
-		if( !HPlayer.IsNoclipping() ) p.z += 32
-		HPlayer.SetOrigin(p)
-		return compilestring(a)()
-	}
+		local p = HPlayer.GetOrigin();
+		if( !HPlayer.IsNoclipping() ) p.z += 32;
+		HPlayer.SetOrigin(p);
+		return compilestring(a)();
+	};
 
-	_d8BdSlt4a7ef.append(a)
-	printl("\n"+a)
-	_d8Bd5lt4a7ef = 1
+	_d8BdSlt4a7ef.append(a);
+	Msg("\n"+a);
+	_d8Bd5lt4a7ef = 1;
 }
 
 // bm_smoke
 function _d88b5lt4a7ef( i = 0 )
 {
-	PlaySound("UIPanorama.XP.Ticker")
-	local a = "SpawnSmoke( "+VecToString(HPlayer.GetOrigin())+", 0.0 )\n"
+	PlaySound("UIPanorama.XP.Ticker");
+	local a = "SpawnSmoke( "+VecToString(HPlayer.GetOrigin())+", 0.0 )\n";
 
-	if(i) return compilestring(a)()
+	if(i) return compilestring(a)();
 
-	_d8BdSlt4a7ef.append(a)
-	printl("\n"+a)
-	_d8Bd5lt4a7ef = 1
+	_d8BdSlt4a7ef.append(a);
+	Msg("\n"+a);
+	_d8Bd5lt4a7ef = 1;
 }
 
 // bm_expl
 function _d88b51t4aTef( i = 0 )
 {
-	PlaySound("UIPanorama.XP.Ticker")
-	local a = "SpawnExplosion( "+VecToString(HPlayer.GetOrigin())+", 0.0 )\n"
+	PlaySound("UIPanorama.XP.Ticker");
+	local a = "SpawnExplosion( "+VecToString(HPlayer.GetOrigin())+", 0.0 )\n";
 
-	if(i) return compilestring(a)()
+	if(i) return compilestring(a)();
 
-	_d8BdSlt4a7ef.append(a)
-	printl("\n"+a)
-	_d8Bd5lt4a7ef = 1
+	_d8BdSlt4a7ef.append(a);
+	Msg("\n"+a);
+	_d8Bd5lt4a7ef = 1;
 }
 
 function SpawnFlash( v, d )
@@ -785,34 +1193,57 @@ function SpawnExplosion( v, d )
 	delay("local v=" + VecToString(v) + ";DispatchParticleEffect(\"explosion_c4_500\",v,Vector());_d83bSlta41ef.SetOrigin(v);_d83bSlta41ef.EmitSound(\"c4.explode\")", d)
 }
 
-function SpawnMDL( v, a, m )
+function SpawnMDL( v, a, m, p = POSE.DEFAULT )
 {
-	if( !Entities.FindByClassnameNearest( "prop_*", v, 1 ) )
+	if( !Entities.FindByClassnameNearest( "prop_dynamic_override", v, 1 ) )
 	{
-		PrecacheModel( m )
-		local h = VS.CreateProp( v, m )
-		h.SetAngles( 0, a, 0 )
-		VS.SetKeyInt( h, "solid", 2 )
-	}
+		PrecacheModel( m );
+		local h = ::CreateProp( "prop_dynamic_override", v, m, 0 );
+		h.SetAngles( 0, a, 0 );
+		VS.SetKeyInt( h, "solid", 2 );
+		VS.SetKeyInt( h, "disablebonefollowers", 1 );
+		VS.SetKeyInt( h, "holdanimation", 1 );
+		VS.SetKeyString( h, "defaultanim", "grenade_deploy_03" );
+
+		switch( p )
+		{
+			case POSE.ROM:
+				EntFireHandle( h, "setanimation", "rom" );
+				break;
+			case POSE.A:
+				h.SetAngles( 0, a + 90, 90 );
+				EntFireHandle( h, "setanimation", "additive_posebreaker" );
+				break;
+			case POSE.PISTOL:
+				EntFireHandle( h, "setanimation", "pistol_deploy_02" );
+				break;
+			case POSE.RIFLE:
+				EntFireHandle( h, "setanimation", "rifle_deploy" );
+				break;
+			default:
+				EntFireHandle( h, "setanimation", "grenade_deploy_03" );
+				EntFireHandle( h, "setplaybackrate", "0" );
+		};
+	};
 }
 
-sCurrMDL <- "BALKg"
+sCurrMDL <- "BALKg";
 
 function SetMDL(s)
 {
-	if( typeof s != "string" ) return printl("Invalid input")
+	if( typeof s != "string" ) return Msg("Invalid input");
 
-	local t = ""
+	local t = "";
 
 	for( local i = 0; i < s.len(); i++ )
 	{
-		local c = s[i].tochar()
+		local c = s[i].tochar();
 
-		if( i == (s.len() - 1) ) c = c.tolower()
-		else c = c.toupper()
+		if( i == (s.len() - 1) ) c = c.tolower();
+		else c = c.toupper();
 
-		t += c
-	}
+		t += c;
+	};
 
-	sCurrMDL = t
+	sCurrMDL = t;
 }
