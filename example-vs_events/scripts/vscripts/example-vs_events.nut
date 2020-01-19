@@ -35,9 +35,9 @@ SendToConsole("mp_warmup_pausetimer 1;bot_stop 1;mp_autoteambalance 0;mp_limitte
 // Example 1.2: Changing the player health
 // Requirements:
 //    vs_library
-//    logic_eventlistener : player_say
 //    logic_eventlistener : player_info
 //    logic_eventlistener : player_connect
+//    logic_eventlistener : player_say
 //
 //------------------------------
 
@@ -56,10 +56,10 @@ SendToConsole("mp_warmup_pausetimer 1;bot_stop 1;mp_autoteambalance 0;mp_limitte
 	local player = VS.GetPlayerByUserid( id )
 
 	// execute
-	SMain.say_cmd( msg.slice(1), player )
+	SMain.SayCommand( msg.slice(1), player )
 }
 
-function Say_cmd( msg, player = null )
+function SayCommand( msg, player = null )
 {
 	// Your chat commands are string cases in this switch statement
 	// Strings are case sensitive
@@ -71,9 +71,9 @@ function Say_cmd( msg, player = null )
 
 	// if there are no spaces in the message, meaning the message is just "hp"
 	// buffer[1] will not exist. Then val = null
-	// The same result can be achieved by checking the buffer length but this is good enough.
 	// val = "1337"
-	try( val = buffer[1] ) catch(e){}
+	if( buffer.len() > 1 )
+		val = buffer[1]
 
 	switch( cmd.tolower() )
 	{
@@ -180,8 +180,6 @@ function BizonHeal(data)
 //
 // Spawn a watermelon on impact, kill it after 2 seconds
 //
-// // Not the most ideal method.
-//
 //------------------------------
 
 PrecacheModel("models/props_junk/watermelon01.mdl")
@@ -201,13 +199,15 @@ function OnImpact( pos )
 }
 
 nMelonCount <- 0
+list_melons <- []
 
 function SpawnMelon(pos,idx)
 {
-	this["melon" + idx] <- VS.Entity.CreateProp( pos, "models/props_junk/watermelon01.mdl" )
+	local prop = CreateProp( "prop_dynamic_override", pos, "models/props_junk/watermelon01.mdl", 0 )
+	list_melons.append(prop)
 }
 
 function KillMelon(idx)
 {
-	(delete this["melon" + idx]).Destroy()
+	list_melons.remove(0).Destroy()
 }
