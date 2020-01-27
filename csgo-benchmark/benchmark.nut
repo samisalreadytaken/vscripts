@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------
-//----------------------- Copyright (C) 2019 Sam ------------------------
-//                     github.com/samisalreadytaken
+//------------------- Copyright (c) samisalreadytaken -------------------
+//                       github.com/samisalreadytaken
 //-----------------------------------------------------------------------
 IncludeScript("vs_library");
 
@@ -26,9 +26,9 @@ if(!("__R"in::getroottable()))::__R<-false;;if(::__R)delete::__R;else{local _=fu
 
 const FTIME = 0.015625;;
 
-SendToConsole("alias benchmark\"script _d83bS1t4a7ef()\";alias bm_stop\"script _d83bSlt4a7ef()\";alias bm_rec\"script _db3b51t4a7ef()\";alias bm_play\"script _d83bS1t4a7ef(1)\";alias bm_show\"script show(10)\";alias bm_save\"script _dBeb5lta47ef(0)\";alias bm_trim\"script _db3b51tAa7ef(0,0)\";alias bm_trim_undo\"script _db3b51tAa7ef(1,0)\";alias bm_setup\"script _d8bb5ltAa7ef()\";alias bm_timer\"script _dBebSlt4a73f()\";alias bm_list\"script _d88bSlt4a7ef()\";alias bm_clear\"script _dB8d5lt4a7ef()\";alias bm_remove\"script _dB8b5lt4a7ef()\"");
+SendToConsole("alias benchmark\"script _d83bS1t4a7ef()\";alias bm_stop\"script _d83bSlt4a7ef()\";alias bm_rec\"script _db3b51t4a7ef()\";alias bm_play\"script _d83bS1t4a7ef(1)\";alias bm_show\"script bm_show()\";alias bm_save\"script _dBeb5lta47ef(0)\";alias bm_trim\"script _db3b51tAa7ef(0,0)\";alias bm_trim_undo\"script _db3b51tAa7ef(1,0)\";alias bm_setup\"script _d8bb5ltAa7ef()\";alias bm_timer\"script _dBebSlt4a73f()\";alias bm_list\"script _d88bSlt4a7ef()\";alias bm_clear\"script _dB8d5lt4a7ef()\";alias bm_remove\"script _dB8b5lt4a7ef()\"");
 
-SendToConsole("alias bm_mdl\"script _d8Bb51t4a7ef()\";alias bm_mdl1\"script _d8Bb51t4a7ef(1)\";alias bm_flash\"script _d8Bp51t4a7ef()\";alias bm_flash1\"script _d8Bp51t4a7ef(1)\";alias bm_he\"script _dB8d51t4a7ef()\";alias bm_he1\"script _dB8d51t4a7ef(1)\";alias bm_molo\"script _dBBb5lt4a7ef()\";alias bm_molo1\"script _dBBb5lt4a7ef(1)\";alias bm_smoke\"script _d88b5lt4a7ef()\";alias bm_smoke1\"script _d88b5lt4a7ef(1)\";alias bm_expl\"script _d88b51t4aTef()\";alias bm_expl1\"script _d88b51t4aTef(1)\";alias bm_add\"script _dbBbSlt4aT3f()\";alias bm_pop\"script _dbBbSlt4aTef()\";alias bm_popall\"script _db3bSlt4aTef()\";alias bm_compile\"script _db3bSlt4a7ef()\";alias bm_play2\"script _d83bS1t4a7ef(2)\";alias bm_save2\"script _dBeb5lta47ef(1)\";alias bm_trim2\"script _db3b51tAa7ef(0,1)\";alias bm_trim2_undo\"script _db3b51tAa7ef(1,1)\";alias bm_show2\"script show2(10)\";alias bm_roll\"script bm_roll()\"");
+SendToConsole("alias bm_mdl\"script _d8Bb51t4a7ef()\";alias bm_mdl1\"script _d8Bb51t4a7ef(1)\";alias bm_flash\"script _d8Bp51t4a7ef()\";alias bm_flash1\"script _d8Bp51t4a7ef(1)\";alias bm_he\"script _dB8d51t4a7ef()\";alias bm_he1\"script _dB8d51t4a7ef(1)\";alias bm_molo\"script _dBBb5lt4a7ef()\";alias bm_molo1\"script _dBBb5lt4a7ef(1)\";alias bm_smoke\"script _d88b5lt4a7ef()\";alias bm_smoke1\"script _d88b5lt4a7ef(1)\";alias bm_expl\"script _d88b51t4aTef()\";alias bm_expl1\"script _d88b51t4aTef(1)\";alias bm_add\"script _dbBbSlt4aT3f()\";alias bm_pop\"script _dbBbSlt4aTef()\";alias bm_popall\"script _db3bSlt4aTef()\";alias bm_compile\"script _db3bSlt4a7ef()\";alias bm_play2\"script _d83bS1t4a7ef(2)\";alias bm_save2\"script _dBeb5lta47ef(1)\";alias bm_trim2\"script _db3b51tAa7ef(0,1)\";alias bm_trim2_undo\"script _db3b51tAa7ef(1,1)\";alias bm_show2\"script bm_show2()\";alias bm_roll\"script bm_roll()\"");
 
 SendToConsole("clear;script OnPostSpawn()");
 
@@ -162,7 +162,7 @@ function _ProcessData()
 			if( lp_p[0] instanceof V )
 			{
 				::_d8ebSltA4Tef <- lp_p.len();
-				::_d8eBSltA4Tef <- 2000;
+				::_d8eBSltA4Tef <- 1450;
 				::_d8eBS1tA4Tef <- 0;
 				::_d8ebS1tA4Tef <- clamp( _d8eBSltA4Tef, 0, _d8ebSltA4Tef );
 
@@ -178,7 +178,7 @@ function _ProcessData()
 				if( IsKeyframeRecording( sMapName ) )
 				{
 					::_dBebS1t4aTeF <- la_p.len();
-					::_dBebS1t4aTef <- 2000;
+					::_dBebS1t4aTef <- 1450;
 					::_dBebSlt4aTef <- 0;
 					::_d8ebSlt4aTef <- clamp( _dBebS1t4aTef, 0, _dBebS1t4aTeF );
 
@@ -604,7 +604,7 @@ function _db365ltA47Ef()
 }
 
 // show keyframes
-function show2( t = 10 )
+function __show2( t = 10 )
 {
 	if( !("lp_c" in this) || !("la_c" in this) )
 		return Msg("No keyframes found.");
@@ -627,7 +627,7 @@ function show2( t = 10 )
 }
 
 // show pos recording
-function show( t = 10 )
+function __show( t = 10 )
 {
 	if( !("lp_r" in this) || !("la_r" in this) )
 		return Msg("No recording found.");
@@ -640,6 +640,59 @@ function show( t = 10 )
 
 	for( local i = 31; i < lp_r.len()-64; i+=64 )
 		DebugDrawBox( lp_r[i], Vector(-8,-8,-8), Vector(8,8,8), 255, 64, 0, 16, t );
+}
+
+function _d83b5lt4aTeF()
+{
+	if( _d83b5lt4aTef )
+		__show(1.5+FrameTime());
+	if( _d83b5lt447ef )
+		__show2(1.5+FrameTime());
+}
+
+_d83b5lt4aTef <- false;
+_d83b5lt447ef <- false;
+
+function bm_show()
+{
+	if( _d83bS1ta47ef )
+		return Msg("Cannot show while recording!");
+	if( _d83bS1ta4Tef || _d83bSl7a4Tef )
+		return Msg("Cannot show while playing!");
+
+	_d83b5lt4aTef = !_d83b5lt4aTef;
+
+	if( _d83b5lt4aTef )
+	{
+		VS.SetKeyFloat( _d83bSlta47ef, "refiretime", 1.5 );
+		VS.OnTimer( _d83bSlta47ef, "_d83b5lt4aTeF" );
+		EntFireHandle( _d83bSlta47ef, "enable" );
+		__show(1.5);
+	}
+	else if( !_d83b5lt447ef ) EntFireHandle( _d83bSlta47ef, "disable" );;
+
+	Msg("Show toggle: " + _d83b5lt4aTef);
+}
+
+function bm_show2()
+{
+	if( _d83bS1ta47ef )
+		return Msg("Cannot show while recording!");
+	if( _d83bS1ta4Tef || _d83bSl7a4Tef )
+		return Msg("Cannot show while playing!");
+
+	_d83b5lt447ef = !_d83b5lt447ef;
+
+	if( _d83b5lt447ef )
+	{
+		VS.SetKeyFloat( _d83bSlta47ef, "refiretime", 1.5 );
+		VS.OnTimer( _d83bSlta47ef, "_d83b5lt4aTeF" );
+		EntFireHandle( _d83bSlta47ef, "enable" );
+		__show2(1.5);
+	}
+	else if( !_d83b5lt4aTef ) EntFireHandle( _d83bSlta47ef, "disable" );;
+
+	Msg("Show2 toggle: " + _d83b5lt447ef);
 }
 
 // IsKeyframeRecording
@@ -677,6 +730,10 @@ function _db3b51t4a7ef()
 	// trimmed
 	_d83Bb517a47ef = false;
 
+	_d83b5lt4aTef = false;
+	_d83b5lt447ef = false;
+	EntFireHandle( _d83bSlta47ef, "disable" );
+	VS.SetKeyFloat( _d83bSlta47ef, "refiretime", FTIME );
 	VS.OnTimer( _d83bSlta47ef, "_d83b5lT4a9ef" );
 	lp_r <- [];
 	la_r <- [];
@@ -732,13 +789,13 @@ function _dBeb5lta47ef( k = 0 )
 	VS.Log.condition = true;
 	VS.Log.export = true;
 	VS.Log.filter = "L ";
-	VS.Log.Add( "lp_" + sMapName + "<-[" );
+	VS.Log.L.append( "lp_" + sMapName + "<-[" );
 
 	lp_s <- k ? lp_k : lp_r;
 	la_s <- k ? la_k : la_r;
 
 	_dBebSlTa4T3F <- lp_s.len();
-	_dBebSlTa4t3F <- 2000;
+	_dBebSlTa4t3F <- 1450;
 	_dBebSlTa4tef <- 0;
 	_dBebSlTa4teF <- clamp( _dBebSlTa4t3F, 0, _dBebSlTa4T3F );
 
@@ -759,16 +816,14 @@ function _dBeb5lta47ef2()
 {
 	if( _dBebSlTa4tef >= _dBebSlTa4teF )
 	{
-		VS.Log.Add("];la_" + sMapName + "<-[");
+		VS.Log.L.append("];la_" + sMapName + "<-[");
 		_dBebSlTa4tef = 0;
 		_dBebSlTa4teF = clamp( _dBebSlTa4t3F, 0, _dBebSlTa4T3F );
 		return delay( "_dBeb5lta47ef3()", FTIME );
 	};
 
-	local Add = VS.Log.Add;
-
 	for( local i = _dBebSlTa4tef; i < _dBebSlTa4teF; i++ )
-		Add( VecToString(lp_s[i],"V(") );
+		VS.Log.L.append( VecToString(lp_s[i],"V(") );
 
 	_dBebSlTa4tef += _dBebSlTa4t3F;
 	_dBebSlTa4teF = clamp( _dBebSlTa4teF + _dBebSlTa4t3F, 0, _dBebSlTa4T3F );
@@ -783,20 +838,18 @@ function _dBeb5lta47ef3()
 	{
 		VS.Log.L.pop();
 		if( type(la_s[0]) == "instance" )
-			VS.Log.Add( VecToString(la_s[la_s.len()-1],"V(") + "];\n" );
+			VS.Log.L.append( VecToString(la_s[la_s.len()-1],"V(") + "];\n" );
 		else
-			VS.Log.Add( la_s[la_s.len()-1] + "];\n" );
+			VS.Log.L.append( la_s[la_s.len()-1] + "];\n" );
 		return delay( "_dBeb5lta47ef4()", FTIME );
 	};
 
-	local Add = VS.Log.Add;
-
 	if( type(la_s[0]) == "instance" )
 		for( local i = _dBebSlTa4tef; i < _dBebSlTa4teF; i++ )
-			Add( VecToString(la_s[i],"V(") );
+			VS.Log.L.append( VecToString(la_s[i],"V(") );
 	else
 		for( local i = _dBebSlTa4tef; i < _dBebSlTa4teF; i++ )
-			Add( v + "," );
+			VS.Log.L.append( la_s[i] + "," );
 
 	_dBebSlTa4tef += _dBebSlTa4t3F;
 	_dBebSlTa4teF = clamp( _dBebSlTa4teF + _dBebSlTa4t3F, 0, _dBebSlTa4T3F );
@@ -816,7 +869,7 @@ function _d83b5lT4a9ef()
 	v.z += IsCrouching() ? 45.98 : 64.0;
 
 	lp_r.append( v );
-	la_r.append( VS.AngleNormalize(HPlayerEye.GetAngles().y) );
+	la_r.append( VS.AngleNormalize(HPlayer.GetAngles().y) );
 }
 
 // set
@@ -849,6 +902,8 @@ function _d83bS1t4a7ef( r = 0 )
 
 	local m;
 
+	nPlayMode <- r;
+
 	// default
 	if( r == 0 )
 	{
@@ -874,6 +929,11 @@ function _d83bS1t4a7ef( r = 0 )
 
 	if( !_d8ebSlta4Tef || _d8ebSlta4Tef != _dB3b5lta47ef.len() )
 		return Msg(" *** Map data is corrupted! [" + _dB3bS1ta47ef.len() + "," + _dB3b5lta47ef.len() + "]");
+
+	_d83b5lt4aTef = false;
+	_d83b5lt447ef = false;
+	EntFireHandle( _d83bSlta47ef, "disable" );
+	VS.SetKeyFloat( _d83bSlta47ef, "refiretime", FTIME );
 
 	// IsKeyframeRecording
 	if( IsKeyframeRecording(m) )
@@ -942,7 +1002,7 @@ function _d83bSlt4a7ef( i = 0 )
 	PlaySound("UIPanorama.gameover_show");
 	if( i ) PlaySound("Buttons.snd9");
 
-	SendToConsole( "host_timescale 1;clear;echo;echo;echo;echo\"----------------------------\";echo;echo " + ( i ? "Benchmark finished.;echo;echo\"Map: " + sMapName + "\";echo\"Tickrate: "+ fTickrate + "\";echo;toggleconsole" : "Stopped benchmark.;echo;" ) + ";echo\"Time: " + ( Time() - _dB3bSlta47ef ) + " seconds\";echo;bench_end;echo;echo\"----------------------------\";echo;echo;developer " + _d8ebSlta47ef );
+	SendToConsole( "host_timescale 1;clear;echo;echo;echo;echo\"----------------------------\";echo;echo " + ( i ? "Benchmark finished.;echo;echo\"Map: " + sMapName + "\";echo\"Tickrate: "+ fTickrate + "\";echo;toggleconsole" : (nPlayMode?"Stopped playback.;echo":"Stopped benchmark.;echo;mp_restartgame 1") ) + ";echo\"Time: " + ( Time() - _dB3bSlta47ef ) + " seconds\";echo;bench_end;echo;echo\"----------------------------\";echo;echo;developer " + _d8ebSlta47ef );
 }
 
 // bm_setup

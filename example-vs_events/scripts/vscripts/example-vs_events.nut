@@ -35,7 +35,7 @@ SendToConsole("mp_warmup_pausetimer 1;bot_stop 1;mp_autoteambalance 0;mp_limitte
 // Example 1.2: Changing the player health
 // Requirements:
 //    vs_library
-//    logic_eventlistener : player_info
+//    logic_eventlistener : player_spawn
 //    logic_eventlistener : player_connect
 //    logic_eventlistener : player_say
 //

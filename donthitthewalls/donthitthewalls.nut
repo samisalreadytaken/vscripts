@@ -6,7 +6,6 @@
 //
 //-----------------------------------------------------------------------
 
-// lib ver 191212 or above
 IncludeScript("vs_library")
 
 function OnPostSpawn()

@@ -2,8 +2,7 @@
 //----------------------- Copyright (C) 2019 Sam ------------------------
 //                     github.com/samisalreadytaken
 //
-// This project is licensed under the terms of the GNU GPL license,
-// see <https://www.gnu.org/licenses/> for details.
+// This project is licensed under the terms of the GNU GPL license.
 //-----------------------------------------------------------------------
 //
 // Depth-first search maze generator in CS:GO
