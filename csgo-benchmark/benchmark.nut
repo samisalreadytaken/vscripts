@@ -28,7 +28,7 @@ const FTIME = 0.015625;;
 
 SendToConsole("alias benchmark\"script _d83bS1t4a7ef()\";alias bm_stop\"script _d83bSlt4a7ef()\";alias bm_rec\"script _db3b51t4a7ef()\";alias bm_play\"script _d83bS1t4a7ef(1)\";alias bm_show\"script bm_show()\";alias bm_save\"script _dBeb5lta47ef(0)\";alias bm_trim\"script _db3b51tAa7ef(0,0)\";alias bm_trim_undo\"script _db3b51tAa7ef(1,0)\";alias bm_setup\"script _d8bb5ltAa7ef()\";alias bm_timer\"script _dBebSlt4a73f()\";alias bm_list\"script _d88bSlt4a7ef()\";alias bm_clear\"script _dB8d5lt4a7ef()\";alias bm_remove\"script _dB8b5lt4a7ef()\"");
 
-SendToConsole("alias bm_mdl\"script _d8Bb51t4a7ef()\";alias bm_mdl1\"script _d8Bb51t4a7ef(1)\";alias bm_flash\"script _d8Bp51t4a7ef()\";alias bm_flash1\"script _d8Bp51t4a7ef(1)\";alias bm_he\"script _dB8d51t4a7ef()\";alias bm_he1\"script _dB8d51t4a7ef(1)\";alias bm_molo\"script _dBBb5lt4a7ef()\";alias bm_molo1\"script _dBBb5lt4a7ef(1)\";alias bm_smoke\"script _d88b5lt4a7ef()\";alias bm_smoke1\"script _d88b5lt4a7ef(1)\";alias bm_expl\"script _d88b51t4aTef()\";alias bm_expl1\"script _d88b51t4aTef(1)\";alias bm_add\"script _dbBbSlt4aT3f()\";alias bm_pop\"script _dbBbSlt4aTef()\";alias bm_popall\"script _db3bSlt4aTef()\";alias bm_compile\"script _db3bSlt4a7ef()\";alias bm_play2\"script _d83bS1t4a7ef(2)\";alias bm_save2\"script _dBeb5lta47ef(1)\";alias bm_trim2\"script _db3b51tAa7ef(0,1)\";alias bm_trim2_undo\"script _db3b51tAa7ef(1,1)\";alias bm_show2\"script bm_show2()\";alias bm_roll\"script bm_roll()\"");
+SendToConsole("alias bm_mdl\"script _d8Bb51t4a7ef()\";alias bm_mdl1\"script _d8Bb51t4a7ef(1)\";alias bm_flash\"script _d8Bp51t4a7ef()\";alias bm_flash1\"script _d8Bp51t4a7ef(1)\";alias bm_he\"script _dB8d51t4a7ef()\";alias bm_he1\"script _dB8d51t4a7ef(1)\";alias bm_molo\"script _dBBb5lt4a7ef()\";alias bm_molo1\"script _dBBb5lt4a7ef(1)\";alias bm_smoke\"script _d88b5lt4a7ef()\";alias bm_smoke1\"script _d88b5lt4a7ef(1)\";alias bm_expl\"script _d88b51t4aTef()\";alias bm_expl1\"script _d88b51t4aTef(1)\";alias bm_add\"script _dbBbSlt4aT3f()\";alias bm_pop\"script _dbBbSlt4aTef()\";alias bm_popall\"script _db3bSlt4aTef()\";alias bm_compile\"script _db3bSlt4a7ef()\";alias bm_play2\"script _d83bS1t4a7ef(2)\";alias bm_save2\"script _dBeb5lta47ef(1)\";alias bm_trim2\"script _db3b51tAa7ef(0,1)\";alias bm_trim2_undo\"script _db3b51tAa7ef(1,1)\";alias bm_show2\"script bm_show2()\";alias bm_stable\"script bm_stable()\"");
 
 SendToConsole("clear;script OnPostSpawn()");
 
@@ -63,7 +63,7 @@ _d8ebSlta4Tef <- 0;
 _d8ebSlta47ef <- 0;
 _dB3bSlta47ef <- 0.0;
 
-fTickrate <- -1.0;
+fTickrate <- VS.GetTickrate();
 sMapName <- GetMapName();
 
 // lists
@@ -74,54 +74,53 @@ if( !("_d8Bd5lt4a7ef" in this) ) _d8Bd5lt4a7ef <- -1;;
 
 if( !("_d83b5lta47ef" in this) ) _d83b5lta47ef <- false;;
 
-if( !("_d8ebS1ta4Tef" in this) || !Ent("_d8ebS1ta4Tef") )
+local SpawnEntities = function()
 {
-	_d8ebS1ta4Tef <- VS.CreateEntity( "game_player_equip", "_d8ebS1ta4Tef", {spawnflags = 2} );
-	VS.MakePermanent( _d8ebS1ta4Tef );
-};;
+	if( !("_d8ebS1ta4Tef" in this) || !Ent("_d8ebS1ta4Tef") )
+	{
+		_d8ebS1ta4Tef <- VS.CreateEntity( "game_player_equip", "_d8ebS1ta4Tef", {spawnflags = 2} );
+		VS.MakePermanent( _d8ebS1ta4Tef );
+	};
 
-if( !("_d83bSlta47ef" in this) || !Ent("_d83bSlta47ef") )
-{
-	_d83bSlta47ef <- VS.CreateTimer( "_d83bSlta47ef", FTIME, 0, 0, 0, 1 );
-	VS.MakePermanent( _d83bSlta47ef );
-};;
+	if( !("_d83bSlta47ef" in this) || !Ent("_d83bSlta47ef") )
+	{
+		_d83bSlta47ef <- VS.CreateTimer( "_d83bSlta47ef", FTIME, 0, 0, 0, 1 );
+		VS.MakePermanent( _d83bSlta47ef );
+	};
 
-if( !("_d83bSlta41ef" in this) || !Ent("_d83bSlta41ef") )
-	_d83bSlta41ef <- VS.CreateEntity( "info_target", "_d83bSlta41ef" );;
+	if( !("_d83bSlta41ef" in this) || !Ent("_d83bSlta41ef") )
+		_d83bSlta41ef <- VS.CreateEntity( "info_target", "_d83bSlta41ef" );
 
-if( !("_d83bSlta4lef" in this) || !Ent("_d83bSlta4lef") )
-{
-	_d83bSlta4lef <- VS.CreateHudHint( "_d83bSlta4lef" );
-	VS.MakePermanent( _d83bSlta4lef );
-};;
+	if( !("_d83bSlta4lef" in this) || !Ent("_d83bSlta4lef") )
+	{
+		_d83bSlta4lef <- VS.CreateHudHint( "_d83bSlta4lef" );
+		VS.MakePermanent( _d83bSlta4lef );
+	};
 
-if( !("HPlayerEye" in this) || !Ent("vs_ref*") )
-{
-	local a = VS.CreateMeasure(HPlayer.GetName());
-	HPlayerEye <- a[0];
-	VS.MakePermanent( HPlayerEye );
-	VS.MakePermanent( a[1] );
-};;
+	if( !("HPlayerEye" in this) || !Ent("vs_ref_*") )
+		HPlayerEye <- VS.CreateMeasure(HPlayer.GetName(),null,true);
 
-if( !("_d83b5lt4a7ef" in this) || !Ent("_d83b5lt4a7ef") )
-{
-	_d83b5lt4a7ef <- VS.CreateEntity( "point_viewcontrol", "_d83b5lt4a7ef", { spawnflags = 8 } );
-};;
+	if( !("_d83b5lt4a7ef" in this) || !Ent("_d83b5lt4a7ef") )
+		_d83b5lt4a7ef <- VS.CreateEntity( "point_viewcontrol", "_d83b5lt4a7ef", { spawnflags = 8 } );
 
-EntFireHandle( _d83b5lt4a7ef, "disable", "", 0, HPlayer );
-EntFireHandle( _d83bSlta47ef, "disable" );
-EntFire( "_d83b5l7a4Tef", "disable" );
+	if( !Ent("_d83b5l7a4Tef") )
+	{
+		VS.OnTimer( VS.CreateTimer( "_d83b5l7a4Tef", 1, 0, 0, 0, 1 ), _dBebSlt4a7ef );
+		VS.MakePermanent( Ent("_d83b5l7a4Tef") );
+	};
+
+	EntFireByHandle( _d83b5lt4a7ef, "disable", "", 0, HPlayer );
+	EntFireByHandle( _d83bSlta47ef, "disable" );
+	EntFire( "_d83b5l7a4Tef", "disable" );
+}
 
 ::Msg <-::printl;
 
 function OnPostSpawn()
 {
-	if( !HPlayer ) throw "NO PLAYER FOUND";
 	if( HPlayer.GetTeam() != 2 && HPlayer.GetTeam() != 3 ) HPlayer.SetTeam(2);
 
 	PlaySound("Player.DrownStart");
-
-	fTickrate = VS.GetTickrate();
 
 	_ProcessData();
 
@@ -151,12 +150,15 @@ function PlaySound(s)
 
 function _ProcessData()
 {
-	lp_p <- "lp_"+sMapName,
-	la_p <- "la_"+sMapName;
+	local l = "l_"+sMapName;
 
-	if( lp_p in this )
+	if( !(l in this) ) return;
+
+	l_p <- this[l];
+
+	if( "pos" in l_p )
 	{
-		lp_p = this[lp_p];
+		lp_p <- l_p.pos;
 
 		if( type(lp_p[0]) == "instance" )
 			if( lp_p[0] instanceof V )
@@ -169,13 +171,13 @@ function _ProcessData()
 				_ProcessData_p();
 			};
 	};
-	if( la_p in this )
+	if( "ang" in l_p )
 	{
-		la_p = this[la_p];
+		la_p <- l_p.ang;
 
 		if( type(la_p[0]) == "instance" )
 			if( la_p[0] instanceof V )
-				if( IsKeyframeRecording( sMapName ) )
+				if( IsKeyframeRecording( l ) )
 				{
 					::_dBebS1t4aTeF <- la_p.len();
 					::_dBebS1t4aTef <- 1450;
@@ -200,7 +202,7 @@ function _ProcessData_p()
 	};
 
 	for( local i = _d8eBS1tA4Tef; i < _d8ebS1tA4Tef; i++ )
-		VS.ReplaceArrayIndex( lp_p, i, lp_p[i].V() );
+		lp_p[i] = lp_p[i].V();
 
 	_d8eBS1tA4Tef += _d8eBSltA4Tef;
 	_d8ebS1tA4Tef = clamp( _d8ebS1tA4Tef + _d8eBSltA4Tef, 0, _d8ebSltA4Tef );
@@ -221,7 +223,7 @@ function _ProcessData_a()
 	};
 
 	for( local i = _dBebSlt4aTef; i < _d8ebSlt4aTef; i++ )
-		VS.ReplaceArrayIndex( la_p, i, la_p[i].V() );
+		la_p[i] = la_p[i].V();
 
 	_dBebSlt4aTef += _dBebS1t4aTef;
 	_d8ebSlt4aTef = clamp( _d8ebSlt4aTef + _dBebS1t4aTef, 0, _dBebS1t4aTeF );
@@ -229,10 +231,10 @@ function _ProcessData_a()
 	return delay( "_ProcessData_a()", FTIME );
 }
 
-function Alert(s){ VS.ShowHudHint( _d83bSlta4lef, HPlayer, s ) }
+function Hint(s){ VS.ShowHudHint( _d83bSlta4lef, HPlayer, s ) }
 
 // strip
-function _d83bS174a7ef(){ EntFireHandle( _d8ebS1ta4Tef, "use", "", 0.0, HPlayer ) }
+function _d83bS174a7ef(){ EntFireByHandle( _d8ebS1ta4Tef, "use", "", 0.0, HPlayer ) }
 
 // sec timer
 function _dBebSlt4a73f()
@@ -247,15 +249,11 @@ function _dBebSlt4a73f()
 // sec counter
 function _dBebSlt4a7ef()
 {
-	Alert( ++_dBebS1t4a7ef );
+	Hint( ++_dBebS1t4a7ef );
 	PlaySound("UIPanorama.container_countdown");
 }
 
-if( !Ent("_d83b5l7a4Tef") )
-{
-	VS.OnTimer( VS.CreateTimer( "_d83b5l7a4Tef", 1, 0, 0, 0, 1 ), "_dBebSlt4a7ef" );
-	VS.MakePermanent( Ent("_d83b5l7a4Tef") );
-};;
+SpawnEntities();
 
 // trim
 function _db3b51tAa7ef( i = 0, k = 0 )
@@ -350,9 +348,9 @@ function replace(i)
 	      dir = HPlayerEye.GetForwardVector();
 	pos.z += 64.0;
 
-	VS.ReplaceArrayIndex( lp_c, i, pos );
-	VS.ReplaceArrayIndex( la_c, i, dir );
-	VS.ReplaceArrayIndex( la_q, i, VS.AngleQuaternion(HPlayerEye.GetAngles(), Quaternion()) );
+	lp_c[i]=pos;
+	la_c[i]=dir;
+	la_q[i]=VS.AngleQuaternion(HPlayerEye.GetAngles(), Quaternion());
 
 	DebugDrawLine( pos, pos + dir * 64, 138, 255, 0, true, 10 );
 	DebugDrawBox( pos, Vector(-4,-4,-4), Vector(4,4,4), 138, 255, 0, 127, 10 );
@@ -403,9 +401,9 @@ function _dbBbSlt4aT3f()
 	      dir = HPlayerEye.GetForwardVector();
 	pos.z += 64.0;
 
-	lp_c.append( pos );
-	la_c.append( dir );
-	la_q.append( VS.AngleQuaternion(HPlayerEye.GetAngles(), Quaternion()) );
+	lp_c.append(pos);
+	la_c.append(dir);
+	la_q.append(VS.AngleQuaternion(HPlayerEye.GetAngles(), Quaternion()));
 
 	DebugDrawLine( pos, pos + dir * 64, 138, 255, 0, true, 10 );
 	DebugDrawBox( pos, Vector(-4,-4,-4), Vector(4,4,4), 138, 255, 0, 127, 10 );
@@ -461,7 +459,25 @@ function res(f)
 
 	fInterpResolution = f.tofloat();
 	Msg("Interpolation resolution set to: " + fInterpResolution);
+	Msg("Time between 2 keyframes: " + (FTIME/fInterpResolution) + " second(s)");
 	PlaySound("UIPanorama.container_countdown");
+}
+
+lstr_loading <- array(64," ");
+nIdxLoading <- 1;
+nIdxLoadingPre <- 0;
+
+function GetLoadingString()
+{
+	++nIdxLoadingPre;
+	nIdxLoadingPre %= lstr_loading.len();
+	++nIdxLoading;
+	nIdxLoading %= lstr_loading.len();
+	lstr_loading[nIdxLoadingPre] = " ";
+	lstr_loading[nIdxLoading] = "●";
+	local str = "";
+	foreach(s in lstr_loading) str += s;
+	return str;
 }
 
 // Compile Keyframes
@@ -474,10 +490,23 @@ function _db3bSlt4a7ef()
 	if( !lp_c.len() )
 		return Msg("No keyframes found.");
 
-	Msg("\nPreparing..." + "\nResolution: " + fInterpResolution + "\nInterp algorithm: "+(bUsingQuats?"alternative":"default")+"\n");
+	if( lp_c.len() < 8 )
+		return Msg("Not enough keyframes to compile.");
 
+	if( lp_c.len() != la_c.len() )
+		return Msg("[ERROR]\nAssertion failed: Corrupted keyframe data! [" + lp_c.len() + "," + la_c.len() + "]");
+
+	_d83b5lt4aTef = false;
+	_d83b5lt447ef = false;
+
+	Msg("\nPreparing..." + "\nResolution: " + fInterpResolution + "\nInterp algorithm: "+(bInterpMode?"default":"alternative")+"\n");
+
+	// an alternative to inserting would be calculating the future length of
+	// the compiled data, and creating that sized empty arrays, and accessing those indices
+	// but I'm fine with inserting
 	lp_k <- array(lp_c.len());
 	la_k <- array(la_c.len());
+	// la_v <- array(la_f.len());
 
 	RTIME <- FTIME;
 	_db36SltAaTef <- 10;
@@ -508,16 +537,19 @@ function _db365ltA4T3f()
 		// next process
 		_db36SltA4T3f = 0;
 		_db36SltA473f = clamp( _db36SltAaTef, 0, _db36Slt4ATef );
-		delay( "print(\"Compiling (2/3) \");_db365ltA473f()", RTIME );
+		print("Compiling (2/3) ");_db365ltA473f();
 
 		return true;
 	};
 
 	if(!(_db36SltA4T3f % 25)) print(".");
 
+	// if(!(_db36SltA4T3f % 10))
+	Hint(GetLoadingString());
+
 	for( local j = _db36SltA4T3f, f = fInterpResolution * _db36SltA4T3f; j < _db36SltA473f; j++, f += fInterpResolution )
 		for( local i = 0; i < lp_c.len()-4; i++ )
-			lp_k.insert( (j+2)+(i*(j+2)), VS.Catmull_Rom_Spline( lp_c[i], lp_c[i+1], lp_c[i+2], lp_c[i+3], f, Vector()) );
+			lp_k.insert((j+2)+(i*(j+2)),VS.Catmull_Rom_Spline(lp_c[i],lp_c[i+1],lp_c[i+2],lp_c[i+3],f,Vector()));
 
 	_db36SltA4T3f += _db36SltAaTef;
 	_db36SltA473f = clamp( _db36SltA473f + _db36SltAaTef, 0, _db36Slt4ATef );
@@ -525,19 +557,19 @@ function _db365ltA4T3f()
 	return delay( "_db365ltA4T3f()", RTIME );
 }
 
-bUsingQuats <- false;
+bInterpMode <- true;
 
-function bm_roll()
+function bm_stable()
 {
-	bUsingQuats = !bUsingQuats;
+	bInterpMode = !bInterpMode;
 
-	if( bUsingQuats )
+	if( bInterpMode )
 	{
-		Msg("\nNow using alternative algorithm.")
+		Msg("\nNow using the default algorithm.")
 	}
 	else
 	{
-		Msg("\nNow using the default algorithm.")
+		Msg("\nNow using the alternative algorithm.")
 	};
 
 	Msg("Recompile to see the changes.");
@@ -557,23 +589,24 @@ function _db365ltA473f()
 		// next process
 		_db36SltA4T3f = 0;
 		_db36SltA473f = clamp( _db36SltAaTef, 0, _db36Slt4ATef );
-		delay( "print(\"Compiling (3/3) \");_db365ltA47Ef()", RTIME );
+		print("Compiling (3/3) ");_db365ltA47Ef();
 
 		return true;
 	};
 
 	if(!(_db36SltA4T3f % 25)) print(".");
 
-	if( !bUsingQuats )
+	// if(!(_db36SltA4T3f % 10))
+	Hint(GetLoadingString());
+
+	if( !bInterpMode )
 		for( local j = _db36SltA4T3f, f = fInterpResolution * _db36SltA4T3f; j < _db36SltA473f; j++, f += fInterpResolution )
 			for( local i = 0; i < lp_c.len()-4; i++ )
-				la_k.insert( (j+2)+(i*(j+2)), VS.QAngleNormalize(VS.VectorAngles(VS.Catmull_Rom_Spline( la_c[i], la_c[i+1], la_c[i+2], la_c[i+3], f, Vector()))) );
-
-	// FIXME: is this broken again??
+				la_k.insert((j+2)+(i*(j+2)),VS.QAngleNormalize(VS.VectorAngles(VS.Catmull_Rom_Spline(la_c[i],la_c[i+1],la_c[i+2],la_c[i+3],f,Vector()))));
 	else
 		for( local j = _db36SltA4T3f, f = fInterpResolution * _db36SltA4T3f; j < _db36SltA473f; j++, f += fInterpResolution )
 			for( local i = 0; i < lp_c.len()-4; i++ )
-				la_k.insert( (j+2)+(i*(j+2)), VS.QAngleNormalize(VS.QuaternionAngles(VS.Hermite_Spline3Q(la_q[i], la_q[i+1], la_q[i+2], f, Quaternion()),Vector())) );
+				la_k.insert((j+2)+(i*(j+2)),VS.QAngleNormalize(VS.QuaternionAngles(VS.Catmull_Rom_SplineQ(la_q[i],la_q[i+1],la_q[i+2],la_q[i+3],f,Quaternion()),Vector())));
 
 	_db36SltA4T3f += _db36SltAaTef;
 	_db36SltA473f = clamp( _db36SltA473f + _db36SltAaTef, 0, _db36Slt4ATef );
@@ -584,19 +617,24 @@ function _db365ltA473f()
 // clear up keyframes
 function _db365ltA47Ef()
 {
-	if(!(_db36Slt4aTef % 50)) print(".");
+	if(!(_db36Slt4aTef % 175)) print(".");
+
+	if(!(_db36Slt4aTef % 75))
+		Hint(GetLoadingString());
 
 	for( local i = _db36Slt4aTef; i < lp_k.len(); i++ )
 		if( lp_k[i] == null )
 		{
 			lp_k.remove(i);
 			la_k.remove(i);
+			// la_v.remove(i);
 
 			_db36Slt4aTef = i;
 			return delay( "_db365ltA47Ef()", RTIME );
 		};
 
 	// complete
+	VS.HideHudHint(_d83bSlta4lef, HPlayer);
 	print("\n");
 
 	Msg("\nCompiled keyframes: "+lp_k.len() * FTIME+" seconds\n\n* Trim the data to the nearest integer: bm_trim2\n* Playback the compiled data:           bm_play2\n* Save the compiled data:               bm_save2\n");
@@ -612,16 +650,11 @@ function __show2( t = 10 )
 	foreach( v in lp_c )
 		DebugDrawBox( v, Vector(-8,-8,-8), Vector(8,8,8), 255, 64, 0, 16, t );
 
-	local f,j = _db36Slt4ATef / 10;
-
-	if( !IsKeyframeRecording("k") )
-		f = function(i){return i};
-	else if( IsKeyframeRecording("k") )
-		f = VS.AngleVectors;;
+	local j = _db36Slt4ATef / 10;
 
 	for( local i = 0; i < lp_k.len()-j; i+=j )
 	{
-		DebugDrawLine( lp_k[i], lp_k[i] + f(la_k[i]) * 16, 255, 128, 255, true, t );
+		DebugDrawLine( lp_k[i], lp_k[i] + VS.AngleVectors(la_k[i]) * 16, 255, 128, 255, true, t );
 		DebugDrawLine( lp_k[i], lp_k[i+j], 138, 255, 0, true, t );
 	}
 }
@@ -665,11 +698,11 @@ function bm_show()
 	if( _d83b5lt4aTef )
 	{
 		VS.SetKeyFloat( _d83bSlta47ef, "refiretime", 1.5 );
-		VS.OnTimer( _d83bSlta47ef, "_d83b5lt4aTeF" );
-		EntFireHandle( _d83bSlta47ef, "enable" );
+		VS.OnTimer( _d83bSlta47ef, _d83b5lt4aTeF );
+		EntFireByHandle( _d83bSlta47ef, "enable" );
 		__show(1.5);
 	}
-	else if( !_d83b5lt447ef ) EntFireHandle( _d83bSlta47ef, "disable" );;
+	else if( !_d83b5lt447ef ) EntFireByHandle( _d83bSlta47ef, "disable" );;
 
 	Msg("Show toggle: " + _d83b5lt4aTef);
 }
@@ -686,11 +719,11 @@ function bm_show2()
 	if( _d83b5lt447ef )
 	{
 		VS.SetKeyFloat( _d83bSlta47ef, "refiretime", 1.5 );
-		VS.OnTimer( _d83bSlta47ef, "_d83b5lt4aTeF" );
-		EntFireHandle( _d83bSlta47ef, "enable" );
+		VS.OnTimer( _d83bSlta47ef, _d83b5lt4aTeF );
+		EntFireByHandle( _d83bSlta47ef, "enable" );
 		__show2(1.5);
 	}
-	else if( !_d83b5lt4aTef ) EntFireHandle( _d83bSlta47ef, "disable" );;
+	else if( !_d83b5lt4aTef ) EntFireByHandle( _d83bSlta47ef, "disable" );;
 
 	Msg("Show2 toggle: " + _d83b5lt447ef);
 }
@@ -698,8 +731,16 @@ function bm_show2()
 // IsKeyframeRecording
 function IsKeyframeRecording(m)
 {
-	if( type(this["la_" + m][0]) == "instance" )
+	// fixme ducttape
+	if( type(this[m]) == "table" )
+	{
+		if( type(this[m].ang[0]) == "instance" )
 			return true;
+		return false;
+	};
+
+	if( type(this[m][0]) == "instance" )
+		return true;
 	return false;
 }
 
@@ -732,9 +773,9 @@ function _db3b51t4a7ef()
 
 	_d83b5lt4aTef = false;
 	_d83b5lt447ef = false;
-	EntFireHandle( _d83bSlta47ef, "disable" );
+	EntFireByHandle( _d83bSlta47ef, "disable" );
 	VS.SetKeyFloat( _d83bSlta47ef, "refiretime", FTIME );
-	VS.OnTimer( _d83bSlta47ef, "_d83b5lT4a9ef" );
+	VS.OnTimer( _d83bSlta47ef, _d83b5lT4a9ef );
 	lp_r <- [];
 	la_r <- [];
 
@@ -743,15 +784,15 @@ function _db3b51t4a7ef()
 	PlaySound("UIPanorama.tab_mainmenu_overwatch");
 	SendToConsole( "developer 0;echo Starting recording in 3 seconds..." );
 
-	        Alert( "Starting recording in 3..." );PlaySound( "Alert.WarmupTimeoutBeep");
-	delay( "Alert(\"Starting recording in 2...\");PlaySound(\"Alert.WarmupTimeoutBeep\")", 1 );
-	delay( "Alert(\"Starting recording in 1...\");PlaySound(\"Alert.WarmupTimeoutBeep\")", 2 );
-	delay( "Alert(\"Recording...\");Msg(\"Recording...\")", 2.9 );
+	        Hint( "Starting recording in 3..." );PlaySound( "Alert.WarmupTimeoutBeep");
+	delay( "Hint(\"Starting recording in 2...\");PlaySound(\"Alert.WarmupTimeoutBeep\")", 1 );
+	delay( "Hint(\"Starting recording in 1...\");PlaySound(\"Alert.WarmupTimeoutBeep\")", 2 );
+	delay( "Hint(\"Recording...\");Msg(\"Recording...\")", 2.9 );
 
 	// bRecordingPending
 	delay( "_d83bS1t4a73f=false", 3 );
 
-	EntFireHandle( _d83bSlta47ef, "enable", "", 3 );
+	EntFireByHandle( _d83bSlta47ef, "enable", "", 3 );
 	EntFire( "_d83b5l7a4Tef", "enable", "", 3 );
 }
 
@@ -768,18 +809,19 @@ function _db3b5lt4a7ef()
 	// bRecording
 	_d83bS1ta47ef = false;
 
-	EntFireHandle( _d83bSlta47ef, "disable" );
+	EntFireByHandle( _d83bSlta47ef, "disable" );
 	EntFire( "_d83b5l7a4Tef", "disable" );
 	PlaySound("UIPanorama.gameover_show");
 	SendToConsole( "developer " + _d8ebSlta47ef );
 	Chat( txt.orange + "● "+txt.grey+"Stopped recording." );
-	Msg("\nStopped recording: "+lp_r.len() * FTIME+" seconds.\n\n* Trim the data to the nearest integer: bm_trim\n* Playback the recorded data:           bm_play\n* Save the recorded data:               bm_save\n");
+	Msg("\nStopped recording: "+lp_r.len() * FTIME+" seconds.\n\n* Trim the data to the nearest integer: bm_trim\n* Playback the recorded data:           bm_play\n* Save the recorded data:               bm_save\n\n[i] Use the keyframe smoothing for more professional paths.");
 }
 
 // record save
 function _dBeb5lta47ef( k = 0 )
 {
-	// FIXME: simplify
+	// TODO: refactor
+
 	// recording exists
 	if( !k ) { if( !_d83b5lta47ef ) return Msg("No recording found."); }
 	else if( !("lp_k" in this) ) return Msg("No compiled keyframes found.");;
@@ -789,7 +831,7 @@ function _dBeb5lta47ef( k = 0 )
 	VS.Log.condition = true;
 	VS.Log.export = true;
 	VS.Log.filter = "L ";
-	VS.Log.L.append( "lp_" + sMapName + "<-[" );
+	VS.Log.L.append( "l_" + sMapName + "<-{pos=[" );
 
 	lp_s <- k ? lp_k : lp_r;
 	la_s <- k ? la_k : la_r;
@@ -816,7 +858,7 @@ function _dBeb5lta47ef2()
 {
 	if( _dBebSlTa4tef >= _dBebSlTa4teF )
 	{
-		VS.Log.L.append("];la_" + sMapName + "<-[");
+		VS.Log.L.append("]ang=[");
 		_dBebSlTa4tef = 0;
 		_dBebSlTa4teF = clamp( _dBebSlTa4t3F, 0, _dBebSlTa4T3F );
 		return delay( "_dBeb5lta47ef3()", FTIME );
@@ -838,9 +880,9 @@ function _dBeb5lta47ef3()
 	{
 		VS.Log.L.pop();
 		if( type(la_s[0]) == "instance" )
-			VS.Log.L.append( VecToString(la_s[la_s.len()-1],"V(") + "];\n" );
+			VS.Log.L.append( VecToString(la_s[la_s.len()-1],"V(") + "]}\n" );
 		else
-			VS.Log.L.append( la_s[la_s.len()-1] + "];\n" );
+			VS.Log.L.append( la_s[la_s.len()-1] + "]}\n" );
 		return delay( "_dBeb5lta47ef4()", FTIME );
 	};
 
@@ -900,31 +942,52 @@ function _d83bS1t4a7ef( r = 0 )
 	if( !("_d83bSlta47ef" in this) || !Ent("_d83bSlta47ef") )
 		return SendToConsole( "exec benchmark;" + ( r ? "bm_play" : "benchmark" ) );
 
-	local m;
+	local m, c1, c2;
 
 	nPlayMode <- r;
+
+
+// FIXME
+// THIS IS A MESS!!!
+
 
 	// default
 	if( r == 0 )
 	{
+		c1 = "l_" + sMapName;
+		c2 = "l_" + sMapName;
 		m = sMapName;
 	}
 	// rec playback
 	else if( r == 1 )
 	{
+		c1 = "lp_r";
+		c2 = "la_r";
 		m = "r";
 	}
 	// keyframe playback
 	else if( r == 2 )
 	{
+		c1 = "lp_k";
+		c2 = "la_k";
 		m = "k";
-	};;;
+	}
+	else throw "Invalid value";;;
 
-	if( !("lp_" + m in this) || !("la_" + m in this) )
-		return Msg( r ? "No recording found." : (" *** Data not available for this map: " + m) );
+	if( !(c1 in this) || !(c2 in this) )
+		return Msg( r ? "No recording found." : (" *** Data not available for this map: " + sMapName) );
 
-	_dB3bS1ta47ef = this["lp_" + m];
-	_dB3b5lta47ef = this["la_" + m];
+	if( r )
+	{
+		_dB3bS1ta47ef = this[c1];
+		_dB3b5lta47ef = this[c2];
+	}
+	else
+	{
+		_dB3bS1ta47ef = this[c1].pos;
+		_dB3b5lta47ef = this[c2].ang;
+	};
+
 	_d8ebSlta4Tef = _dB3bS1ta47ef.len();
 
 	if( !_d8ebSlta4Tef || _d8ebSlta4Tef != _dB3b5lta47ef.len() )
@@ -932,18 +995,18 @@ function _d83bS1t4a7ef( r = 0 )
 
 	_d83b5lt4aTef = false;
 	_d83b5lt447ef = false;
-	EntFireHandle( _d83bSlta47ef, "disable" );
+	EntFireByHandle( _d83bSlta47ef, "disable" );
 	VS.SetKeyFloat( _d83bSlta47ef, "refiretime", FTIME );
 
 	// IsKeyframeRecording
-	if( IsKeyframeRecording(m) )
-		VS.OnTimer( _d83bSlta47ef, "_d83bS1TAabef" );
+	if( IsKeyframeRecording(c2) )
+		VS.OnTimer( _d83bSlta47ef, _d83bS1TAabef );
 	else
-		VS.OnTimer( _d83bSlta47ef, "_d83bS1T4a9ef" );
+		VS.OnTimer( _d83bSlta47ef, _d83bS1T4a9ef );
 
 	_d83bS174a7ef();
 	HPlayer.SetHealth(1337);
-	try( this["Setup_" + m]() )catch(e){}
+	if( "Setup_" + m in this ) this["Setup_" + m]();
 
 	// bStartedPending
 	_d83bSl7a4Tef = true;
@@ -955,17 +1018,14 @@ function _d83bS1t4a7ef( r = 0 )
 	SendToConsole( "r_cleardecals;clear;echo;echo;echo;echo\"   Starting in 3 seconds.\";echo;echo\"   Keep the console closed for higher FPS\";echo;echo;echo;developer 0;toggleconsole;fadeout" );
 
 	local _1 = "SendToConsole(\"+quickinv\")",_0 = "SendToConsole(\"-quickinv\")";
-	delay( _1, 0.0 );
-	delay( _0, 0.1 );
-	delay( _1, 0.2 );
-	delay( _0, 0.3 );
-	delay( _1, 0.4 );
-	delay( _0, 0.5 );
+	delay( _1, 0.0 );delay( _0, 0.1 );
+	delay( _1, 0.2 );delay( _0, 0.3 );
+	delay( _1, 0.4 );delay( _0, 0.5 );
 
-	delay( "Alert(\"Starting in 3...\");PlaySound(\"Alert.WarmupTimeoutBeep\")", 0.5 );
-	delay( "Alert(\"Starting in 2...\");PlaySound(\"Alert.WarmupTimeoutBeep\")", 1.5 );
-	delay( "Alert(\"Starting in 1...\");PlaySound(\"Alert.WarmupTimeoutBeep\")", 2.5 );
-	delay( "Alert(\"Started...\")", 3.5 );
+	delay( "Hint(\"Starting in 3...\");PlaySound(\"Alert.WarmupTimeoutBeep\")", 0.5 );
+	delay( "Hint(\"Starting in 2...\");PlaySound(\"Alert.WarmupTimeoutBeep\")", 1.5 );
+	delay( "Hint(\"Starting in 1...\");PlaySound(\"Alert.WarmupTimeoutBeep\")", 2.5 );
+	delay( "Hint(\"Started...\")", 3.5 );
 	// bStartedPending
 	delay( "_d83bSl7a4Tef=false;_d83b51T4a9ef(" + r + ")", 3.5 );
 }
@@ -977,8 +1037,8 @@ function _d83b51T4a9ef(r)
 	_d83bS1ta4Tef = true;
 	_d83b51ta47ef = 0;
 	_dB3bSlta47ef = Time();
-	EntFireHandle( _d83b5lt4a7ef, "enable", "", 0, HPlayer );
-	EntFireHandle( _d83bSlta47ef, "enable" );
+	EntFireByHandle( _d83b5lt4a7ef, "enable", "", 0, HPlayer );
+	EntFireByHandle( _d83bSlta47ef, "enable" );
 	SendToConsole( "fadein;fps_max 0;bench_start;bench_end;clear;echo;echo;echo;echo\"   Benchmark has started\";echo;echo\"   Keep the console closed for higher FPS\";echo;echo" );
 }
 
@@ -992,10 +1052,10 @@ function _d83bSlt4a7ef( i = 0 )
 	_d83bS1ta4Tef = false;
 
 	Chat( txt.orange + "● "+txt.grey + "Results are printed onto the console." );
-	Alert( "Results are printed onto the console." );
+	Hint( "Results are printed onto the console." );
 
-	EntFireHandle( _d83b5lt4a7ef, "disable", "", 0, HPlayer );
-	EntFireHandle( _d83bSlta47ef, "disable" );
+	EntFireByHandle( _d83b5lt4a7ef, "disable", "", 0, HPlayer );
+	EntFireByHandle( _d83bSlta47ef, "disable" );
 
 	if( _d8bb5lta47ef ) EntFire( "_d83b5l7a4Tef", "disable" );
 
@@ -1268,21 +1328,21 @@ function SpawnMDL( v, a, m, p = POSE.DEFAULT )
 		switch( p )
 		{
 			case POSE.ROM:
-				EntFireHandle( h, "setanimation", "rom" );
+				EntFireByHandle( h, "setanimation", "rom" );
 				break;
 			case POSE.A:
 				h.SetAngles( 0, a + 90, 90 );
-				EntFireHandle( h, "setanimation", "additive_posebreaker" );
+				EntFireByHandle( h, "setanimation", "additive_posebreaker" );
 				break;
 			case POSE.PISTOL:
-				EntFireHandle( h, "setanimation", "pistol_deploy_02" );
+				EntFireByHandle( h, "setanimation", "pistol_deploy_02" );
 				break;
 			case POSE.RIFLE:
-				EntFireHandle( h, "setanimation", "rifle_deploy" );
+				EntFireByHandle( h, "setanimation", "rifle_deploy" );
 				break;
 			default:
-				EntFireHandle( h, "setanimation", "grenade_deploy_03" );
-				EntFireHandle( h, "setplaybackrate", "0" );
+				EntFireByHandle( h, "setanimation", "grenade_deploy_03" );
+				EntFireByHandle( h, "setplaybackrate", "0" );
 		};
 	};
 }

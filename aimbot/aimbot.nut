@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------
-//----------------------- Copyright (C) 2019 Sam ------------------------
-//                     github.com/samisalreadytaken
+//------------------- Copyright (c) samisalreadytaken -------------------
+//                       github.com/samisalreadytaken
 //-----------------------------------------------------------------------
 //------------------------------
 //
@@ -156,7 +156,7 @@ function OnPostSpawn()
 		bAimbot <- false
 		bWH <- false
 
-		fT2 <- FrameTime()*2
+		flFrameTime2 <- FrameTime()*2
 
 		hTimer <- VS.Timer( 0, FrameTime(), "Think2" )
 
@@ -164,39 +164,35 @@ function OnPostSpawn()
 		hCMD <- VS.CreateEntity("point_clientcommand")
 
 		// to calculate player2's head origin
-		local a = VS.CreateMeasure(NAME_P2)
-		hPlayer2Measure <- a[1]
-		hPlayer2Eye <- a[0]
+		hPlayer2Eye <- VS.CreateMeasure(NAME_P2,null,true)
 
 		// persistency through rounds
 		VS.MakePermanent( hTimer )
 		VS.MakePermanent( hCMD )
-		VS.MakePermanent( hPlayer2Measure )
-		VS.MakePermanent( hPlayer2Eye )
 	}
 
 	bAttacked <- false
 	CMD("-attack")
 
-	if( !hPlayer2 || !list_enemy_players.len() ) EntFireHandle( hTimer, "disable" )
+	if( !hPlayer2 || !list_enemy_players.len() ) EntFireByHandle( hTimer, "disable" )
 	else
 	{
-		if( Ent("vs_timer*") ) EntFireHandle( hTimer, "enable" )
-		VS.SetMeasure( hPlayer2Measure, NAME_P2 )
+		if( Ent("vs_timer*") ) EntFireByHandle( hTimer, "enable" )
+		VS.SetMeasure( hPlayer2Eye, NAME_P2 )
 	}
 }
 
 function CMD( cmd, delay = 0.0 )
 {
-	EntFireHandle( hCMD, "command", cmd, delay, hPlayer1 )
+	EntFireByHandle( hCMD, "command", cmd, delay, hPlayer1 )
 }
 
 function attack()
 {
 	SendToConsoleServer("weapon_accuracy_nospread 1;weapon_recoil_scale 0.0")
 	CMD( "+attack" )
-	CMD( "-attack", fT2 )
-	delay( "SendToConsoleServer(\"weapon_accuracy_nospread 0;weapon_recoil_scale 2.0\")", fT2 )
+	CMD( "-attack", flFrameTime2 )
+	delay( "SendToConsoleServer(\"weapon_accuracy_nospread 0;weapon_recoil_scale 2.0\")", flFrameTime2 )
 }
 
 function P1( i )
@@ -229,7 +225,7 @@ function _P2(h)
 
 	local i; while( i = Ent(NAME_P2,i) ) VS.SetName( i, "" )
 	VS.SetName( hPlayer2, NAME_P2 )
-	VS.SetMeasure( hPlayer2Measure, NAME_P2 )
+	VS.SetMeasure( hPlayer2Eye, NAME_P2 )
 }
 
 function targets()
@@ -246,7 +242,7 @@ function targets()
 		UpdateEnemyPlayers()
 		bWH = false
 		VS.OnTimer( hTimer, "Think2" )
-		EntFireHandle( hTimer, "enable" )
+		EntFireByHandle( hTimer, "enable" )
 	}
 
 	printl("[][] " + (b1v1 ? "1v1 mode" : "all enemies mode"))
@@ -258,7 +254,8 @@ function Think()
 	{
 		local h2
 
-		if( bAimHead ) h2 = VS.TraceDir( hPlayer2.GetAttachmentOrigin(15), hPlayer2Eye.GetForwardVector(), -4 ).GetPos()
+		if( bAimHead )
+			h2 = VS.TraceDir( hPlayer2.GetAttachmentOrigin(15), hPlayer2Eye.GetForwardVector(), -4 ).GetPos()
 		else
 		{
 			h2 = hPlayer2.EyePosition()
@@ -268,7 +265,8 @@ function Think()
 		local h1  = hPlayer1.EyePosition(),
 		      ang = VS.GetAngle( h1, h2 )
 
-		if( bAimbot ) hPlayer1.SetAngles( ang.x, ang.y, 0 )
+		if( bAimbot )
+			hPlayer1.SetAngles( ang.x, ang.y, 0 )
 
 		if( bTrigger )
 		{
@@ -284,7 +282,8 @@ function Think()
 			}
 		}
 
-		if( bWH ) DebugDrawBox( hPlayer2.EyePosition(), Vector(-2,-2,-2), Vector(2,2,2), 25, 255, 25, 255, 0.025 )
+		if( bWH )
+			DebugDrawBox( hPlayer2.EyePosition(), Vector(-2,-2,-2), Vector(2,2,2), 25, 255, 25, 255, 0.025 )
 	}
 }
 
@@ -331,12 +330,14 @@ function noclip()
 	if( bNoclip )
 	{
 		VS.SetKeyInt( hPlayer1, "movetype", 8 )
+		// VS.SetKeyInt( hPlayer1, "effects", 1 << 5 )
 		// VS.SetKeyInt( hPlayer1, "rendermode", 1 )
 		// VS.SetKeyInt( hPlayer1, "renderamt", 0 )
 	}
 	else
 	{
 		VS.SetKeyInt( hPlayer1, "movetype", 2 )
+		// VS.SetKeyInt( hPlayer1, "effects", 0 )
 		// VS.SetKeyInt( hPlayer1, "rendermode", 1 )
 		// VS.SetKeyInt( hPlayer1, "renderamt", 255 )
 	}

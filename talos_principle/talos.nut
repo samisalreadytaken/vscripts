@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------
-//----------------------- Copyright (C) 2019 Sam ------------------------
-//                     github.com/samisalreadytaken
+//------------------- Copyright (c) samisalreadytaken -------------------
+//                       github.com/samisalreadytaken
 //-----------------------------------------------------------------------
 //
 // https://www.youtube.com/watch?v=brUpQi_9ZIU
@@ -60,17 +60,19 @@ function OnPostSpawn()
 {
 	if( !VS.GetLocalPlayer() ) return printl("Loading...")
 
-	if( !Ent("vs_timer*") )
+	if( !Ent("vs_ref*") )
 	{
-		::HPlayerEye <- VS.CreateMeasure("player")[0]
+		::HPlayerEye <- VS.CreateMeasure("player",null,true)
 		::hBuffer <- VS.CreateEntity("logic_script")
 		::hHudHint <- VS.CreateHudHint()
-		hThink <- VS.Timer( 0, 0.015625, "Think" )
-		hThinkObj <- VS.Timer( 0, 0.15625, "ThinkBombs" )
-
-		VS.MakePermanent( HPlayerEye )
 		VS.MakePermanent( hBuffer )
 		VS.MakePermanent( hHudHint )
+	}
+
+	if( !Ent("vs_timer*") )
+	{
+		hThink <- VS.Timer( 0, 0.015625, Think )
+		hThinkObj <- VS.Timer( 0, 0.15625, ThinkBombs )
 	}
 
 	ChangeLevel( 0 )
@@ -82,7 +84,9 @@ function OnPostSpawn()
 function CloseDoors()
 {
 	local e
-	while( e = Entities.Next(e) ) if( e.GetName().find("wall_") != null ) EntFireHandle( e, "enable" )
+	while( e = Entities.Next(e) )
+		if( e.GetName().find("wall_") != null )
+			EntFireByHandle( e, "enable" )
 }
 
 /*
@@ -154,6 +158,7 @@ function ChangeLevel( i )
 
 function Checkpoint()
 {
+	// caller is the trigger brush
 	local new = caller.GetOrigin()
 
 	if( VS.VectorsAreEqual( vCheckpoint, new ) ) return
@@ -188,7 +193,6 @@ function GetType( ent )
 function Think()
 {
 	trace = VS.TraceDir( HPlayer.EyePosition(), HPlayerEye.GetForwardVector() )
-
 	// DebugDrawBox( trace.GetPos(), Vector(-2,-2,-2), Vector(2,2,2), 255, 138, 0, 128, 0.1 )
 
 	if( bHolding )
@@ -198,6 +202,10 @@ function Think()
 
 	// DEBUG
 	ThinkLook(trace)
+
+	//==============================
+	// TestThink() //==================
+	//==============================
 }
 
 function ThinkAngles(tr)
@@ -360,10 +368,10 @@ function PlaceJammer()
 	{
 		if( GetType( ent ) == "wall" )
 		{
-			ent = Entities.FindByClassnameWithin( null, "func_brush", ent.GetOrigin(), 2.0 )
+			ent = ent.GetMoveParent()
 
 			// map was configured incorrectly
-			// the info_teleport_destination needs to be placed in the center of the jammable objects
+			// the info_teleport_destination needs to be parented to the jammable object
 			Assert(ent)
 
 			// if looking directly at a jammable wall
@@ -371,12 +379,12 @@ function PlaceJammer()
 			{
 				links[hEntBase] <- ent
 
-				EntFireHandle( ent, "disable" )
+				EntFireByHandle( ent, "disable" )
 			}
 		}
 		else if( GetType( ent ) == "obj" )
 		{
-			ent = Entities.FindByClassnameWithin( null, "func_tanktrain", ent.GetOrigin(), 2.0 )
+			ent = ent.GetMoveParent()
 			Assert(ent)
 
 			if( VS.IsBoxIntersectingRay( ent.GetCenter(), ent.GetBoundingMins(), ent.GetBoundingMaxs(), trace.Ray(), 0.5 ) )
@@ -384,7 +392,7 @@ function PlaceJammer()
 				links[hEntBase] <- ent
 				obj_bombs[ent] = true
 
-				EntFireHandle( ent, "stop" )
+				EntFireByHandle( ent, "stop" )
 			}
 		}
 	}
@@ -409,14 +417,14 @@ function PickupJammer( input = null )
 
 		if( typ == "wall" )
 		{
-			EntFireHandle( ent, "enable" )
+			EntFireByHandle( ent, "enable" )
 		}
 		else if( typ == "obj" )
 		{
 			// FIXME: resume double jammed bombs after picking up both jammers
 			obj_bombs[ent] = false
 
-			EntFireHandle( ent, "resume" )
+			EntFireByHandle( ent, "resume" )
 		}
 	}
 }

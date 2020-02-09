@@ -1,24 +1,24 @@
 //-----------------------------------------------------------------------
-//----------------------- Copyright (C) 2019 Sam ------------------------
-//                     github.com/samisalreadytaken
+//------------------- Copyright (c) samisalreadytaken -------------------
+//                       github.com/samisalreadytaken
 //-----------------------------------------------------------------------
 
 ::OnGameEvent_player_say <- function( data )
 {
 	local msg = data.text
 
-	if( msg.slice(0,1) != "/") return
+	if( msg.slice(0,1) != "/" ) return
 
-	SMain.say_cmd( msg.slice(1).tolower() )
+	SMain.SayCommand( msg.slice(1) )
 }
 
-function say_cmd( str )
+function SayCommand( str )
 {
 	local buffer = split(str, " ")
 	local val, cmd = buffer[0]
-	try( val = buffer[1] ) catch(e){}
+	if( buffer.len() > 1 ) val = buffer[1]
 
-	switch( cmd ){
+	switch( cmd.tolower() ){
 //------------------------------
 		case "size":
 			local buffer3 = GetInputXY( val, _MAZE_X, _MAZE_Y )

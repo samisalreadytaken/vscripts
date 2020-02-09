@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------
-//----------------------- Copyright (C) 2019 Sam ------------------------
-//                     github.com/samisalreadytaken
+//------------------- Copyright (c) samisalreadytaken -------------------
+//                       github.com/samisalreadytaken
 //
 // This project is licensed under the terms of the GNU GPL license,
 // see <https://www.gnu.org/licenses/> for details.
@@ -136,14 +136,14 @@ function Console::Run( sFuncLoop, sFuncUserUpdate, scope = null, freq = 0.1 )
 function Console::Start()
 {
 	if( !("THINK" in ::VS.Console) ) return printl("ERROR; not ran")
-	EntFireHandle(THINK, "Enable")
+	EntFireByHandle(THINK, "Enable")
 }
 
 function Console::Stop( i = 0 )
 {
 	if( !("THINK" in ::VS.Console) ) return printl("ERROR; cannot stop what hasn't started")
 	if(i){Clear()}
-	EntFireHandle(THINK, "Disable")
+	EntFireByHandle(THINK, "Disable")
 }
 
 // @param ix : integer [ extra array indices for data storage ]

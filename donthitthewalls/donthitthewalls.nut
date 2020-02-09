@@ -32,10 +32,10 @@ function OnPostSpawn()
 
 	VS.OnTimer( hThink, "Think" )
 	VS.OnTimer( hIncr, "IncrementSpeed" )
-	EntFireHandle( hIncr, "refiretime", fIncrementInterval )
+	EntFireByHandle( hIncr, "refiretime", fIncrementInterval )
 
-	EntFireHandle( hThink, "disable" )
-	EntFireHandle( hIncr, "disable" )
+	EntFireByHandle( hThink, "disable" )
+	EntFireByHandle( hIncr, "disable" )
 
 	HPlayerEye <- VS.CreateMeasure("player")[0]
 
@@ -49,7 +49,7 @@ function IncrementSpeed()
 
 	// SendToConsole("sv_noclipspeed "+fSpeed)
 
-	EntFireHandle( hSpeed, "modifyspeed", fSpeed, 0.0, HPlayer )
+	EntFireByHandle( hSpeed, "modifyspeed", fSpeed, 0.0, HPlayer )
 }
 
 function Start()
@@ -59,7 +59,7 @@ function Start()
 	HPlayer.SetOrigin(vStartPos)
 	HPlayer.SetAngles(0,vStartAngYaw,0)
 	VS.SetKeyInt( HPlayer, "movetype", 8 )
-	EntFireHandle( hSpeed, "modifyspeed", fSpeed, 0.0, HPlayer )
+	EntFireByHandle( hSpeed, "modifyspeed", fSpeed, 0.0, HPlayer )
 
 	HPlayer.EmitSound("UI.CounterBeep")
 	Alert("Starting in 3...")
@@ -72,17 +72,17 @@ function _Start()
 {
 	SendToConsole("+forward")
 
-	EntFireHandle( hThink, "enable" )
-	EntFireHandle( hIncr, "enable" )
+	EntFireByHandle( hThink, "enable" )
+	EntFireByHandle( hIncr, "enable" )
 }
 
 function Stop()
 {
 	SendToConsole("-forward")
 	HPlayer.SetVelocity(Vector())
-	EntFireHandle( hThink, "disable" )
-	EntFireHandle( hIncr, "disable" )
-	EntFireHandle( hSpeed, "modifyspeed", 1, 0.0, HPlayer )
+	EntFireByHandle( hThink, "disable" )
+	EntFireByHandle( hIncr, "disable" )
+	EntFireByHandle( hSpeed, "modifyspeed", 1, 0.0, HPlayer )
 	HPlayer.EmitSound("UI.ArmsRace.Demoted")
 }
 

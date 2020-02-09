@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------
-//----------------------- Copyright (C) 2019 Sam ------------------------
-//                     github.com/samisalreadytaken
+//------------------- Copyright (c) samisalreadytaken -------------------
+//                       github.com/samisalreadytaken
 //-----------------------------------------------------------------------
 //
 // Drawing in the CS:GO console, using vs_library/vs_console

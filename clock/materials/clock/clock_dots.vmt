@@ -1,7 +1,0 @@
-"LightMappedGeneric"
-{
-  "$baseTexture" "aim_amplified/clock/clock_dots"
-  "$surfaceprop" "glass"
-  "$selfillum" 1
-  "$nodecal" "1"
-}

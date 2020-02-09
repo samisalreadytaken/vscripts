@@ -1,10 +1,9 @@
 //-----------------------------------------------------------------------
-//----------------------- Copyright (C) 2019 Sam ------------------------
-//                     github.com/samisalreadytaken
+//                       github.com/samisalreadytaken
 //-----------------------------------------------------------------------
 //
 // Testing decals in CS:GO
-//  	https://www.youtube.com/watch?v=rIXsA9flaX0
+//  	https://www.youtube.com/watch?v=xyMLJQB5nYs
 //
 //
 // Place this file in:
@@ -13,21 +12,6 @@
 //  	script_execute decaltest
 // Start to shoot 2048 shots in a row.
 // Use < host_timescale > to speed it up.
-//
-// Chat commands:
-//  	start
-//
-//  	break
-//
-//  	view
-//
-//  	add
-//
-//  	res <X>,<Y>
-//
-//  	offset <value>
-//
-//  	shots
 //
 // Console commands:
 //  	script Start()
@@ -63,8 +47,6 @@ VS.GetLocalPlayer()
 
 SendToConsole("mp_warmup_end;mp_freezetime 0;mp_ignore_round_win_conditions 1;sv_infinite_ammo 1;r_cleardecals")
 
-// lasermode(1)
-
 //------------------------------
 
 impactCount <- 0
@@ -73,12 +55,13 @@ lastpos <- Vector()
 res.m <- res.x*res.y
 
 BREAK <- true
-delay( "::BREAK <- false", 0.3 )
+delay( "BREAK = false", 0.3 )
 
 // Timer to keep the player looking down
-function SetAngles(){HPlayer.SetAngles(89,90,0)}
-if(!Entities.FindByName(null,"timer_angles"))
-	VS.OnTimer( VS.CreateTimer( "timer_angles", 0.001, 0,0,0, 1 ), "SetAngles" )
+function SetAngles(){ HPlayer.SetAngles(89,90,0) }
+
+if( !Ent("vs_timer_*") )
+	hTimer <- VS.Timer(1, FrameTime(), SetAngles)
 
 
 function SetPos( vec )
@@ -137,16 +120,16 @@ function View()
 
 function Break()
 {
-	BREAK = 1
-	EntFire( "timer_angles", "Disable" )
+	BREAK = true
+	EntFireByHandle( hTimer, "Disable" )
 }
 
 function Start()
 {
 	if( !HPlayer.IsNoclipping() ) SendToConsole("noclip")
 	SetPos( pos_start )
-	BREAK = 0
-	EntFire( "timer_angles", "Enable" )
+	BREAK = false
+	EntFireByHandle( hTimer, "Enable" )
 	delay( "loop()", 0.1 )
 }
 
@@ -161,14 +144,16 @@ function Start()
 {
 	local msg = data.text
 
-	say_cmd( msg )
+	SayCommand( msg )
 }
 
-function say_cmd( msg )
+function SayCommand( msg )
 {
 	local buffer = split( msg, " " )
 	local val, cmd = buffer[0]
-	try( val = buffer[1] ) catch(e){}
+
+	if( buffer.len() > 1 )
+		val = buffer[1]
 
 	switch( cmd.tolower() )
 	{

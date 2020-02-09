@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------
-//----------------------- Copyright (C) 2019 Sam ------------------------
-//                     github.com/samisalreadytaken
+//------------------- Copyright (c) samisalreadytaken -------------------
+//                       github.com/samisalreadytaken
 //-----------------------------------------------------------------------
 //------------------------------
 //
@@ -32,7 +32,7 @@
 
 function StripWeapons()
 {
-	if(!Entities.FindByName(null,"strip")) VS.CreateEntity("game_player_equip","strip",{spawnflags=2})
+	if(!Ent("strip")) VS.CreateEntity("game_player_equip","strip",{spawnflags=2})
 	EntFire( "strip", "use", "", 0.0, HPlayer )
 }
 
@@ -428,13 +428,14 @@ function Create_core(pos, type)
 	VS.SetKey(ent, "solid", 6)
 }
 
+// TODO
 // An better method would be spawning
 // as many props that can be seen at once, all types
 // then moving them to create the maze.
 // This would save resources, and be better for performance.
 function CreateSolidProp(vec, mdl)
 {
-	local ent = VS.CreateProp( vec, mdl )
+	local ent = CreateProp( "prop_dynamic_override", vec, mdl, 0 )
 	VS.SetKeyInt(ent, "solid", 6)
 	return ent
 }
@@ -692,7 +693,7 @@ function DS_GetPlayer()
 
 function DS_SetPlayer()
 {
-	EntFireHandle(VS.CreateEntity("player_speedmod",null,{speed=0}),"modifyspeed","3",0,HPlayer)
+	EntFireByHandle(VS.CreateEntity("player_speedmod",null,{speed=0}),"modifyspeed","3",0,HPlayer)
 
 	HPlayer.SetOrigin(Vector(c_start.point()[5].x,c_start.point()[5].y+CELL_DIST,c_start.point()[5].z))
 	ds_currnt = [_POS_START_X,_POS_START_Y]

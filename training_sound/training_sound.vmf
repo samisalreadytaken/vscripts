@@ -1,8 +1,8 @@
 versioninfo
 {
 	"editorversion" "400"
-	"editorbuild" "8365"
-	"mapversion" "209"
+	"editorbuild" "8456"
+	"mapversion" "215"
 	"formatversion" "100"
 	"prefab" "0"
 }
@@ -20,7 +20,7 @@ viewsettings
 world
 {
 	"id" "1"
-	"mapversion" "209"
+	"mapversion" "215"
 	"classname" "worldspawn"
 	"detailmaterial" "detail/detailsprites"
 	"detailvbsp" "detail.vbsp"
@@ -3328,6 +3328,28 @@ world
 			"visgroupshown" "1"
 			"visgroupautoshown" "1"
 		}
+	}
+}
+entity
+{
+	"id" "13651"
+	"classname" "logic_eventlistener"
+	"EventName" "player_info"
+	"FetchEventData" "1"
+	"IsEnabled" "1"
+	"targetname" "player_info"
+	"TeamNum" "-1"
+	connections
+	{
+		"OnEventFired" "player_infoRunScriptCode::VS.Events.player_info(event_data)0-1"
+	}
+	"origin" "-48 0 8"
+	editor
+	{
+		"color" "220 30 220"
+		"visgroupshown" "1"
+		"visgroupautoshown" "1"
+		"logicalpos" "[0 0]"
 	}
 }
 entity
@@ -10413,13 +10435,13 @@ entity
 	"EventName" "player_spawn"
 	"FetchEventData" "1"
 	"IsEnabled" "1"
-	"targetname" "@event_spawn"
+	"targetname" "player_spawn"
 	"TeamNum" "-1"
 	connections
 	{
-		"OnEventFired" "@event_spawnRunScriptCodeOnGameEvent_player_spawn(event_data)0-1"
+		"OnEventFired" "player_spawnRunScriptCode::VS.Events.player_spawn(event_data)0-1"
 	}
-	"origin" "-48 0 8"
+	"origin" "-32 16 8"
 	editor
 	{
 		"color" "220 30 220"
@@ -10435,11 +10457,11 @@ entity
 	"EventName" "player_jump"
 	"FetchEventData" "0"
 	"IsEnabled" "1"
-	"targetname" "@event_jump"
+	"targetname" "player_jump"
 	"TeamNum" "-1"
 	connections
 	{
-		"OnEventFired" "@event_jumpRunScriptCodeOnGameEvent_player_jump()0-1"
+		"OnEventFired" "player_jumpRunScriptCodeOnGameEvent_player_jump()0-1"
 	}
 	"origin" "-48 -16 8"
 	editor
@@ -10457,35 +10479,13 @@ entity
 	"EventName" "player_connect"
 	"FetchEventData" "1"
 	"IsEnabled" "1"
-	"targetname" "@event_connect"
+	"targetname" "player_connect"
 	"TeamNum" "-1"
 	connections
 	{
-		"OnEventFired" "@event_connectRunScriptCode::VS.Events.player_connect(event_data)0-1"
+		"OnEventFired" "player_connectRunScriptCode::VS.Events.player_connect(event_data)0-1"
 	}
 	"origin" "-48 16 8"
-	editor
-	{
-		"color" "220 30 220"
-		"visgroupshown" "1"
-		"visgroupautoshown" "1"
-		"logicalpos" "[0 0]"
-	}
-}
-entity
-{
-	"id" "5867"
-	"classname" "logic_eventlistener"
-	"EventName" "player_info"
-	"FetchEventData" "1"
-	"IsEnabled" "1"
-	"targetname" "@event_info"
-	"TeamNum" "-1"
-	connections
-	{
-		"OnEventFired" "@event_infoRunScriptCode::VS.Events.player_info(event_data)0-1"
-	}
-	"origin" "-32 16 8"
 	editor
 	{
 		"color" "220 30 220"
@@ -10501,11 +10501,11 @@ entity
 	"EventName" "player_death"
 	"FetchEventData" "1"
 	"IsEnabled" "1"
-	"targetname" "@event_death"
+	"targetname" "player_death"
 	"TeamNum" "-1"
 	connections
 	{
-		"OnEventFired" "@event_deathRunScriptCodeOnGameEvent_player_death(event_data)0-1"
+		"OnEventFired" "player_deathRunScriptCodeOnGameEvent_player_death(event_data)0-1"
 	}
 	"origin" "-32 0 8"
 	editor

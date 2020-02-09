@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------
-//----------------------- Copyright (C) 2019 Sam ------------------------
-//                     github.com/samisalreadytaken
+//------------------- Copyright (c) samisalreadytaken -------------------
+//                       github.com/samisalreadytaken
 //-----------------------------------------------------------------------
 //
 // Directional Sound Training Map ( + music kits )
@@ -39,28 +39,33 @@ nThinkCount<- 0
 list_bots  <- []
 sSndCurr   <- ""
 nSoundsLen <- 0
+bAimbotON  <- false
 
 // CT spawned
 function Init()
 {
-	// if a bot is CT
-	if( VS.FindInArray( activator, VS.GetPlayersAndBots()[1] ) != null )
-	{
-		printl(" !!! WRONG TEAM\nWhat have you done?!")
-		throw "WRONG TEAM"
-	}
-
-	// redundant
-	SendToConsole("game_mode 0;game_type 0;mp_warmup_end")
-
-	// t spawn points
-	EntFire("tt","setenabled")
-
 	// single player : HPlayer
 	VS.GetLocalPlayer()
 
+	// if a bot is CT
+	if( VS.arrayFind( VS.GetPlayersAndBots()[1], activator ) != null )
+	{
+		activator.SetTeam(T)
+		HPlayer.SetTeam(CT)
+		printl(" !!! WRONG TEAM\nWhat have you done?!")
+		// throw "WRONG TEAM"
+	}
+
+	// redundant
+	// these should already be set in the map config
+	SendToConsole("sv_cheats 1;game_mode 0;game_type 3;mp_warmup_end;bot_add")
+
+	// T spawn points
+	EntFire("tt","setenabled")
+
 	SendToConsole("r_screenoverlay\"\"")
-	ScriptSetRadarHidden(false)
+	// ScriptSetRadarHidden(false)
+	SendToConsoleServer("sv_disable_radar 0")
 	PrecacheScriptSound("Doors.Metal.Move1")
 
 	// sound target
@@ -70,28 +75,31 @@ function Init()
 	if( !(hTarget <- Ent("t")) ) hTarget <- VS.CreateEntity("info_target","t")
 
 	// play sound
-	hTimerSnd <- VS.Timer( 1, fIntvlCurr, "PlaySound" )
+	hTimerSnd <- VS.Timer( 1, fIntvlCurr, PlaySound )
 
 	// vertical aim helper
-	hTimerAim <- VS.Timer( 1, 0.1, "CheckAng" )
+	hTimerAim <- VS.Timer( 1, 0.1, CheckAng )
 
-	hAIMBOT <- VS.Timer( 1, 0.01, "AIMBOT" )
+	hAIMBOT <- VS.Timer( 1, 0.01, AIMBOT )
 
 	// 1. set bot angles to the center of the map
 	// 2. sound-interval setting timer
-	hTimerThink <- VS.Timer( 1, 0.01, "BotAng" )
+	hTimerThink <- VS.Timer( 1, 0.01, BotAng )
 
 	// Music kit 10 second countdown timer
-	hTimer10 <- VS.Timer( 1, fFrameTime, "Tick" )
+	hTimer10 <- VS.Timer( 1, flFrameTime, Tick )
 	hMsgTen <- VS.CreateEntity( "point_worldtext", null, { origin = "-179 -172 100", angles = "0 -120 0", message = "10.0000" } )
 
 	VS.SetParent( hMsgTen, Ent("d") )
 
 	// Display info on the music kits when looked at
-	hTimerLook <- VS.Timer( 0, 0.1, "Looking" )
+	hTimerLook <- VS.Timer( 0, 0.1, Looking )
 
 	// player eye angles
-	HPlayerEye <- VS.CreateMeasure("player")[0]
+	HPlayerEye <- VS.CreateMeasure(HPlayer.GetName())
+
+	// for aimbot head measuring
+	hBotEye <- VS.CreateMeasure("BOT")
 
 	// hud hint
 	hHudhint <- VS.CreateHudHint()
@@ -115,29 +123,56 @@ function Init()
 	})
 
 	// Team coin
-	VS.CreateTextureToggle("c")
+	VS.CreateEntity("env_texturetoggle","texture_c",{target="c"})
 
 	// default values
 	SetRange(0,0)
 	SetSoundType(0,0)
 
 	// these are delayed because of the game type 2 training
+	// this map wouldn't have many of its problems and
+	// workarounds if the game type was not training
+	// It's only for that sweet Steam Rich Presence
 	delay( "s.Equip(weapon.m4a1)", 0.1 )
 	delay( "SendToConsole(\"buy usp_silencer\")", 0.3 )
-	delay( "SendToConsole(\"game_mode 0;game_type 2\")", 0.6 )
-	delay( "VS.ValidateUseridAll()", 0.6 )
 
 	ClearChat()
 
 	// catch if the player userid is not validated
 	try{
 		Chat( txt.lightgreen + "● "+txt.lightblue+"Welcome, "+SPlayer.name+"!")
-		Chat( ChatPrefix() + txt.yellow + "Using a silenced weapon is suggested to protect your hearing.")
+		Chat( ChatPrefix + txt.yellow + "Using a silenced weapon is suggested to protect your hearing.")
 		Chat(" ")
 		printl("\n\nWelcome, "+SPlayer.name+"!")
 		printl("Using a silenced weapon is suggested to protect your hearing.")
 		printl("")
 	}catch(e){printl("Loading...")}
+
+	delay("s.PurgeTheUnfit()", 1)
+}
+
+// FIXME
+// The first bot to join will not trigger the player_connect event,
+// thus cannot be validated. Force validate the userid, then kick it
+// so the newly connected bot will work.
+function PurgeTheUnfit()
+{
+	local bots = VS.GetPlayersAndBots()[1],
+	      i = 0,
+	      b = false
+
+	foreach( bot in bots )
+	{
+		if( !bot.GetScriptScope() )
+		{
+			delay( "VS.Events.ForceValidateUserid(activator)", flFrameTime * i++, ENT_SCRIPT, bot )
+			b = true
+		}
+		else if( bot.GetScriptScope().name.len() == 0 )
+			SendToConsole( "kickid " + bot.GetScriptScope().userid + ";bot_add")
+	}
+
+	if( b ) delay("s.PurgeTheUnfit()", flFrameTime * 2 * i)
 }
 
 // distance between spawn points
@@ -159,7 +194,7 @@ function SetRange( b, m = true )
 		_MIN = 384
 
 		VS.SetKeyString( Ent("t2"),"color",CL_WHITE )
-		if(m)Chat( ChatPrefix() + txt.yellow + "Enemies can now spawn everywhere")
+		if(m)Chat( ChatPrefix + txt.yellow + "Enemies can now spawn everywhere")
 	}
 	else
 	{
@@ -168,7 +203,7 @@ function SetRange( b, m = true )
 		_MIN = 384
 
 		VS.SetKeyString( Ent("t2"),"color",CL_GREEN )
-		if(m)Chat( ChatPrefix() + txt.yellow + "Enemies will only spawn around you")
+		if(m)Chat( ChatPrefix + txt.yellow + "Enemies will only spawn around you")
 	}
 
 	if(m)Chat(" ")
@@ -226,9 +261,9 @@ function Process()
 	hTarget.SetOrigin(Vector(v.x,v.y,64))
 	hTarget.EmitSound(GetSound())
 
-	EntFireHandle( hTimerSnd,"enable" )
+	EntFireByHandle( hTimerSnd,"enable" )
 
-	EntFireHandle( hTimerThink,"enable" )
+	EntFireByHandle( hTimerThink,"enable" )
 
 	bSpawned = true
 }
@@ -245,7 +280,17 @@ function GetSound()
 function GetBot()
 {
 	// redundant
-	if( list_bots.len() == 0 ) return SendToConsole("mp_restartgame 1")
+	if( list_bots.len() == 0 ) return SendToConsole("mp_restartgame 1;echo\"No bot found\"")
+
+	if( bAimbotON )
+	{
+		// blank previous named bots
+		// start measuring new
+		local i; while( i = Ent("BOT",i) ) VS.SetName( i, "" )
+		VS.SetName( list_bots[0], "BOT" )
+		VS.SetMeasure( hBotEye, "BOT" )
+	}
+
 	return list_bots[0]
 }
 
@@ -309,13 +354,13 @@ function ToggleBlindMode( b )
 	if( !b )
 	{
 		VS.SetKeyString( Ent("t1"),"color",CL_WHITE )
-		Chat( ChatPrefix() + txt.yellow + "Blind mode " + txt.lightred + "disabled" )
+		Chat( ChatPrefix + txt.yellow + "Blind mode " + txt.lightred + "disabled" )
 	}
 	else
 	{
 		VS.SetKeyString( Ent("t1"),"color",CL_GREEN )
-		Chat( ChatPrefix() + txt.yellow + "Blind mode " + txt.lightgreen + "enabled" )
-		if(!bAimHelper)Chat( ChatPrefix() + txt.lightblue + "Suggested: " + txt.yellow + "enabling aim helper" )
+		Chat( ChatPrefix + txt.yellow + "Blind mode " + txt.lightgreen + "enabled" )
+		if(!bAimHelper)Chat( ChatPrefix + txt.lightblue + "Suggested: " + txt.yellow + "enabling aim helper" )
 	}
 
 	Chat(" ")
@@ -327,15 +372,15 @@ function ToggleAimHelper( b )
 	if( b )
 	{
 		VS.SetKeyString( Ent("t0"),"color",CL_GREEN )
-		Chat( ChatPrefix() + txt.yellow + "Vertical aim helper " + txt.lightgreen + "enabled" )
-		EntFireHandle( hTimerAim,"enable" )
+		Chat( ChatPrefix + txt.yellow + "Vertical aim helper " + txt.lightgreen + "enabled" )
+		EntFireByHandle( hTimerAim,"enable" )
 	}
 	else
 	{
 		VS.SetKeyString( Ent("t0"),"color",CL_WHITE )
-		Chat( ChatPrefix() + txt.yellow + "Vertical aim helper " + txt.lightred + "disabled" )
+		Chat( ChatPrefix + txt.yellow + "Vertical aim helper " + txt.lightred + "disabled" )
 		VS.HideHudHint( hHudhint,HPlayer )
-		EntFireHandle( hTimerAim,"disable" )
+		EntFireByHandle( hTimerAim,"disable" )
 	}
 
 	Chat(" ")
@@ -350,24 +395,24 @@ function SetInterval(b)
 	if( b )
 	{
 		ClearChat()
-		Chat( ChatPrefix() + txt.yellow + "Set the time between sounds playing." )
-		Chat( ChatPrefix() + txt.yellow + "Hold "+txt.lightgreen+"W"+txt.yellow+" to increase" )
-		Chat( ChatPrefix() + txt.yellow + "Hold "+txt.lightgreen+"S"+txt.yellow+" to decrease" )
+		Chat( ChatPrefix + txt.yellow + "Set the time between sounds playing." )
+		Chat( ChatPrefix + txt.yellow + "Hold "+txt.lightgreen+"W"+txt.yellow+" to increase" )
+		Chat( ChatPrefix + txt.yellow + "Hold "+txt.lightgreen+"S"+txt.yellow+" to decrease" )
 
 		VS.ShowHudHint( hHudhint,HPlayer,fIntvlCurr )
 		VS.SetKeyString( Ent("t3"),"color",CL_GREEN )
 
 		VS.OnTimer( hTimerThink,"ThinkButton" )
-		EntFireHandle( hTimerThink,"enable" )
-		EntFireHandle( hGameUI,"activate","",0.0,HPlayer )
+		EntFireByHandle( hTimerThink,"enable" )
+		EntFireByHandle( hGameUI,"activate","",0.0,HPlayer )
 	}
 	else
 	{
 		VS.HideHudHint( hHudhint,HPlayer )
 		VS.SetKeyString( Ent("t3"),"color",CL_WHITE )
 
-		EntFireHandle( hTimerThink,"disable" )
-		EntFireHandle( hGameUI,"deactivate","",0.0,HPlayer )
+		EntFireByHandle( hTimerThink,"disable" )
+		EntFireByHandle( hGameUI,"deactivate","",0.0,HPlayer )
 	}
 
 	nCtrlIntvl = 0
@@ -422,26 +467,28 @@ function ThinkButton()
 function Start()
 {
 	Ent("d").EmitSound("Doors.Metal.Move1")
-	Chat( ChatPrefix() + txt.purple + "START" )
+	Chat( ChatPrefix + txt.purple + "START" )
 
-	EntFireHandle( hTimerLook,"disable" )
+	EntFireByHandle( hTimerLook,"disable" )
 
-	VS.ValidateUseridAll()
+	SendToConsole("game_mode 0;game_type 2;r_cleardecals")
+
 	delay("s._Start()", 0.17)
 }
 
 function _Start()
 {
-	SendToConsole("game_mode 0;game_type 2;r_cleardecals")
-	ScriptSetRadarHidden(true)
+	// ScriptSetRadarHidden(true)
+	SendToConsoleServer("sv_disable_radar 1")
 
 	if(bSettingUp)SetInterval(false)
 	bStarted = true
-	SetupBots()
+
+	if( !SetupBots() ) return printl("\nERROR\n")
 
 	VS.OnTimer( hTimerThink,"BotAng" )
-	EntFireHandle( hTimerThink,"enable" )
-	if( bAimHelper ) EntFireHandle( hTimerAim,"enable" )
+	EntFireByHandle( hTimerThink,"enable" )
+	if( bAimHelper ) EntFireByHandle( hTimerAim,"enable" )
 	EntFire("d","open")
 
 	delay( "s.Process()", RandomFloat(1.5,2.9) )
@@ -453,31 +500,44 @@ function Stop()
 
 	Ent("d").EmitSound("Doors.Metal.Move1")
 
-	Chat( ChatPrefix() + txt.purple + "STOP" )
+	Chat( ChatPrefix + txt.purple + "STOP" )
 
 	bSpawned = false
 	bStarted = false
 	Kill(GetBot())
-	ScriptSetRadarHidden(false)
+	// ScriptSetRadarHidden(false)
+	SendToConsoleServer("sv_disable_radar 0")
 	SendToConsole("r_screenoverlay\"\"")
 	EntFire("d","close")
-	EntFireHandle( hTimerSnd,"disable" )
-	EntFireHandle( hTimerThink,"disable" )
-	EntFireHandle( hTimerAim,"disable" )
-	EntFireHandle( hAIMBOT,"disable" )
+	EntFireByHandle( hTimerSnd,"disable" )
+	EntFireByHandle( hTimerThink,"disable" )
+	EntFireByHandle( hTimerAim,"disable" )
+	EntFireByHandle( hAIMBOT,"disable" )
+	bAimbotON = false
 
-	EntFireHandle( hTimerLook,"enable" )
+	EntFireByHandle( hTimerLook,"enable" )
+
+	SendToConsole("game_mode 0;game_type 3;r_cleardecals")
 }
 
 function SetupBots()
 {
 	list_bots.clear()
 
-	foreach( bot in VS.GetPlayersAndBots()[1] )
+	local bots = VS.GetPlayersAndBots()[1],
+	      i = 0
+
+	if( bots.len() == 0 )
+		return SendToConsole("echo\" === NO BOT FOUND\";bot_add;bot_add;bot_add;bot_add;bot_add;bot_add")
+
+	foreach( bot in bots )
 	{
-		// The first spawned bot won't have its userid validated,
-		// because of the game type. Kick it.
-		if( bot.GetScriptScope().name.len() == 0 ) SendToConsole( "kickid " + bot.GetScriptScope().userid + ";bot_add")
+		// error checks
+		// FIXME
+		if( !bot.GetScriptScope() )
+			delay("s.PurgeTheUnfit()")
+
+		// bot is ready
 		else if( bot.GetHealth() > 0 )
 		{
 			bot.SetHealth(1)
@@ -489,7 +549,9 @@ function SetupBots()
 	}
 
 	// cheap workaround to spawn all bots
-	if( list_bots.len() == 0 ) SendToConsole("mp_restartgame 1")
+	if( list_bots.len() == 0 ) return SendToConsole("mp_restartgame 1;echo\" === Empty list\"")
+
+	return true
 }
 
 // slam the bot to the ground
@@ -521,7 +583,7 @@ function OnKill( ent )
 
 	// "You killed X"
 	VS.SetKeyString( hGametext, "message", "You killed " + ent.GetScriptScope().name )
-	EntFireHandle( hGametext, "display", "", 0.0, HPlayer )
+	EntFireByHandle( hGametext, "display", "", 0.0, HPlayer )
 
 	if( bBlindMode ) SendToConsole("r_screenoverlay\"\"")
 
@@ -531,9 +593,9 @@ function OnKill( ent )
 		list_bots.remove(i)
 
 	// stop playing sound
-	EntFireHandle( hTimerSnd,"disable" )
+	EntFireByHandle( hTimerSnd,"disable" )
 
-	EntFireHandle( hTimerThink,"disable" )
+	EntFireByHandle( hTimerThink,"disable" )
 
 	bSpawned = false
 
@@ -562,19 +624,19 @@ function CheckAng()
 }
 
 // bot look at 0,0,0
+// the hitboxes are desynced for a second or two when they spawn
 function BotAng()
 {
 	local bot = GetBot()
+
+	if(!bot) return
 
 	local yaw = VS.GetAngle2D( bot.EyePosition(), Vector() )
 
 	bot.SetAngles(0,yaw,0)
 }
 
-function ChatPrefix()
-{
-	return txt.orange + "● "
-}
+ChatPrefix <- txt.orange + "● "
 
 function ToggleTeam()
 {
@@ -586,18 +648,20 @@ function ToggleTeam()
 
 function Equip( input )
 {
-	if( !Ent( "equip_"+input) ) VS.SetKeyInt(VS.CreateEntity( "game_player_equip", "equip_"+input, {spawnflags = 3, weapon_knife = 1} ), "weapon_"+input, 1)
+	if( !Ent("equip") ) VS.CreateEntity( "game_player_equip", "equip", {spawnflags = 5, weapon_knife = 1} )
 
 	if(input==weapon.hkp2000||input==weapon.usp_silencer||input==weapon.fn57||input==weapon.famas||input==weapon.m4a1||input==weapon.m4a1_silencer||input==weapon.aug||input==weapon.scar20||input==weapon.mag7||input==weapon.mp9)
 		SetTeam(CT)
+	else SetTeam(T)
 
-	// EntFire( "@equip", "triggerforactivatedplayer", "weapon_"+input, 0.0, HPlayer )
-	EntFire( "equip_"+input, "use", "", 0.0, HPlayer )
+	EntFire( "equip", "triggerforactivatedplayer", "weapon_"+input, 0.0, HPlayer )
+
+	delay("s.SetTeam(CT)",0.1)
 }
 
 function SetTeam(i)
 {
-	TextureToggle("c", i-1)
+	EntFire("texture_c","SetTextureIndex",""+(i-1))
 	VS.SetKeyInt( HPlayer, "teamnumber", i )
 }
 
@@ -608,17 +672,20 @@ function AIMBOT()
 	if( !bSpawned ) return
 
 	local bot  = GetBot(),
-	      head = VS.TraceDir( bot.EyePosition(), bot.GetForwardVector(), 14 ).GetPos(),
+	      head = VS.TraceDir( bot.GetAttachmentOrigin(15), bot.GetForwardVector(), -4 ).GetPos(),
 	      ang  = VS.GetAngle( HPlayer.EyePosition(), head )
 
 	HPlayer.SetAngles(ang.x,ang.y,0)
 }
 
+// When the aimbot is on, and the player kills every bot too fast,
+// without letting them respawn, the game will restart
 function EnableAimbot()
 {
-	EntFireHandle( hAIMBOT, "enable" )
-	Chat( ChatPrefix() + txt.green + "Aimbot enabled" )
+	EntFireByHandle( hAIMBOT, "enable" )
+	Chat( ChatPrefix + txt.green + "Aimbot enabled" )
 	HPlayer.EmitSound("UIPanorama.container_weapon_ticker")
+	bAimbotON = true
 }
 
 //-----------------------------------------------------------------------
@@ -726,7 +793,7 @@ sMusicKitCurr <- Music[sMusicKitCurrID]
 sMusicKitSoundCurr <- ""
 hCurrMusicKit <- Ent("m0")
 nMusicType <- 0
-fFrameTime <- FrameTime()
+flFrameTime <- FrameTime()
 fCountdown <- 10.0
 nCounterLook <- 0
 
@@ -740,8 +807,8 @@ function PickMusicKit( idx )
 
 	hCurrMusicKit = Ent("m"+idx)
 
-	Chat( ChatPrefix() + "Picked " + txt.white + sMusicKitCurr )
-	printl( ChatPrefix() + "Picked " + txt.white + sMusicKitCurr )
+	Chat( ChatPrefix + "Picked " + txt.white + sMusicKitCurr )
+	printl( ChatPrefix + "Picked " + txt.white + sMusicKitCurr )
 
 	SendToConsole("r_cleardecals")
 }
@@ -757,7 +824,7 @@ function PlayMusicKit()
 	{
 		sMusicKitSoundCurr = "Music.BombTenSecCount." + sMusicKitCurrID
 		fCountdown = 10.0
-		EntFireHandle( hTimer10, "enable" )
+		EntFireByHandle( hTimer10, "enable" )
 	}
 	else if( nMusicType == 1 )
 	{
@@ -773,7 +840,7 @@ function StopMusicKit()
 	Chat( txt.lightred + "■ " + txt.yellow + "Stopped playing" )
 	printl( txt.lightred + "■ " + txt.yellow + "Stopped playing" )
 
-	EntFireHandle( hTimer10, "disable" )
+	EntFireByHandle( hTimer10, "disable" )
 	VS.SetKeyString( hMsgTen, "message", "10.0000" )
 
 	HPlayer.StopSound( sMusicKitSoundCurr )
@@ -781,12 +848,12 @@ function StopMusicKit()
 }
 
 // main menu musics can stack, stop all if any are playing.
-// Alternatively I could keep track of playing tracks,
+// Alternatively I could keep track of playing tracks, (TODO)
 // but there's no performance worry in this map, so this is fine.
 function StopMusicKitAll()
 {
 	foreach( k in MusicI ) HPlayer.StopSound( "Musix.HalfTime." + k )
-	EntFireHandle( hTimer10, "disable" )
+	EntFireByHandle( hTimer10, "disable" )
 	VS.SetKeyString( hMsgTen, "message", "10.0000" )
 }
 
@@ -796,21 +863,23 @@ function SetMusicType()
 
 	nMusicType %= 2
 
+	// TODO: add all types
+	// switch( nMusicType ){}
 	if( nMusicType == 0 )
 	{
-		Chat( ChatPrefix() + "Music type: " + txt.yellow + "Bomb 10 second count" )
-		printl( ChatPrefix() + "Music type: " + txt.yellow + "Bomb 10 second count" )
+		Chat( ChatPrefix + "Music type: " + txt.yellow + "Bomb 10 second count" )
+		printl( ChatPrefix + "Music type: " + txt.yellow + "Bomb 10 second count" )
 
 		VS.SetKeyString( hMsgTen, "textsize", 10 )
 		VS.SetKeyString( hMsgTen, "message", "10.0000" )
 	}
 	else if( nMusicType == 1 )
 	{
-		Chat( ChatPrefix() + "Music type: " + txt.yellow + "Main menu" )
-		printl( ChatPrefix() + "Music type: " + txt.yellow + "Main menu" )
+		Chat( ChatPrefix + "Music type: " + txt.yellow + "Main menu" )
+		printl( ChatPrefix + "Music type: " + txt.yellow + "Main menu" )
 
-		VS.SetKeyString( hMsgTen, "textsize", 0 )
-		EntFireHandle( hTimer10, "disable" )
+		VS.SetKeyString( hMsgTen, "textsize", "0" )
+		EntFireByHandle( hTimer10, "disable" )
 		VS.SetKeyString( hMsgTen, "message", "10.0000" )
 	}
 
@@ -819,13 +888,13 @@ function SetMusicType()
 
 function Tick()
 {
-	fCountdown -= fFrameTime
+	fCountdown -= flFrameTime
 
 	VS.SetKeyString( hMsgTen, "message", VS.FormatPrecision( fCountdown, 5 ) )
 
 	if( fCountdown <= 0.0 )
 	{
-		EntFireHandle( hTimer10, "disable" )
+		EntFireByHandle( hTimer10, "disable" )
 		VS.SetKeyString( hMsgTen, "message", "0.00000" )
 	}
 }
@@ -843,15 +912,15 @@ function Looking()
 		if( n.len() && n[0] == 109 )
 		{
 			// Look time
-			if( ++nCounterLook == 1 )
-			{
+			// if( ++nCounterLook == 1 )
+			// {
 				nCounterLook = 0
 				VS.DrawEntityBBox( 0.15, ent )
 				VS.ShowHudHint( hHudhint, HPlayer, Music[MusicI[n.slice(1).tointeger()]] )
-			}
+			// }
 		}
 	}
-	else VS.HideHudHint( hHudhint, HPlayer )
+	else if( !bAimHelper ) VS.HideHudHint( hHudhint, HPlayer )
 
 	VS.DrawEntityBBox( 0.15, hCurrMusicKit, 128, 255, 128 )
 }
