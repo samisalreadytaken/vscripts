@@ -1,12 +1,10 @@
 # vscripts
-Some of my vscripts projects, heavily utilise the [VScript Library](https://github.com/samisalreadytaken/vs_library).
+Some of my vscripts projects, heavily utilise the [VScript Library](https://github.com/samisalreadytaken/vs_library). This repository isn't always up to date, and it may contain out of date code.
 
 ## License
 These codes are published in the hope that they will be useful, without any warranty of fitness for a particular purpose. You are free to do whatever you want with them without redistributing them as they are. See [LICENSE](LICENSE) for more details.
 
-[![HitCount][]](https://hits.dwyl.com/samisalreadytaken/vscripts)
-
-[HitCount]: http://hits.dwyl.com/samisalreadytaken/vscripts.svg
+[![](http://hits.dwyl.com/samisalreadytaken/vscripts.svg)](https://hits.dwyl.com/samisalreadytaken/vscripts)
 
 ---
 

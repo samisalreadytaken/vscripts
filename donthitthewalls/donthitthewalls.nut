@@ -37,7 +37,7 @@ function OnPostSpawn()
 	EntFireByHandle( hThink, "disable" )
 	EntFireByHandle( hIncr, "disable" )
 
-	HPlayerEye <- VS.CreateMeasure("player")[0]
+	HPlayerEye <- VS.CreateMeasure("player")
 
 	// SendToConsole("-forward;sv_noclipspeed "+fSpeed)
 	SendToConsole("-forward")

@@ -2,6 +2,11 @@
 //------------------- Copyright (c) samisalreadytaken -------------------
 //                       github.com/samisalreadytaken
 //-----------------------------------------------------------------------
+
+//
+// This thing became a real mess. But it still works.
+//
+
 IncludeScript("vs_library");
 
 class V
@@ -13,7 +18,7 @@ class V
 		z = _z;
 	}
 
-	function V(dx=0,dy=0,dz=0){ return::Vector(x+dx,y+dy,z+dz) }
+	function V(dx=0,dy=0,dz=0)return::Vector(x+dx,y+dy,z+dz);
 
 	x = 0.0;
 	y = 0.0;
@@ -26,31 +31,28 @@ if(!("__R"in::getroottable()))::__R<-false;;if(::__R)delete::__R;else{local _=fu
 
 const FTIME = 0.015625;;
 
-SendToConsole("alias benchmark\"script _d83bS1t4a7ef()\";alias bm_stop\"script _d83bSlt4a7ef()\";alias bm_rec\"script _db3b51t4a7ef()\";alias bm_play\"script _d83bS1t4a7ef(1)\";alias bm_show\"script bm_show()\";alias bm_save\"script _dBeb5lta47ef(0)\";alias bm_trim\"script _db3b51tAa7ef(0,0)\";alias bm_trim_undo\"script _db3b51tAa7ef(1,0)\";alias bm_setup\"script _d8bb5ltAa7ef()\";alias bm_timer\"script _dBebSlt4a73f()\";alias bm_list\"script _d88bSlt4a7ef()\";alias bm_clear\"script _dB8d5lt4a7ef()\";alias bm_remove\"script _dB8b5lt4a7ef()\"");
+SendToConsole("alias benchmark\"script _d83bS1t4a7ef()\";alias bm_stop\"script _d83bSlt4a7ef()\";alias bm_rec\"script _db3b51t4a7ef()\";alias bm_play\"script _d83bS1t4a7ef(1)\";alias bm_show\"script _d83b5lt4alef()\";alias bm_save\"script _dBeb5lta47ef()\";alias bm_trim\"script _db3b51tAa7ef(0,0)\";alias bm_trim_undo\"script _db3b51tAa7ef(1,0)\";alias bm_setup\"script _d8bb5ltAa7ef()\";alias bm_timer\"script _dBebSlt4a73f()\";alias bm_list\"script _d88bSlt4a7ef()\";alias bm_clear\"script _dB8d5lt4a7ef()\";alias bm_remove\"script _dB8b5lt4a7ef()\"");
 
-SendToConsole("alias bm_mdl\"script _d8Bb51t4a7ef()\";alias bm_mdl1\"script _d8Bb51t4a7ef(1)\";alias bm_flash\"script _d8Bp51t4a7ef()\";alias bm_flash1\"script _d8Bp51t4a7ef(1)\";alias bm_he\"script _dB8d51t4a7ef()\";alias bm_he1\"script _dB8d51t4a7ef(1)\";alias bm_molo\"script _dBBb5lt4a7ef()\";alias bm_molo1\"script _dBBb5lt4a7ef(1)\";alias bm_smoke\"script _d88b5lt4a7ef()\";alias bm_smoke1\"script _d88b5lt4a7ef(1)\";alias bm_expl\"script _d88b51t4aTef()\";alias bm_expl1\"script _d88b51t4aTef(1)\";alias bm_add\"script _dbBbSlt4aT3f()\";alias bm_pop\"script _dbBbSlt4aTef()\";alias bm_popall\"script _db3bSlt4aTef()\";alias bm_compile\"script _db3bSlt4a7ef()\";alias bm_play2\"script _d83bS1t4a7ef(2)\";alias bm_save2\"script _dBeb5lta47ef(1)\";alias bm_trim2\"script _db3b51tAa7ef(0,1)\";alias bm_trim2_undo\"script _db3b51tAa7ef(1,1)\";alias bm_show2\"script bm_show2()\";alias bm_stable\"script bm_stable()\"");
+SendToConsole("alias bm_mdl\"script _d8Bb51t4a7ef()\";alias bm_mdl1\"script _d8Bb51t4a7ef(1)\";alias bm_flash\"script _d8Bp51t4a7ef()\";alias bm_flash1\"script _d8Bp51t4a7ef(1)\";alias bm_he\"script _dB8d51t4a7ef()\";alias bm_he1\"script _dB8d51t4a7ef(1)\";alias bm_molo\"script _dBBb5lt4a7ef()\";alias bm_molo1\"script _dBBb5lt4a7ef(1)\";alias bm_smoke\"script _d88b5lt4a7ef()\";alias bm_smoke1\"script _d88b5lt4a7ef(1)\";alias bm_expl\"script _d88b51t4aTef()\";alias bm_expl1\"script _d88b51t4aTef(1)\"\"");
 
 SendToConsole("clear;script OnPostSpawn()");
 
 VS.GetLocalPlayer();
 
 // bRecording
-_d83bS1ta47ef <- false;
+if( !("_d83bS1ta47ef" in this) ) _d83bS1ta47ef <- false;;
 
 // bRecordingPending
-_d83bS1t4a73f <- false;
+if( !("_d83bS1t4a73f" in this) ) _d83bS1t4a73f <- false;;
 
 // sec timer enabled
-_d8bb5lta47ef <- false;
+if( !("_d8bb5lta47ef" in this) ) _d8bb5lta47ef <- false;;
 
 // bStarted
-_d83bS1ta4Tef <- false;
+if( !("_d83bS1ta4Tef" in this) ) _d83bS1ta4Tef <- false;;
 
 // bStartedPending
-_d83bSl7a4Tef <- false;
-
-// bRecordingPos Only
-_d83b5lta4Tef <- false;
+if( !("_d83bSl7a4Tef" in this) ) _d83bSl7a4Tef <- false;;
 
 // trimmed
 if( !("_d83Bb517a47ef" in this) ) _d83Bb517a47ef <- false;;
@@ -64,7 +66,7 @@ _d8ebSlta47ef <- 0;
 _dB3bSlta47ef <- 0.0;
 
 fTickrate <- VS.GetTickrate();
-sMapName <- GetMapName();
+sMapName <- split(GetMapName(),"/").top();
 
 // lists
 if( !("_d8BbSlt4a7ef" in this) ) _d8BbSlt4a7ef <- [];;
@@ -72,9 +74,7 @@ if( !("_d8BdSlt4a7ef" in this) ) _d8BdSlt4a7ef <- [];;
 // nRecLast
 if( !("_d8Bd5lt4a7ef" in this) ) _d8Bd5lt4a7ef <- -1;;
 
-if( !("_d83b5lta47ef" in this) ) _d83b5lta47ef <- false;;
-
-local SpawnEntities = function()
+local _ = function()
 {
 	if( !("_d8ebS1ta4Tef" in this) || !Ent("_d8ebS1ta4Tef") )
 	{
@@ -88,9 +88,6 @@ local SpawnEntities = function()
 		VS.MakePermanent( _d83bSlta47ef );
 	};
 
-	if( !("_d83bSlta41ef" in this) || !Ent("_d83bSlta41ef") )
-		_d83bSlta41ef <- VS.CreateEntity( "info_target", "_d83bSlta41ef" );
-
 	if( !("_d83bSlta4lef" in this) || !Ent("_d83bSlta4lef") )
 	{
 		_d83bSlta4lef <- VS.CreateHudHint( "_d83bSlta4lef" );
@@ -101,7 +98,10 @@ local SpawnEntities = function()
 		HPlayerEye <- VS.CreateMeasure(HPlayer.GetName(),null,true);
 
 	if( !("_d83b5lt4a7ef" in this) || !Ent("_d83b5lt4a7ef") )
+	{
 		_d83b5lt4a7ef <- VS.CreateEntity( "point_viewcontrol", "_d83b5lt4a7ef", { spawnflags = 8 } );
+		VS.MakePermanent( _d83b5lt4a7ef );
+	};
 
 	if( !Ent("_d83b5l7a4Tef") )
 	{
@@ -109,9 +109,9 @@ local SpawnEntities = function()
 		VS.MakePermanent( Ent("_d83b5l7a4Tef") );
 	};
 
-	EntFireByHandle( _d83b5lt4a7ef, "disable", "", 0, HPlayer );
-	EntFireByHandle( _d83bSlta47ef, "disable" );
-	EntFire( "_d83b5l7a4Tef", "disable" );
+	// EntFireByHandle( _d83b5lt4a7ef, "disable", "", 0, HPlayer );
+	// EntFireByHandle( _d83bSlta47ef, "disable" );
+	// EntFire( "_d83b5l7a4Tef", "disable" );
 }
 
 ::Msg <-::printl;
@@ -135,12 +135,8 @@ function OnPostSpawn()
 	Chat( txt.blue+" -------------------------------- " );
 
 	// print after Steamworks Msg
-	if( GetDeveloperLevel() > 0 ) delay("SendToConsole(\"clear;script _d88bSlt4aTef();script _d83d51ta4Tef()\")", 0.75);
-	else
-	{
-		_d88bSlt4aTef();
-		_d83d51ta4Tef();
-	};
+	if( GetDeveloperLevel() > 0 ) delay("SendToConsole(\"clear;script _d88bSlt4aTef()\")", 0.75);
+	else _d88bSlt4aTef();
 }
 
 function PlaySound(s)
@@ -148,6 +144,7 @@ function PlaySound(s)
 	HPlayer.EmitSound(s);
 }
 
+// todo: refactor
 function _ProcessData()
 {
 	local l = "l_"+sMapName;
@@ -233,9 +230,6 @@ function _ProcessData_a()
 
 function Hint(s){ VS.ShowHudHint( _d83bSlta4lef, HPlayer, s ) }
 
-// strip
-function _d83bS174a7ef(){ EntFireByHandle( _d8ebS1ta4Tef, "use", "", 0.0, HPlayer ) }
-
 // sec timer
 function _dBebSlt4a73f()
 {
@@ -253,7 +247,7 @@ function _dBebSlt4a7ef()
 	PlaySound("UIPanorama.container_countdown");
 }
 
-SpawnEntities();
+_();
 
 // trim
 function _db3b51tAa7ef( i = 0, k = 0 )
@@ -279,20 +273,7 @@ function _db3b51tAa7ef( i = 0, k = 0 )
 	}
 	else
 	{
-		if( !("lp_k" in this) || !("la_k" in this) )
-			return Msg("No compiled keyframes found.");
-
-		lp = lp_k;
-		la = la_k;
-
-		if( !("lp_k_trim" in this) )
-		{
-			lp_k_trim <- [];
-			la_k_trim <- [];
-		};
-
-		lpt = lp_k_trim;
-		lat = la_k_trim;
+		return Msg("KEYFRAMES UNAVAILABLE");
 	};
 
 	if( !i )
@@ -301,11 +282,14 @@ function _db3b51tAa7ef( i = 0, k = 0 )
 			  dec = full - floor(full),
 			  unit = dec / FTIME;
 
-		if( !VS.IsInteger(unit) ) return Msg("An error occured while trimming! ["+lp.len()+","+full+","+dec+","+unit+"]\n");
+		if( !VS.IsInteger(unit) )
+			return Msg("An error occured while trimming! ["+lp.len()+","+full+","+dec+","+unit+"]\n");
 
-		if( unit == lp.len() ) return Msg("The recording is too short! " + full + " seconds\n");
+		if( unit == lp.len() )
+			return Msg("The recording is too short! " + full + " seconds\n");
 
-		if( unit == 0.0 ) return Msg("Cannot trim, recording is already at an integer length! [" + full + " seconds]\n");
+		if( unit == 0.0 )
+			return Msg("Cannot trim, recording is already at an integer length! [" + full + " seconds]\n");
 
 		for( local i = 0; i < unit; i++ )
 		{
@@ -335,358 +319,27 @@ function _db3b51tAa7ef( i = 0, k = 0 )
 	};
 }
 
-function replace(i)
-{
-	if( !("lp_c" in this) || !("la_c" in this) )
-		return Msg("No keyframes found.");
-
-	i = i.tointeger();
-	if( i < 0 || i >= lp_c.len() )
-		return Msg("Invalid index value.");
-
-	local pos = HPlayer.GetOrigin(),
-	      dir = HPlayerEye.GetForwardVector();
-	pos.z += 64.0;
-
-	lp_c[i]=pos;
-	la_c[i]=dir;
-	la_q[i]=VS.AngleQuaternion(HPlayerEye.GetAngles(), Quaternion());
-
-	DebugDrawLine( pos, pos + dir * 64, 138, 255, 0, true, 10 );
-	DebugDrawBox( pos, Vector(-4,-4,-4), Vector(4,4,4), 138, 255, 0, 127, 10 );
-
-	Msg("Replaced keyframe #" + i);
-	PlaySound("UIPanorama.container_countdown");
-}
-
-function insert(i)
-{
-	if( !("lp_c" in this) || !("la_c" in this) )
-	{
-		lp_c <- [];
-		la_c <- [];
-		la_q <- [];
-	};
-
-	i = i.tointeger();
-	if( i < 0 || i >= lp_c.len() )
-		return Msg("Invalid index value.");
-
-	local pos = HPlayer.GetOrigin(),
-	      dir = HPlayerEye.GetForwardVector();
-	pos.z += 64.0;
-
-	lp_c.insert( i, pos );
-	la_c.insert( i, dir );
-	la_q.append( VS.AngleQuaternion(HPlayerEye.GetAngles(), Quaternion()) );
-
-	DebugDrawLine( pos, pos + dir * 64, 138, 255, 0, true, 10 );
-	DebugDrawBox( pos, Vector(-4,-4,-4), Vector(4,4,4), 138, 255, 0, 127, 10 );
-
-	Msg("Inserted keyframe #" + i);
-	PlaySound("UIPanorama.container_countdown");
-}
-
-// Add Keyframe
-function _dbBbSlt4aT3f()
-{
-	if( !("lp_c" in this) || !("la_c" in this) || !("la_q" in this) )
-	{
-		lp_c <- [];
-		la_c <- [];
-		la_q <- [];
-	};
-
-	local pos = HPlayer.GetOrigin(),
-	      dir = HPlayerEye.GetForwardVector();
-	pos.z += 64.0;
-
-	lp_c.append(pos);
-	la_c.append(dir);
-	la_q.append(VS.AngleQuaternion(HPlayerEye.GetAngles(), Quaternion()));
-
-	DebugDrawLine( pos, pos + dir * 64, 138, 255, 0, true, 10 );
-	DebugDrawBox( pos, Vector(-4,-4,-4), Vector(4,4,4), 138, 255, 0, 127, 10 );
-
-	Msg("Added keyframe #" + (lp_c.len()-1));
-	PlaySound("UIPanorama.container_countdown");
-}
-
-// pop keyframe
-function _dbBbSlt4aTef()
-{
-	if( !("lp_c" in this) || !("la_c" in this) )
-		return Msg("No keyframes found.");
-
-	if( !lp_c.len() )
-		return Msg("No keyframes found.");
-
-	local pos = lp_c.pop(),
-	      dir = la_c.pop();
-	la_q.pop();
-
-	DebugDrawLine( pos, pos + dir * 64, 255, 64, 0, true, 10 );
-	DebugDrawBox( pos, Vector(-4,-4,-4), Vector(4,4,4), 255, 64, 0, 127, 10 );
-
-	Msg("Removed keyframe #" + lp_c.len());
-	PlaySound("UIPanorama.container_countdown");
-}
-
-// pop all
-function _db3bSlt4aTef()
-{
-	if( !("lp_c" in this) || !("la_c" in this) )
-		return Msg("No keyframes found.");
-
-	if( !lp_c.len() )
-		return Msg("No keyframes found.");
-
-	Msg("Cleared "+lp_c.len()+" keyframes.");
-
-	lp_c.clear();
-	la_c.clear();
-	la_q.clear();
-
-	PlaySound("UIPanorama.container_countdown");
-}
-
-if( !("fInterpResolution" in this) ) fInterpResolution <- 0.01;;
-
-function res(f)
-{
-	if( f < 0.001 || f > 0.5 )
-		return Msg("Invalid resolution range. [0.001, 0.5]");
-
-	fInterpResolution = f.tofloat();
-	Msg("Interpolation resolution set to: " + fInterpResolution);
-	Msg("Time between 2 keyframes: " + (FTIME/fInterpResolution) + " second(s)");
-	PlaySound("UIPanorama.container_countdown");
-}
-
-lstr_loading <- array(64," ");
-nIdxLoading <- 1;
-nIdxLoadingPre <- 0;
-
-function GetLoadingString()
-{
-	++nIdxLoadingPre;
-	nIdxLoadingPre %= lstr_loading.len();
-	++nIdxLoading;
-	nIdxLoading %= lstr_loading.len();
-	lstr_loading[nIdxLoadingPre] = " ";
-	lstr_loading[nIdxLoading] = "●";
-	local str = "";
-	foreach(s in lstr_loading) str += s;
-	return str;
-}
-
-// Compile Keyframes
-// TODO: Implement consistent speed
-function _db3bSlt4a7ef()
-{
-	if( !("lp_c" in this) || !("la_c" in this) )
-		return Msg("No keyframes found.");
-
-	if( !lp_c.len() )
-		return Msg("No keyframes found.");
-
-	if( lp_c.len() < 8 )
-		return Msg("Not enough keyframes to compile.");
-
-	if( lp_c.len() != la_c.len() )
-		return Msg("[ERROR]\nAssertion failed: Corrupted keyframe data! [" + lp_c.len() + "," + la_c.len() + "]");
-
-	_d83b5lt4aTef = false;
-	_d83b5lt447ef = false;
-
-	Msg("\nPreparing..." + "\nResolution: " + fInterpResolution + "\nInterp algorithm: "+(bInterpMode?"default":"alternative")+"\n");
-
-	// an alternative to inserting would be calculating the future length of
-	// the compiled data, and creating that sized empty arrays, and accessing those indices
-	// but I'm fine with inserting
-	lp_k <- array(lp_c.len());
-	la_k <- array(la_c.len());
-	// la_v <- array(la_f.len());
-
-	RTIME <- FTIME;
-	_db36SltAaTef <- 10;
-	if( fInterpResolution <= 0.025 )
-	{
-		_db36SltAaTef <- 2;
-		RTIME *= 2;
-	};
-	_db36Slt4aTef <- 0;
-	_db36Slt4ATef <- floor(1.0/fInterpResolution);
-	_db36SltA4T3f <- 0;
-	_db36SltA473f <- clamp( _db36SltAaTef, 0, _db36Slt4ATef );
-
-	delay( "print(\"Compiling (1/3) \");_db365ltA4T3f()", 0.25 );
-}
-
-// spline origin
-function _db365ltA4T3f()
-{
-	// complete
-	if( _db36SltA4T3f >= _db36SltA473f )
-	{
-		print("\n");
-		lp_k.pop();
-		lp_k.pop();
-		lp_k.remove(0);
-
-		// next process
-		_db36SltA4T3f = 0;
-		_db36SltA473f = clamp( _db36SltAaTef, 0, _db36Slt4ATef );
-		print("Compiling (2/3) ");_db365ltA473f();
-
-		return true;
-	};
-
-	if(!(_db36SltA4T3f % 25)) print(".");
-
-	// if(!(_db36SltA4T3f % 10))
-	Hint(GetLoadingString());
-
-	for( local j = _db36SltA4T3f, f = fInterpResolution * _db36SltA4T3f; j < _db36SltA473f; j++, f += fInterpResolution )
-		for( local i = 0; i < lp_c.len()-4; i++ )
-			lp_k.insert((j+2)+(i*(j+2)),VS.Catmull_Rom_Spline(lp_c[i],lp_c[i+1],lp_c[i+2],lp_c[i+3],f,Vector()));
-
-	_db36SltA4T3f += _db36SltAaTef;
-	_db36SltA473f = clamp( _db36SltA473f + _db36SltAaTef, 0, _db36Slt4ATef );
-
-	return delay( "_db365ltA4T3f()", RTIME );
-}
-
-bInterpMode <- true;
-
-function bm_stable()
-{
-	bInterpMode = !bInterpMode;
-
-	if( bInterpMode )
-	{
-		Msg("\nNow using the default algorithm.")
-	}
-	else
-	{
-		Msg("\nNow using the alternative algorithm.")
-	};
-
-	Msg("Recompile to see the changes.");
-}
-
-// spline angles
-function _db365ltA473f()
-{
-	// complete
-	if( _db36SltA4T3f >= _db36SltA473f )
-	{
-		print("\n");
-		la_k.pop();
-		la_k.pop();
-		la_k.remove(0);
-
-		// next process
-		_db36SltA4T3f = 0;
-		_db36SltA473f = clamp( _db36SltAaTef, 0, _db36Slt4ATef );
-		print("Compiling (3/3) ");_db365ltA47Ef();
-
-		return true;
-	};
-
-	if(!(_db36SltA4T3f % 25)) print(".");
-
-	// if(!(_db36SltA4T3f % 10))
-	Hint(GetLoadingString());
-
-	if( !bInterpMode )
-		for( local j = _db36SltA4T3f, f = fInterpResolution * _db36SltA4T3f; j < _db36SltA473f; j++, f += fInterpResolution )
-			for( local i = 0; i < lp_c.len()-4; i++ )
-				la_k.insert((j+2)+(i*(j+2)),VS.QAngleNormalize(VS.VectorAngles(VS.Catmull_Rom_Spline(la_c[i],la_c[i+1],la_c[i+2],la_c[i+3],f,Vector()))));
-	else
-		for( local j = _db36SltA4T3f, f = fInterpResolution * _db36SltA4T3f; j < _db36SltA473f; j++, f += fInterpResolution )
-			for( local i = 0; i < lp_c.len()-4; i++ )
-				la_k.insert((j+2)+(i*(j+2)),VS.QAngleNormalize(VS.QuaternionAngles(VS.Catmull_Rom_SplineQ(la_q[i],la_q[i+1],la_q[i+2],la_q[i+3],f,Quaternion()),Vector())));
-
-	_db36SltA4T3f += _db36SltAaTef;
-	_db36SltA473f = clamp( _db36SltA473f + _db36SltAaTef, 0, _db36Slt4ATef );
-
-	return delay( "_db365ltA473f()", RTIME );
-}
-
-// clear up keyframes
-function _db365ltA47Ef()
-{
-	if(!(_db36Slt4aTef % 175)) print(".");
-
-	if(!(_db36Slt4aTef % 75))
-		Hint(GetLoadingString());
-
-	for( local i = _db36Slt4aTef; i < lp_k.len(); i++ )
-		if( lp_k[i] == null )
-		{
-			lp_k.remove(i);
-			la_k.remove(i);
-			// la_v.remove(i);
-
-			_db36Slt4aTef = i;
-			return delay( "_db365ltA47Ef()", RTIME );
-		};
-
-	// complete
-	VS.HideHudHint(_d83bSlta4lef, HPlayer);
-	print("\n");
-
-	Msg("\nCompiled keyframes: "+lp_k.len() * FTIME+" seconds\n\n* Trim the data to the nearest integer: bm_trim2\n* Playback the compiled data:           bm_play2\n* Save the compiled data:               bm_save2\n");
-	PlaySound("UIPanorama.container_countdown");
-}
-
-// show keyframes
-function __show2( t = 10 )
-{
-	if( !("lp_c" in this) || !("la_c" in this) )
-		return Msg("No keyframes found.");
-
-	foreach( v in lp_c )
-		DebugDrawBox( v, Vector(-8,-8,-8), Vector(8,8,8), 255, 64, 0, 16, t );
-
-	local j = _db36Slt4ATef / 10;
-
-	for( local i = 0; i < lp_k.len()-j; i+=j )
-	{
-		DebugDrawLine( lp_k[i], lp_k[i] + VS.AngleVectors(la_k[i]) * 16, 255, 128, 255, true, t );
-		DebugDrawLine( lp_k[i], lp_k[i+j], 138, 255, 0, true, t );
-	}
-}
-
-// show pos recording
-function __show( t = 10 )
-{
-	if( !("lp_r" in this) || !("la_r" in this) )
-		return Msg("No recording found.");
-
-	for( local i = 0; i < lp_r.len()-5; i+=5 )
-	{
-		DebugDrawLine( lp_r[i], lp_r[i] + VS.YawToVector(la_r[i]) * 16, 255, 128, 255, true, t );
-		DebugDrawLine( lp_r[i], lp_r[i+5], 138, 255, 0, true, t );
-	}
-
-	for( local i = 31; i < lp_r.len()-64; i+=64 )
-		DebugDrawBox( lp_r[i], Vector(-8,-8,-8), Vector(8,8,8), 255, 64, 0, 16, t );
-}
-
 function _d83b5lt4aTeF()
 {
 	if( _d83b5lt4aTef )
-		__show(1.5+FrameTime());
-	if( _d83b5lt447ef )
-		__show2(1.5+FrameTime());
+	{
+		if( !("lp_r" in this) || !("la_r" in this) )
+		return Msg("No recording found.");
+
+		local t = 1.5+FrameTime();
+
+		for( local i = 0; i < lp_r.len()-5; i+=5 )
+		{
+			local p = lp_r[i];
+			DebugDrawLine( p, p + VS.YawToVector(la_r[i]) * 16, 255, 128, 255, true, t );
+			DebugDrawLine( p, lp_r[i+5], 138, 255, 0, true, t );
+		}
+	};
 }
 
 _d83b5lt4aTef <- false;
-_d83b5lt447ef <- false;
 
-function bm_show()
+function _d83b5lt4alef()
 {
 	if( _d83bS1ta47ef )
 		return Msg("Cannot show while recording!");
@@ -700,32 +353,15 @@ function bm_show()
 		VS.SetKeyFloat( _d83bSlta47ef, "refiretime", 1.5 );
 		VS.OnTimer( _d83bSlta47ef, _d83b5lt4aTeF );
 		EntFireByHandle( _d83bSlta47ef, "enable" );
-		__show(1.5);
+		_d83b5lt4aTeF();
 	}
-	else if( !_d83b5lt447ef ) EntFireByHandle( _d83bSlta47ef, "disable" );;
+	else
+	{
+		EntFireByHandle( _d83bSlta47ef, "disable" );
+		SendToConsole("clear_debug_overlays");
+	};
 
 	Msg("Show toggle: " + _d83b5lt4aTef);
-}
-
-function bm_show2()
-{
-	if( _d83bS1ta47ef )
-		return Msg("Cannot show while recording!");
-	if( _d83bS1ta4Tef || _d83bSl7a4Tef )
-		return Msg("Cannot show while playing!");
-
-	_d83b5lt447ef = !_d83b5lt447ef;
-
-	if( _d83b5lt447ef )
-	{
-		VS.SetKeyFloat( _d83bSlta47ef, "refiretime", 1.5 );
-		VS.OnTimer( _d83bSlta47ef, _d83b5lt4aTeF );
-		EntFireByHandle( _d83bSlta47ef, "enable" );
-		__show2(1.5);
-	}
-	else if( !_d83b5lt4aTef ) EntFireByHandle( _d83bSlta47ef, "disable" );;
-
-	Msg("Show2 toggle: " + _d83b5lt447ef);
 }
 
 // IsKeyframeRecording
@@ -747,6 +383,8 @@ function IsKeyframeRecording(m)
 // record
 function _db3b51t4a7ef()
 {
+	Msg("\n[=======]\nPlease use the standalone 'keyframes' script to record paths.\nGet it here: github.com/samisalreadytaken/keyframes\n[=======]\n");
+
 	// bRecordingPending
 	if( _d83bS1t4a73f ) return Msg("Recording hasn't started yet!");
 	// bRecording
@@ -759,9 +397,6 @@ function _db3b51t4a7ef()
 	HPlayer.SetHealth(1337);
 	_dBebS1t4a7ef = 0;
 
-	// recording exists
-	_d83b5lta47ef = true;
-
 	// bRecording
 	_d83bS1ta47ef = true;
 
@@ -772,7 +407,6 @@ function _db3b51t4a7ef()
 	_d83Bb517a47ef = false;
 
 	_d83b5lt4aTef = false;
-	_d83b5lt447ef = false;
 	EntFireByHandle( _d83bSlta47ef, "disable" );
 	VS.SetKeyFloat( _d83bSlta47ef, "refiretime", FTIME );
 	VS.OnTimer( _d83bSlta47ef, _d83b5lT4a9ef );
@@ -803,9 +437,6 @@ function _db3b5lt4a7ef()
 
 	_dBebS1t4a7ef = 0;
 
-	// recording exists
-	_d83b5lta47ef = true;
-
 	// bRecording
 	_d83bS1ta47ef = false;
 
@@ -814,41 +445,39 @@ function _db3b5lt4a7ef()
 	PlaySound("UIPanorama.gameover_show");
 	SendToConsole( "developer " + _d8ebSlta47ef );
 	Chat( txt.orange + "● "+txt.grey+"Stopped recording." );
-	Msg("\nStopped recording: "+lp_r.len() * FTIME+" seconds.\n\n* Trim the data to the nearest integer: bm_trim\n* Playback the recorded data:           bm_play\n* Save the recorded data:               bm_save\n\n[i] Use the keyframe smoothing for more professional paths.");
+	Msg("\nStopped recording: "+lp_r.len() * FTIME+" seconds.\n\n* Trim the data down to the nearest integer: bm_trim\n* Playback the recorded data:           bm_play\n* Save the recorded data:               bm_save\n");
 }
 
 // record save
-function _dBeb5lta47ef( k = 0 )
+function _dBeb5lta47ef()
 {
-	// TODO: refactor
+	Msg("\n[=======]\nPlease use the standalone 'keyframes' script to record paths.\nGet it here: github.com/samisalreadytaken/keyframes\n[=======]\n");
 
 	// recording exists
-	if( !k ) { if( !_d83b5lta47ef ) return Msg("No recording found."); }
-	else if( !("lp_k" in this) ) return Msg("No compiled keyframes found.");;
+	if( !("lp_r" in this) || !lp_r.len() ) return Msg("No recording found.");
+
+	_kf82b3b2lBb4 <- VS.Log.L;
 
 	VS.Log.Clear();
 	VS.Log.filePrefix = "benchmark_rec";
 	VS.Log.condition = true;
 	VS.Log.export = true;
 	VS.Log.filter = "L ";
-	VS.Log.L.append( "l_" + sMapName + "<-{pos=[" );
+	_kf82b3b2lBb4.append( "l_" + sMapName + "<-{pos=[" );
 
-	lp_s <- k ? lp_k : lp_r;
-	la_s <- k ? la_k : la_r;
-
-	_dBebSlTa4T3F <- lp_s.len();
+	_dBebSlTa4T3F <- lp_r.len();
 	_dBebSlTa4t3F <- 1450;
 	_dBebSlTa4tef <- 0;
 	_dBebSlTa4teF <- clamp( _dBebSlTa4t3F, 0, _dBebSlTa4T3F );
 
-	_dBeb5lta47ef2();
+	return _dBeb5lta47ef2();
 }
 
-// run
+// save run
 function _dBeb5lta47ef4()
 {
 	local file = VS.Log.Run();
-	HPlayer.PrecacheScriptSound("Survival.TabletUpgradeSuccess");
+	PrecacheScriptSound("Survival.TabletUpgradeSuccess");
 	PlaySound("Survival.TabletUpgradeSuccess");
 	Msg("\n* Recorded data is exported: /csgo/"+file+".log\n");
 }
@@ -858,14 +487,14 @@ function _dBeb5lta47ef2()
 {
 	if( _dBebSlTa4tef >= _dBebSlTa4teF )
 	{
-		VS.Log.L.append("]ang=[");
+		_kf82b3b2lBb4.append("]ang=[");
 		_dBebSlTa4tef = 0;
 		_dBebSlTa4teF = clamp( _dBebSlTa4t3F, 0, _dBebSlTa4T3F );
-		return delay( "_dBeb5lta47ef3()", FTIME );
+		return _dBeb5lta47ef3();
 	};
 
 	for( local i = _dBebSlTa4tef; i < _dBebSlTa4teF; i++ )
-		VS.Log.L.append( VecToString(lp_s[i],"V(") );
+		_kf82b3b2lBb4.append( VecToString(lp_r[i],"V(") );
 
 	_dBebSlTa4tef += _dBebSlTa4t3F;
 	_dBebSlTa4teF = clamp( _dBebSlTa4teF + _dBebSlTa4t3F, 0, _dBebSlTa4T3F );
@@ -878,20 +507,20 @@ function _dBeb5lta47ef3()
 {
 	if( _dBebSlTa4tef >= _dBebSlTa4teF )
 	{
-		VS.Log.L.pop();
-		if( type(la_s[0]) == "instance" )
-			VS.Log.L.append( VecToString(la_s[la_s.len()-1],"V(") + "]}\n" );
+		_kf82b3b2lBb4.pop();
+		if( type(la_r[0]) == "instance" )
+			_kf82b3b2lBb4.append( VecToString(la_r[la_r.len()-1],"V(") + "]}\n" );
 		else
-			VS.Log.L.append( la_s[la_s.len()-1] + "]}\n" );
-		return delay( "_dBeb5lta47ef4()", FTIME );
+			_kf82b3b2lBb4.append( la_r[la_r.len()-1] + "]}\n" );
+		return _dBeb5lta47ef4();
 	};
 
-	if( type(la_s[0]) == "instance" )
+	if( type(la_r[0]) == "instance" )
 		for( local i = _dBebSlTa4tef; i < _dBebSlTa4teF; i++ )
-			VS.Log.L.append( VecToString(la_s[i],"V(") );
+			_kf82b3b2lBb4.append( VecToString(la_r[i],"V(") );
 	else
 		for( local i = _dBebSlTa4tef; i < _dBebSlTa4teF; i++ )
-			VS.Log.L.append( la_s[i] + "," );
+			_kf82b3b2lBb4.append( la_r[i] + "," );
 
 	_dBebSlTa4tef += _dBebSlTa4t3F;
 	_dBebSlTa4teF = clamp( _dBebSlTa4teF + _dBebSlTa4t3F, 0, _dBebSlTa4T3F );
@@ -965,14 +594,7 @@ function _d83bS1t4a7ef( r = 0 )
 		c2 = "la_r";
 		m = "r";
 	}
-	// keyframe playback
-	else if( r == 2 )
-	{
-		c1 = "lp_k";
-		c2 = "la_k";
-		m = "k";
-	}
-	else throw "Invalid value";;;
+	else throw "Invalid value";;
 
 	if( !(c1 in this) || !(c2 in this) )
 		return Msg( r ? "No recording found." : (" *** Data not available for this map: " + sMapName) );
@@ -994,7 +616,6 @@ function _d83bS1t4a7ef( r = 0 )
 		return Msg(" *** Map data is corrupted! [" + _dB3bS1ta47ef.len() + "," + _dB3b5lta47ef.len() + "]");
 
 	_d83b5lt4aTef = false;
-	_d83b5lt447ef = false;
 	EntFireByHandle( _d83bSlta47ef, "disable" );
 	VS.SetKeyFloat( _d83bSlta47ef, "refiretime", FTIME );
 
@@ -1004,7 +625,8 @@ function _d83bS1t4a7ef( r = 0 )
 	else
 		VS.OnTimer( _d83bSlta47ef, _d83bS1T4a9ef );
 
-	_d83bS174a7ef();
+	// strip
+	EntFireByHandle( _d8ebS1ta4Tef, "use", "", 0.0, HPlayer );
 	HPlayer.SetHealth(1337);
 	if( "Setup_" + m in this ) this["Setup_" + m]();
 
@@ -1026,13 +648,15 @@ function _d83bS1t4a7ef( r = 0 )
 	delay( "Hint(\"Starting in 2...\");PlaySound(\"Alert.WarmupTimeoutBeep\")", 1.5 );
 	delay( "Hint(\"Starting in 1...\");PlaySound(\"Alert.WarmupTimeoutBeep\")", 2.5 );
 	delay( "Hint(\"Started...\")", 3.5 );
-	// bStartedPending
-	delay( "_d83bSl7a4Tef=false;_d83b51T4a9ef(" + r + ")", 3.5 );
+
+	// start core
+	delay( "_d83b51T4a9ef(" + r + ")", 3.5 );
 }
 
 // start core
 function _d83b51T4a9ef(r)
 {
+	_d83bSl7a4Tef=false;
 	// bStarted
 	_d83bS1ta4Tef = true;
 	_d83b51ta47ef = 0;
@@ -1069,84 +693,77 @@ function _d83bSlt4a7ef( i = 0 )
 function _d8bb5ltAa7ef()
 {
 	PlaySound("HudChat.Message");
-/*
-Msg(@"
-[i] See README.md for details.
 
-                 github.com/samisalreadytaken/csgo-benchmark
+//Msg(@"
+//[i] See README.md for details.
+//
+//                 github.com/samisalreadytaken/csgo-benchmark
+//
+//bm_rec     : Start/stop recording new path
+//bm_play    : Play the recording, run benchmark
+//bm_save    : Save the recording
+//bm_timer   : Toggle counter
+//           :
+//bm_list    : Print saved setup data
+//bm_clear   : Clear saved setup data
+//bm_remove  : Remove the last added setup data
+//           :
+//bm_mdl     : Print SpawnMDL()
+//bm_flash   : Print SpawnFlash()
+//bm_he      : Print SpawnHE()
+//bm_molo    : Print SpawnMolotov()
+//bm_smoke   : Print SpawnSmoke()
+//bm_expl    : Print SpawnExplosion()
+//           :
+//bm_mdl1    : SpawnMDL()
+//bm_flash1  : SpawnFlash()
+//bm_he1     : SpawnHE()
+//bm_molo1   : SpawnMolotov()
+//bm_smoke1  : SpawnSmoke()
+//bm_expl1   : SpawnExplosion()
+//")
 
-bm_rec     : Start/stop recording new path
-bm_play    : Play the recording, run benchmark
-bm_save    : Save the recording
-bm_timer   : Toggle counter
-           :
-bm_list    : Print saved setup data
-bm_clear   : Clear saved setup data
-bm_remove  : Remove the last added setup data
-           :
-bm_mdl     : Print SpawnMDL()
-bm_flash   : Print SpawnFlash()
-bm_he      : Print SpawnHE()
-bm_molo    : Print SpawnMolotov()
-bm_smoke   : Print SpawnSmoke()
-bm_expl    : Print SpawnExplosion()
-           :
-bm_mdl1    : SpawnMDL()
-bm_flash1  : SpawnFlash()
-bm_he1     : SpawnHE()
-bm_molo1   : SpawnMolotov()
-bm_smoke1  : SpawnSmoke()
-bm_expl1   : SpawnExplosion()
-")
-*/
 	Msg("\n[i] See README for details.\n\n                 github.com/samisalreadytaken/csgo-benchmark\n\nbm_rec     : Start/stop recording new path\nbm_play    : Play the recording, run benchmark\nbm_save    : Save the recording\nbm_timer   : Toggle counter\n           :\nbm_list    : Print saved setup data\nbm_clear   : Clear saved setup data\nbm_remove  : Remove the last added setup data\n           :\nbm_mdl     : Print SpawnMDL()\nbm_flash   : Print SpawnFlash()\nbm_he      : Print SpawnHE()\nbm_molo    : Print SpawnMolotov()\nbm_smoke   : Print SpawnSmoke()\nbm_expl    : Print SpawnExplosion()\n           :\nbm_mdl1    : SpawnMDL()\nbm_flash1  : SpawnFlash()\nbm_he1     : SpawnHE()\nbm_molo1   : SpawnMolotov()\nbm_smoke1  : SpawnSmoke()\nbm_expl1   : SpawnExplosion()\n\n");
 }
 
 function _d88bSlt4aTef()
 {
-/*
-Msg(@"
+//Msg(@"
+//
+//                 github.com/samisalreadytaken/csgo-benchmark
+//
+// Console commands:
+//
+//benchmark  : Run the benchmark
+//bm_stop    : Force stop the ongoing benchmark
+//           :
+//           :
+//bm_rec     : Start/stop recording new path
+//bm_play    : Play the recording, run benchmark
+//           :
+//           :
+//bm_setup   : Print setup related commands
+//
+// ----------
+//
+// Commands to display FPS:
+//
+//cl_showfps 1
+//net_graph 1
+//
+// ----------
+//
+//[i] The benchmark sets your fps_max to 0
+//")
 
- Benchmark script loaded.
-
-                 github.com/samisalreadytaken/csgo-benchmark
-
- Console commands:
-
-benchmark  : Run the benchmark
-bm_stop    : Force stop the ongoing benchmark
-           :
-           :
-bm_rec     : Start/stop recording new path
-bm_play    : Play the recording, run benchmark
-           :
-           :
-bm_setup   : Print setup related commands
-
- ----------
-
- Commands to display FPS:
-
-cl_showfps 1
-net_graph 1
-
- ----------
-
-[i] The benchmark sets your fps_max to 0
-")
-*/
-	Msg("\n\n\n Benchmark script loaded.\n\n                 github.com/samisalreadytaken/csgo-benchmark\n\n Console commands:\n\nbenchmark  : Run the benchmark\nbm_stop    : Force stop the ongoing benchmark\n           :\n           :\nbm_rec     : Start/stop recording new path\nbm_play    : Play the recording, run benchmark\n           :\n           :\nbm_setup   : Print setup related commands\n\n ----------\n\n Commands to display FPS:\n\ncl_showfps 1\nnet_graph 1\n\n ----------\n\n[i] The benchmark sets your fps_max to 0\n");
+	Msg("\n\n\n                 github.com/samisalreadytaken/csgo-benchmark\n\n Console commands:\n\nbenchmark  : Run the benchmark\nbm_stop    : Force stop the ongoing benchmark\n           :\n           :\nbm_rec     : Start/stop recording new path\nbm_play    : Play the recording, run benchmark\n           :\n           :\nbm_setup   : Print setup related commands\n\n ----------\n\n Commands to display FPS:\n\ncl_showfps 1\nnet_graph 1\n\n ----------\n\n[i] The benchmark sets your fps_max to 0\n");
 	Msg("[i] Map: " + sMapName);
 	Msg("[i] Server tickrate: " + fTickrate + "\n\n");
-}
 
-function _d83d51ta4Tef()
-{
 	if( !VS.IsInteger( 128.0 / fTickrate ) )
 	{
-		local s = "[!] Invalid tickrate ( " + fTickrate + " )! Only 128 and 64 ticks are supported.";
-		Chat(s);
-		Msg(s);
+		Msg("[!] Invalid tickrate ( " + fTickrate + " )! Only 128 and 64 ticks are supported.");
+		Chat(txt.red+"[!] "+txt.white+"Invalid tickrate ( " +txt.yellow+ fTickrate +txt.white+" )! Only 128 and 64 ticks are supported.");
 	};
 }
 
@@ -1305,12 +922,12 @@ function SpawnMolotov( v, d )
 
 function SpawnSmoke( v, d )
 {
-	delay("local v=" + VecToString(v) + ";DispatchParticleEffect(\"explosion_smokegrenade\",v,Vector(1,0,0));_d83bSlta41ef.SetOrigin(v);_d83bSlta41ef.EmitSound(\"BaseSmokeEffect.Sound\")", d)
+	delay("local v=" + VecToString(v) + ";DispatchParticleEffect(\"explosion_smokegrenade\",v,Vector(1,0,0));_d8ebS1ta4Tef.SetOrigin(v);_d8ebS1ta4Tef.EmitSound(\"BaseSmokeEffect.Sound\")", d)
 }
 
 function SpawnExplosion( v, d )
 {
-	delay("local v=" + VecToString(v) + ";DispatchParticleEffect(\"explosion_c4_500\",v,Vector());_d83bSlta41ef.SetOrigin(v);_d83bSlta41ef.EmitSound(\"c4.explode\")", d)
+	delay("local v=" + VecToString(v) + ";DispatchParticleEffect(\"explosion_c4_500\",v,Vector());_d8ebS1ta4Tef.SetOrigin(v);_d8ebS1ta4Tef.EmitSound(\"c4.explode\")", d)
 }
 
 function SpawnMDL( v, a, m, p = POSE.DEFAULT )

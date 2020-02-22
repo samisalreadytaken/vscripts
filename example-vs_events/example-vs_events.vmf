@@ -2,7 +2,7 @@ versioninfo
 {
 	"editorversion" "400"
 	"editorbuild" "8456"
-	"mapversion" "26"
+	"mapversion" "27"
 	"formatversion" "100"
 	"prefab" "0"
 }
@@ -20,7 +20,7 @@ viewsettings
 world
 {
 	"id" "1"
-	"mapversion" "26"
+	"mapversion" "27"
 	"classname" "worldspawn"
 	"detailmaterial" "detail/detailsprites"
 	"detailvbsp" "detail.vbsp"
@@ -653,6 +653,28 @@ world
 }
 entity
 {
+	"id" "473"
+	"classname" "logic_eventlistener"
+	"EventName" "inspect_weapon"
+	"FetchEventData" "1"
+	"IsEnabled" "1"
+	"targetname" "inspect_weapon"
+	"TeamNum" "-1"
+	connections
+	{
+		"OnEventFired" "inspect_weaponRunScriptCodeOnGameEvent_inspect_weapon(event_data)0-1"
+	}
+	"origin" "96 64 8"
+	editor
+	{
+		"color" "220 30 220"
+		"visgroupshown" "1"
+		"visgroupautoshown" "1"
+		"logicalpos" "[0 0]"
+	}
+}
+entity
+{
 	"id" "450"
 	"classname" "logic_eventlistener"
 	"EventName" "player_spawn"
@@ -702,11 +724,11 @@ entity
 	"EventName" "flashbang_detonate"
 	"FetchEventData" "1"
 	"IsEnabled" "1"
-	"targetname" "@event_flashbang_detonate"
+	"targetname" "flashbang_detonate"
 	"TeamNum" "-1"
 	connections
 	{
-		"OnEventFired" "@event_flashbang_detonateRunScriptCodeOnGameEvent_flashbang_detonate(event_data)0-1"
+		"OnEventFired" "flashbang_detonateRunScriptCodeOnGameEvent_flashbang_detonate(event_data)0-1"
 	}
 	"origin" "64 64 8"
 	editor
@@ -724,11 +746,11 @@ entity
 	"EventName" "player_blind"
 	"FetchEventData" "1"
 	"IsEnabled" "1"
-	"targetname" "@event_player_blind"
+	"targetname" "player_blind"
 	"TeamNum" "-1"
 	connections
 	{
-		"OnEventFired" "@event_player_blindRunScriptCodeOnGameEvent_player_blind(event_data)0-1"
+		"OnEventFired" "player_blindRunScriptCodeOnGameEvent_player_blind(event_data)0-1"
 	}
 	"origin" "48 64 8"
 	editor
@@ -746,11 +768,11 @@ entity
 	"EventName" "bullet_impact"
 	"FetchEventData" "1"
 	"IsEnabled" "1"
-	"targetname" "@event_impact"
+	"targetname" "bullet_impact"
 	"TeamNum" "-1"
 	connections
 	{
-		"OnEventFired" "@event_impactRunScriptCodeOnGameEvent_bullet_impact(event_data)0-1"
+		"OnEventFired" "bullet_impactRunScriptCodeOnGameEvent_bullet_impact(event_data)0-1"
 	}
 	"origin" "80 64 8"
 	editor
@@ -805,11 +827,11 @@ entity
 	"EventName" "player_hurt"
 	"FetchEventData" "1"
 	"IsEnabled" "1"
-	"targetname" "@event_hurt"
+	"targetname" "player_hurt"
 	"TeamNum" "-1"
 	connections
 	{
-		"OnEventFired" "@event_hurtRunScriptCodeOnGameEvent_player_hurt(event_data)0-1"
+		"OnEventFired" "player_hurtRunScriptCodeOnGameEvent_player_hurt(event_data)0-1"
 	}
 	"origin" "32 64 8"
 	editor
@@ -1123,11 +1145,11 @@ entity
 	"EventName" "player_say"
 	"FetchEventData" "1"
 	"IsEnabled" "1"
-	"targetname" "@event_say"
+	"targetname" "player_say"
 	"TeamNum" "-1"
 	connections
 	{
-		"OnEventFired" "@event_sayRunScriptCodeOnGameEvent_player_say(event_data)0-1"
+		"OnEventFired" "player_sayRunScriptCodeOnGameEvent_player_say(event_data)0-1"
 	}
 	"origin" "16 64 8"
 	editor

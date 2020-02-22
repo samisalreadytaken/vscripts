@@ -86,7 +86,7 @@ function Think()
 	TICK = !TICK
 
 	VS.SetKeyString( hGameText, "message", TICK ? "⎸\n⎸\n⎸\n⎸\n⎸\n⎸\n⎸\n⎸\n⎸\n⎸\n⎸\n⎸\n⎸\n⎸\n⎸\n⎸\n⎸\n⎸\n⎸\n⎸\n⎸"
-	                                             : "█\n█\n█\n█\n█\n█\n█\n█\n█\n█\n█\n█\n█\n█\n█\n█\n█\n█\n█\n█\n█" )
+	                                            : "█\n█\n█\n█\n█\n█\n█\n█\n█\n█\n█\n█\n█\n█\n█\n█\n█\n█\n█\n█\n█" )
 	EntFireByHandle( hGameText,  "display", "", 0, HPlayer )
 	EntFireByHandle( hGameText2, "display", "", 0, HPlayer )
 	EntFireByHandle( hGameText2, "settext", "", 0, HPlayer )

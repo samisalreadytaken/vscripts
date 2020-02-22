@@ -130,9 +130,6 @@ function Init()
 	SetSoundType(0,0)
 
 	// these are delayed because of the game type 2 training
-	// this map wouldn't have many of its problems and
-	// workarounds if the game type was not training
-	// It's only for that sweet Steam Rich Presence
 	delay( "s.Equip(weapon.m4a1)", 0.1 )
 	delay( "SendToConsole(\"buy usp_silencer\")", 0.3 )
 
@@ -672,7 +669,7 @@ function AIMBOT()
 	if( !bSpawned ) return
 
 	local bot  = GetBot(),
-	      head = VS.TraceDir( bot.GetAttachmentOrigin(15), bot.GetForwardVector(), -4 ).GetPos(),
+	      head = VS.TraceDir( bot.GetAttachmentOrigin(15), hBotEye.GetForwardVector(), -4 ).GetPos(),
 	      ang  = VS.GetAngle( HPlayer.EyePosition(), head )
 
 	HPlayer.SetAngles(ang.x,ang.y,0)

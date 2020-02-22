@@ -89,6 +89,11 @@ function SayCommand( msg, player = null )
 			cmd_hp( val, player )
 			break
 
+		case "flashlight":
+		case "f":
+			cmd_flashlight( player )
+			break
+
 		default:
 			printl("Invalid command.")
 	}
@@ -114,6 +119,31 @@ function cmd_hp( health, player )
 	if( health < 1 ) health = 1
 
 	player.SetHealth( health )
+}
+
+function cmd_flashlight(player)
+{
+	if( !player ) return
+
+	// if you are adding your own additional flags to the player,
+	// keep track of the flags in the scope of the player
+	// If not, just toggle flashlight
+
+	local scope = player.GetScriptScope()
+
+	// ensure the flags key exists
+	if( !("flags" in scope) ) scope.flags <- 0
+
+	// toggle
+	scope.flags = scope.flags ^ 4
+
+	VS.SetKeyInt(player, "effects", scope.flags)
+}
+
+// toggle flashlight by inspecting
+::OnGameEvent_inspect_weapon <- function(data)
+{
+	S.cmd_flashlight( VS.GetPlayerByUserid(data.userid) )
 }
 
 //------------------------------
