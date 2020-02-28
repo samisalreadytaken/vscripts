@@ -1,8 +1,8 @@
 //-----------------------------------------------------------------------
 //------------------- Copyright (c) samisalreadytaken -------------------
 //                       github.com/samisalreadytaken
-//- v1.1.3 --------------------------------------------------------------
-const _VER_ = "1.1.3";;
+//- v1.1.4 --------------------------------------------------------------
+const _VER_ = "1.1.4";;
 
 IncludeScript("vs_library");
 
@@ -539,9 +539,9 @@ function _kfB2B3B21bBA(i)
 		_kfB2B3821bBA.DisconnectOutput("PressedBack","PressedBack");
 		_kfB2B3821bBA.DisconnectOutput("UnpressedBack","UnpressedBack");
 
-		VS.SetKeyInt(HPlayer,"movetype",_kfB2B3821bBA.GetTeam()?8:2);
+		// VS.SetKeyInt(HPlayer,"movetype",_kfB2B3821bBA.GetTeam()?8:2);
 
-		_kfB2B3821bBA.SetTeam(HPlayer.IsNoclipping().tointeger());
+		// _kfB2B3821bBA.SetTeam(HPlayer.IsNoclipping().tointeger());
 	};
 }
 
@@ -929,6 +929,9 @@ function _kf82bE82lbBA(i=0)
 	if( !_kfb283B2lbBa.GetTeam() )
 		return MsgFail("You need to be in edit mode to use see.");
 
+	if( !__lp_c.len() )
+		return MsgFail("No keyframes found.");
+
 	_kf82bE821bBA = !_kf82bE821bBA;
 
 	if( _kf82bE821bBA )
@@ -1264,6 +1267,9 @@ function _kf82b38Z1bbA()
 
 		// unselect
 		_kfb283821bBa = -1;
+
+		// cheap way to hide the sprite without needing to keep track of too many things
+		_kfB2bEB2lbB4.SetOrigin(Vector(MAX_COORD_FLOAT-1,MAX_COORD_FLOAT-1,MAX_COORD_FLOAT-1));
 	}
 	else
 	{
@@ -1353,7 +1359,7 @@ function _kf82b3BZ1bbA()
 	PlaySound("UIPanorama.container_countdown");
 }
 
-// set fov val and time
+// set fov val
 function fov(x)
 {
 	if( _kfB2B382lbB4.GetTeam() )
@@ -1453,6 +1459,9 @@ function _kf82b3BZ1Bb4()
 	_kf82bEB2lbBA.clear();
 	_kf8ZbEB2lbBA.clear();
 
+	// cheap way to hide the sprite without needing to keep track of too many things
+	_kfB2bEB2lbB4.SetOrigin(Vector(MAX_COORD_FLOAT-1,MAX_COORD_FLOAT-1,MAX_COORD_FLOAT-1));
+
 	PlaySound("UIPanorama.container_countdown");
 }
 
@@ -1512,6 +1521,7 @@ function _kfb28382lB64()
 	EntFireByHandle(_kfb283B2lbBa, "disable");
 	SendToConsole("clear_debug_overlays");
 	DrawOverlay(2);
+	_kfB2bEB2lbB4.SetOrigin(Vector(MAX_COORD_FLOAT-1,MAX_COORD_FLOAT-1,MAX_COORD_FLOAT-1));
 
 	Msg("\nPreparing..." + "\nResolution          : " + _kfb283821bB4 + "\nTime between 2 keys : "+(FTIME/_kfb283821bB4)+"s\nAlgorithm           : "+(_kfb283821B6a?"default":"stabilised")+"\n");
 	PlaySound("UIPanorama.container_countdown");
@@ -1950,7 +1960,7 @@ function _kfB283B2lbBA()
 
 	// initiate cam
 	if( __la_v.len() )
-		if( __la_v[0][0] == -100 )
+		if( __la_v[0][0] == -_db36Slt4ATef )
 			_kfB2B382lbB4.SetFov(__la_v[0][1],0);;
 
 	_kfB2B382lbB4.SetAbsOrigin(s.__lp_p[0]);
