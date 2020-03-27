@@ -105,11 +105,11 @@ function Init()
 	hHudhint <- VS.CreateHudHint()
 
 	// game_ui for sound-interval setting
-	hGameUI <- Ent("u")
-	VS.AddOutput( hGameUI, "PressedForward",  "SetInterval_add" )
-	VS.AddOutput( hGameUI, "PressedBack",     "SetInterval_sub" )
-	VS.AddOutput( hGameUI, "UnpressedForward","SetInterval_rel" )
-	VS.AddOutput( hGameUI, "UnpressedBack",   "SetInterval_rel" )
+	hGameUI <- VS.CreateEntity("game_ui", null, { spawnflags = 1<<5, fieldofview = -1.0 })
+	VS.AddOutput( hGameUI, "PressedForward",  SetInterval_add )
+	VS.AddOutput( hGameUI, "PressedBack",     SetInterval_sub )
+	VS.AddOutput( hGameUI, "UnpressedForward",SetInterval_rel )
+	VS.AddOutput( hGameUI, "UnpressedBack",   SetInterval_rel )
 
 	// "You killed X"
 	hGametext <- VS.CreateGameText(null,{
@@ -136,14 +136,16 @@ function Init()
 	ClearChat()
 
 	// catch if the player userid is not validated
-	try{
+	if( "name" in SPlayer )
+	{
 		Chat( txt.lightgreen + "● "+txt.lightblue+"Welcome, "+SPlayer.name+"!")
 		Chat( ChatPrefix + txt.yellow + "Using a silenced weapon is suggested to protect your hearing.")
 		Chat(" ")
 		printl("\n\nWelcome, "+SPlayer.name+"!")
 		printl("Using a silenced weapon is suggested to protect your hearing.")
 		printl("")
-	}catch(e){printl("Loading...")}
+	}
+	else printl("Loading...")
 
 	delay("s.PurgeTheUnfit()", 1)
 }
@@ -341,7 +343,11 @@ function SetSoundType( i, m = true )
 	nSoundsLen = list_sounds.len()
 
 	for( local j = 0; j <= 7; j++ )
-		try(VS.SetKeyString( Ent("s"+j), "color", CL_WHITE ))catch(e){/*("s"+j+" doesn't exist, I know.")*/}
+	{
+		local e = Ent("s"+j)
+		if(e) VS.SetKeyString( e, "color", CL_WHITE )
+		// else printl("Entity <"+"s"+j+"> does not exist.")
+	}
 
 	VS.SetKeyString( Ent("s"+i), "color", CL_GREEN )
 }
@@ -558,6 +564,8 @@ function Kill( h )
 	v.z += 32
 	h.SetOrigin(v)
 	h.SetVelocity(Vector(0,0,-1000))
+
+	// EntFireByHandle(hHurt, "hurt", "", 0, h)
 }
 
 // Add the bot back to available bots list
@@ -730,7 +738,8 @@ Music <- {
 	neckdeep_01 = "Neck Deep, Life's Not Out To Get You",
 	blitzkids_01 = "Blitz Kids, The Good Youth",
 	theverkkars_01 = "The Verkkars, EZ4ENCE",
-	halo_01 = "Halo, The Master Chief Collection"
+	halo_01 = "Halo, The Master Chief Collection",
+	halflife_alyx_01 = "Half-Life: Alyx, Anti-Citizen"
 }
 
 MusicI <- [
@@ -773,7 +782,8 @@ MusicI <- [
 	"neckdeep_01",
 	"blitzkids_01",
 	"theverkkars_01",
-	"halo_01"
+	"halo_01",
+	"halflife_alyx_01"
 ]
 
 // I should've made this into one table but

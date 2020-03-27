@@ -9,11 +9,12 @@
 //
 // Player 1 has the cheats enabled against every enemy player
 //
-// By default, the first player that has joined the server is chosen as player 1
+// By default, the first player that has joined the server is chosen as player1
+// and the second player as player2
 //
 // Persistent through rounds, needs to be executed only once.
 //
-// To install it, place aimbot.nut and vs_library.nut in /csgo/scripts/vscripts/
+// To install it, place 'aimbot.nut' and 'vs_library.nut' in /csgo/scripts/vscripts/
 //
 // Video:
 //  	https://www.youtube.com/watch?v=j3sOgjRgoJ0
@@ -60,7 +61,7 @@
 /*
 
 #userid name     uniqueid connected ping loss state rate adr
-#21 1   "Sam"    STEAM_1:1:26669608
+#21 1   "Sam"    STEAM_1:0:11101
 #22     "Brandon"BOT
 #23     "Keith"  BOT
 #24     "Perry"  BOT
@@ -70,7 +71,7 @@
 #28     "Ethan"  BOT
 #29     "Adam"   BOT
 #30     "Norm"   BOT
-#31     "ExamplePlayer" STEAM_1:1:001
+#31     "ExamplePlayer" STEAM_1:0:11101
 #end
 
 */
@@ -104,227 +105,237 @@
 
 IncludeScript("vs_library")
 
-const NAME_P2 = "player2"
-
-function OnPostSpawn()
+if( !("__AIMBOT__" in getroottable()) )
 {
-	// make bots human
-	local i; while( i = Entc("cs_bot",i) ) VS.SetName( i, "" )
-
-	local players = VS.GetAllPlayers(),
-	      len = players.len()
-
-	if( !("hPlayer1" in this) )
+	::__AIMBOT__ <-
 	{
-		hPlayer1 <- null
-		hPlayer2 <- null
+		NAME_P2 = "player2"
 
-		if( len == 0 )
+		function OnPostSpawn()
 		{
-			printl("[][] No players found!")
-		}
-		else if( len == 1 )
-		{
-			printl("[][] Only 1 player found")
-		}
-		else if( len >= 2 )
-		{
-			printl("[][] "+len+" players found")
+			// make bots human
+			local i; while( i = Entc("cs_bot",i) ) VS.SetName( i, "" )
 
-			hPlayer1 <- players[0]
-			hPlayer2 <- players[1]
-		}
-	}
+			local players = VS.GetAllPlayers(),
+				  len = players.len()
 
-	nTeamP1 <- hPlayer1.GetTeam()
-	UpdateEnemyPlayers()
-
-	// clear previous player2's name
-	local i; while( i = Ent(NAME_P2,i) ) VS.SetName( i, "" )
-
-	// naming to get the player angles
-	if( hPlayer2 ) VS.SetName( hPlayer2, NAME_P2 )
-
-	// initiate entities
-	if( !Ent("vs_timer*") )
-	{
-		b1v1 <- false
-		bNoclip <- false
-		bAimHead <- true
-		fTriggerInterval <- 0.046875
-		bTrigger <- false
-		bAimbot <- false
-		bWH <- false
-
-		flFrameTime2 <- FrameTime()*2
-
-		hTimer <- VS.Timer( 0, FrameTime(), "Think2" )
-
-		// for triggerbot - to make player shoot
-		hCMD <- VS.CreateEntity("point_clientcommand")
-
-		// to calculate player2's head origin
-		hPlayer2Eye <- VS.CreateMeasure(NAME_P2,null,true)
-
-		// persistency through rounds
-		VS.MakePermanent( hTimer )
-		VS.MakePermanent( hCMD )
-	}
-
-	bAttacked <- false
-	CMD("-attack")
-
-	if( !hPlayer2 || !list_enemy_players.len() ) EntFireByHandle( hTimer, "disable" )
-	else
-	{
-		if( Ent("vs_timer*") ) EntFireByHandle( hTimer, "enable" )
-		VS.SetMeasure( hPlayer2Eye, NAME_P2 )
-	}
-}
-
-function CMD( cmd, delay = 0.0 )
-{
-	EntFireByHandle( hCMD, "command", cmd, delay, hPlayer1 )
-}
-
-function attack()
-{
-	SendToConsoleServer("weapon_accuracy_nospread 1;weapon_recoil_scale 0.0")
-	CMD( "+attack" )
-	CMD( "-attack", flFrameTime2 )
-	delay( "SendToConsoleServer(\"weapon_accuracy_nospread 0;weapon_recoil_scale 2.0\")", flFrameTime2 )
-}
-
-function P1( i )
-{
-	if( typeof i != "integer" ) return printl("[][P1] Invalid value")
-
-	local players = VS.GetAllPlayers()
-
-	if( i > players.len() || i < 1 ) return printl("[][P1] Invalid player id")
-
-	hPlayer1 = players[i-1]
-
-	nTeamP1 = hPlayer1.GetTeam()
-}
-
-function P2( i )
-{
-	if( typeof i != "integer" ) return printl("[][P2] Invalid value")
-
-	local players = VS.GetAllPlayers()
-
-	if( i > players.len() || i < 1 ) return printl("[][P2] Invalid player id")
-
-	_P2( players[i-1] )
-}
-
-function _P2(h)
-{
-	hPlayer2 = h
-
-	local i; while( i = Ent(NAME_P2,i) ) VS.SetName( i, "" )
-	VS.SetName( hPlayer2, NAME_P2 )
-	VS.SetMeasure( hPlayer2Eye, NAME_P2 )
-}
-
-function targets()
-{
-	b1v1 = !b1v1
-
-	if( b1v1 )
-	{
-		P2(2)
-		VS.OnTimer( hTimer, "Think" )
-	}
-	else
-	{
-		UpdateEnemyPlayers()
-		bWH = false
-		VS.OnTimer( hTimer, "Think2" )
-		EntFireByHandle( hTimer, "enable" )
-	}
-
-	printl("[][] " + (b1v1 ? "1v1 mode" : "all enemies mode"))
-}
-
-function Think()
-{
-	if( hPlayer2.GetHealth() )
-	{
-		local h2
-
-		if( bAimHead )
-			h2 = VS.TraceDir( hPlayer2.GetAttachmentOrigin(15), hPlayer2Eye.GetForwardVector(), -4 ).GetPos()
-		else
-		{
-			h2 = hPlayer2.EyePosition()
-			h2.z -= 16
-		}
-
-		local h1  = hPlayer1.EyePosition(),
-		      ang = VS.GetAngle( h1, h2 )
-
-		if( bAimbot )
-			hPlayer1.SetAngles( ang.x, ang.y, 0 )
-
-		if( bTrigger )
-		{
-			if( !bAttacked )
+			if( !("hPlayer1" in this) )
 			{
-				if( !VS.TraceLine( h1, h2 ).DidHit() )
+				hPlayer1 <- null
+				hPlayer2 <- null
+
+				if( len == 0 )
 				{
+					printl("[][] No players found!")
+				}
+				else if( len == 1 )
+				{
+					printl("[][] Only 1 player found")
+
+					hPlayer1 <- players[0]
+				}
+				else if( len >= 2 )
+				{
+					printl("[][] "+len+" players found")
+
+					hPlayer1 <- players[0]
+					hPlayer2 <- players[1]
+				}
+			}
+
+			nTeamP1 <- hPlayer1.GetTeam()
+			UpdateEnemyPlayers()
+
+			// clear previous player2's name
+			local i; while( i = Ent(NAME_P2,i) ) VS.SetName( i, "" )
+
+			// naming to get the player angles
+			if( hPlayer2 ) VS.SetName( hPlayer2, NAME_P2 )
+
+			// initiate entities
+			if( !("hTimer" in this) || !hTimer && !hTimer.IsValid() )
+			{
+				b1v1 <- false
+				bNoclip <- false
+				bAimHead <- true
+				fTriggerInterval <- 0.046875
+				bTrigger <- false
+				bAimbot <- false
+				bWH <- false
+
+				flFrameTime2 <- FrameTime()*2
+
+				hTimer <- VS.Timer( 0, FrameTime(), Think2 )
+
+				// for triggerbot - to make player shoot
+				hCMD <- VS.CreateEntity("point_clientcommand")
+
+				// to calculate player2's head origin
+				hPlayer2Eye <- VS.CreateMeasure(NAME_P2,null,true)
+
+				// persistency through rounds
+				VS.MakePermanent( hTimer )
+				VS.MakePermanent( hCMD )
+			}
+
+			bAttacked <- false
+			CMD("-attack")
+
+			if( !hPlayer2 || !list_enemy_players.len() ) EntFireByHandle( hTimer, "disable" )
+			else
+			{
+				if( hTimer ) EntFireByHandle( hTimer, "enable" )
+				VS.SetMeasure( hPlayer2Eye, NAME_P2 )
+			}
+		}
+
+		function CMD( cmd, delay = 0.0 )
+		{
+			EntFireByHandle( hCMD, "command", cmd, delay, hPlayer1 )
+		}
+
+		function attack()
+		{
+			SendToConsoleServer("weapon_accuracy_nospread 1;weapon_recoil_scale 0.0")
+			CMD( "+attack" )
+			CMD( "-attack", flFrameTime2 )
+			delay( "SendToConsoleServer(\"weapon_accuracy_nospread 0;weapon_recoil_scale 2.0\")", flFrameTime2 )
+		}
+
+		function P1( i )
+		{
+			if( typeof i != "integer" ) return printl("[][P1] Invalid value")
+
+			local players = VS.GetAllPlayers()
+
+			if( i > players.len() || i < 1 ) return printl("[][P1] Invalid player id")
+
+			hPlayer1 = players[i-1]
+
+			nTeamP1 = hPlayer1.GetTeam()
+		}
+
+		function P2( i )
+		{
+			if( typeof i != "integer" ) return printl("[][P2] Invalid value")
+
+			local players = VS.GetAllPlayers()
+
+			if( i > players.len() || i < 1 ) return printl("[][P2] Invalid player id")
+
+			_P2( players[i-1] )
+		}
+
+		function _P2(h)
+		{
+			hPlayer2 = h
+
+			local i; while( i = Ent(NAME_P2,i) ) VS.SetName( i, "" )
+			VS.SetName( hPlayer2, NAME_P2 )
+			VS.SetMeasure( hPlayer2Eye, NAME_P2 )
+		}
+
+		function targets()
+		{
+			b1v1 = !b1v1
+
+			if( b1v1 )
+			{
+				P2(2)
+				VS.OnTimer( hTimer, "Think" )
+			}
+			else
+			{
+				UpdateEnemyPlayers()
+				bWH = false
+				VS.OnTimer( hTimer, "Think2" )
+				EntFireByHandle( hTimer, "enable" )
+			}
+
+			printl("[][] " + (b1v1 ? "1v1 mode" : "all enemies mode"))
+		}
+
+		function Think()
+		{
+			if( hPlayer2.GetHealth() )
+			{
+				local h2
+
+				if( bAimHead )
+					h2 = VS.TraceDir( hPlayer2.GetAttachmentOrigin(15), hPlayer2Eye.GetForwardVector(), -4 ).GetPos()
+				else
+				{
+					h2 = hPlayer2.EyePosition()
+					h2.z -= 16
+				}
+
+				local h1  = hPlayer1.EyePosition(),
+					  ang = VS.GetAngle( h1, h2 )
+
+				if( bAimbot )
 					hPlayer1.SetAngles( ang.x, ang.y, 0 )
-					attack()
-					bAttacked = true
-					delay( "bAttacked = false", fTriggerInterval )
+
+				if( bTrigger )
+				{
+					if( !bAttacked )
+					{
+						if( !VS.TraceLine( h1, h2 ).DidHit() )
+						{
+							hPlayer1.SetAngles( ang.x, ang.y, 0 )
+							attack()
+							bAttacked = true
+							delay( "__AIMBOT__.bAttacked = false", fTriggerInterval )
+						}
+					}
+				}
+
+				if( bWH )
+					DebugDrawBox( hPlayer2.EyePosition(), Vector(-2,-2,-2), Vector(2,2,2), 25, 255, 25, 255, 0.025 )
+			}
+		}
+
+		function Think2()
+		{
+			local h1 = hPlayer1.EyePosition()
+
+			// calculate LOS to every enemy player
+			foreach( player in list_enemy_players )
+			{
+				// if alive
+				if( player.GetHealth() )
+				{
+					// if direct LOS
+					if( !VS.TraceLine( h1, player.GetAttachmentOrigin(15) ).DidHit() )
+					{
+						// set P2 if not already set
+						if( player.GetName() != NAME_P2 ) _P2( player )
+
+						// logic
+						return Think()
+					}
 				}
 			}
 		}
 
-		if( bWH )
-			DebugDrawBox( hPlayer2.EyePosition(), Vector(-2,-2,-2), Vector(2,2,2), 25, 255, 25, 255, 0.025 )
-	}
-}
-
-function Think2()
-{
-	local h1 = hPlayer1.EyePosition()
-
-	// calculate LOS to every enemy player
-	foreach( player in list_enemy_players )
-	{
-		// if alive
-		if( player.GetHealth() )
+		function UpdateEnemyPlayers()
 		{
-			// if direct LOS
-			if( !VS.TraceLine( h1, player.GetAttachmentOrigin(15) ).DidHit() )
+			list_enemy_players <- []
+
+			foreach( player in VS.GetAllPlayers() )
 			{
-				// set P2 if not already set
-				if( player.GetName() != NAME_P2 ) _P2( player )
-
-				// logic
-				return Think()
+				if( player.GetTeam() != nTeamP1 )
+				{
+					list_enemy_players.append( player )
+				}
 			}
-		}
-	}
-}
-
-function UpdateEnemyPlayers()
-{
-	list_enemy_players <- []
-
-	foreach( player in VS.GetAllPlayers() )
-	{
-		if( player.GetTeam() != nTeamP1 )
-		{
-			list_enemy_players.append( player )
 		}
 	}
 }
 
 function noclip()
 {
+	if( this != __AIMBOT__ ) return noclip.call(__AIMBOT__)
+
 	bNoclip = !bNoclip
 
 	if( bNoclip )
@@ -347,6 +358,8 @@ function noclip()
 
 function aim()
 {
+	if( this != __AIMBOT__ ) return aim.call(__AIMBOT__)
+
 	bAimHead = !bAimHead
 
 	printl("[][] Aiming at " + (bAimHead ? "head" : "torso"))
@@ -354,6 +367,8 @@ function aim()
 
 function aimbot()
 {
+	if( this != __AIMBOT__ ) return aimbot.call(__AIMBOT__)
+
 	bAimbot = !bAimbot
 
 	printl("[][] Aimbot " + (bAimbot ? "enabled" : "disabled"))
@@ -361,6 +376,8 @@ function aimbot()
 
 function wh()
 {
+	if( this != __AIMBOT__ ) return wh.call(__AIMBOT__)
+
 	if( !b1v1 ) return printl("[][!] Cannot enable WH while in all-enemies mode")
 
 	bWH = !bWH
@@ -370,9 +387,11 @@ function wh()
 
 function trigger()
 {
+	if( this != __AIMBOT__ ) return trigger.call(__AIMBOT__)
+
 	bTrigger = !bTrigger
 
 	printl("[][] Triggerbot " + (bTrigger ? "enabled" : "disabled"))
 }
 
-OnPostSpawn()
+__AIMBOT__.OnPostSpawn()

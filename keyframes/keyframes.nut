@@ -1,8 +1,8 @@
 //-----------------------------------------------------------------------
 //------------------- Copyright (c) samisalreadytaken -------------------
 //                       github.com/samisalreadytaken
-//- v1.1.4 --------------------------------------------------------------
-const _VER_ = "1.1.4";;
+//- v1.1.5 --------------------------------------------------------------
+const _VER_ = "1.1.5";;
 
 IncludeScript("vs_library");
 
@@ -88,24 +88,24 @@ local _ = function()
 	if( !("_kfb283BZ1b8a" in this) )
 	{
 		// holds playback status
-		_kfb283BZ1b8a <- VS.CreateTimer("", FTIME);
+		_kfb283BZ1b8a <- VS.CreateTimer(null, FTIME);
 		VS.MakePermanent(_kfb283BZ1b8a);
 
 		// holds edit mode status
-		_kfb283B2lbBa <- VS.CreateTimer("", _kfb283B21b8a-FrameTime());
+		_kfb283B2lbBa <- VS.CreateTimer(null, _kfb283B21b8a-FrameTime());
 		VS.MakePermanent(_kfb283B2lbBa);
 
-		_kfb283B2tbBa <- VS.CreateTimer("", FrameTime()*2.5);
+		_kfb283B2tbBa <- VS.CreateTimer(null, FrameTime()*2.5);
 		VS.MakePermanent(_kfb283B2tbBa);
 
-		_kfB2B38Z1bBa <- VS.CreateGameText("",{
+		_kfB2B38Z1bBa <- VS.CreateGameText(null,{
 			channel = 1,
 			color = Vector(255,138,0),
 			holdtime = _kfb283B21b8a,
 			x = 0.475,
 			y = 0.55
 		});
-		_kfB2B38Z1bB4 <- VS.CreateGameText("",{
+		_kfB2B38Z1bB4 <- VS.CreateGameText(null,{
 			channel = 2,
 			color = Vector(255,138,0),
 			holdtime = _kfb283B21b8a,
@@ -115,7 +115,7 @@ local _ = function()
 		VS.MakePermanent(_kfB2B38Z1bBa);
 		VS.MakePermanent(_kfB2B38Z1bB4);
 
-		_kfB2B38ZlbB4 <- VS.CreateHudHint("");
+		_kfB2B38ZlbB4 <- VS.CreateHudHint();
 		VS.MakePermanent(_kfB2B38ZlbB4);
 
 		HPlayerEye <- VS.CreateMeasure(HPlayer.GetName(),null,true);
@@ -221,7 +221,7 @@ function OnPostSpawn()
 // welcome msg
 function _kfB2bEB2lbba()
 {
-	Msg("\n\n\n   [v"+_VER_+"]     github.com/samisalreadytaken/keyframes\n\nkf_add                : Add new keyframe\nkf_remove             : Remove the selected key\nkf_remove_undo        : Undo last remove action\nkf_removefov          : Remove the FOV data from the selected key\nkf_clear              : Remove all keyframes\nkf_insert             : Insert new keyframe after the selected key\nkf_replace            : Replace the selected key\nkf_replace_undo       : Undo last replace action\n                      :\nkf_compile            : Compile the keyframe data\nkf_play               : Play the compiled data\nkf_stop               : Stop playback\nkf_save               : Save the compiled data\nkf_savekeys           : Save the keyframe data\n                      :\nkf_mode_angle         : Toggle stabilised angles algorithm\n                      :\nkf_edit               : Toggle edit mode\nkf_select             : In edit mode, hold the current selection\nkf_see                : In edit mode, see the current selection\nkf_next               : While holding a key, select the next one\nkf_prev               : While holding a key, select the previous one\nkf_showkeys           : In edit mode, toggle showing keyframes\nkf_showpath           : In edit mode, toggle showing the path\n                      :\nscript fov(val)       : Set FOV data on the selected key\nscript tilt(val)      : Set camera tilt on the selected key\n                      :\nscript load(input)    : Load new data from file\n                      :\nkf_cmd                : List all commands\n\n--- --- --- --- --- ---\n\nMOUSE1                : kf_add\nMOUSE2                : kf_remove\nE                     : kf_see\nA / D                 : (In see mode) Set camera tilt\nW / S                 : (In see mode) Set camera FOV\nMOUSE1                : (In see mode) kf_next\nMOUSE2                : (In see mode) kf_prev\n");
+	Msg("\n\n\n   [v"+_VER_+"]     github.com/samisalreadytaken/keyframes\n\nkf_add                : Add new keyframe\nkf_remove             : Remove the selected key\nkf_remove_undo        : Undo last remove action\nkf_removefov          : Remove the FOV data from the selected key\nkf_clear              : Remove all keyframes\nkf_insert             : Insert new keyframe after the selected key\nkf_replace            : Replace the selected key\nkf_replace_undo       : Undo last replace action\n                      :\nkf_compile            : Compile the keyframe data\nkf_play               : Play the compiled data\nkf_stop               : Stop playback\nkf_save               : Save the compiled data\nkf_savekeys           : Save the keyframe data\n                      :\nkf_mode_angle         : Toggle stabilised angles algorithm\n                      :\nkf_edit               : Toggle edit mode\nkf_select             : In edit mode, hold the current selection\nkf_see                : In edit mode, see the current selection\nkf_next               : While holding a key, select the next one\nkf_prev               : While holding a key, select the previous one\nkf_showkeys           : In edit mode, toggle showing keyframes\nkf_showpath           : In edit mode, toggle showing the path\n                      :\nscript fov(val)       : Set FOV data on the selected key\nscript roll(val)      : Set camera roll on the selected key\n                      :\nscript load(input)    : Load new data from file\n                      :\nkf_cmd                : List all commands\n\n--- --- --- --- --- ---\n\nMOUSE1                : kf_add\nMOUSE2                : kf_remove\nE                     : kf_see\nA / D                 : (In see mode) Set camera roll\nW / S                 : (In see mode) Set camera FOV\nMOUSE1                : (In see mode) kf_next\nMOUSE2                : (In see mode) kf_prev\n");
 
 	local T = VS.GetTickrate();
 
@@ -266,7 +266,7 @@ function _kfB2bEB21bba()
 //kf_showpath           : In edit mode, toggle showing the path
 //                      :
 //script fov(val)       : Set FOV data on the selected key
-//script tilt(val)      : Set camera tilt on the selected key
+//script roll(val)      : Set camera roll on the selected key
 //                      :
 //script load(input)    : Load new data from file
 //                      :
@@ -277,13 +277,13 @@ function _kfB2bEB21bba()
 //MOUSE1                : kf_add
 //MOUSE2                : kf_remove
 //E                     : kf_see
-//A / D                 : (In see mode) Set camera tilt
+//A / D                 : (In see mode) Set camera roll
 //W / S                 : (In see mode) Set camera FOV
 //MOUSE1                : (In see mode) kf_next
 //MOUSE2                : (In see mode) kf_prev
 //");
 
-	Msg("\n[i] See README.md for details.\n\n   [v"+_VER_+"]     github.com/samisalreadytaken/keyframes\n\nkf_add                : Add new keyframe\nkf_remove             : Remove the selected key\nkf_remove_undo        : Undo last remove action\nkf_removefov          : Remove the FOV data from the selected key\nkf_clear              : Remove all keyframes\nkf_insert             : Insert new keyframe after the selected key\nkf_replace            : Replace the selected key\nkf_replace_undo       : Undo last replace action\n                      :\nkf_compile            : Compile the keyframe data\nkf_play               : Play the compiled data\nkf_stop               : Stop playback\nkf_save               : Save the compiled data\nkf_savekeys           : Save the keyframe data\n                      :\nkf_mode_angle         : Toggle stabilised angles algorithm\n                      :\nkf_edit               : Toggle edit mode\nkf_select             : In edit mode, hold the current selection\nkf_see                : In edit mode, see the current selection\nkf_next               : While holding a key, select the next one\nkf_prev               : While holding a key, select the previous one\nkf_showkeys           : In edit mode, toggle showing keyframes\nkf_showpath           : In edit mode, toggle showing the path\n                      :\nscript fov(val)       : Set FOV data on the selected key\nscript tilt(val)      : Set camera tilt on the selected key\n                      :\nscript load(input)    : Load new data from file\n                      :\nkf_cmd                : List all commands\n\n--- --- --- --- --- ---\n\nMOUSE1                : kf_add\nMOUSE2                : kf_remove\nE                     : kf_see\nA / D                 : (In see mode) Set camera tilt\nW / S                 : (In see mode) Set camera FOV\nMOUSE1                : (In see mode) kf_next\nMOUSE2                : (In see mode) kf_prev\n");
+	Msg("\n[i] See README.md for details.\n\n   [v"+_VER_+"]     github.com/samisalreadytaken/keyframes\n\nkf_add                : Add new keyframe\nkf_remove             : Remove the selected key\nkf_remove_undo        : Undo last remove action\nkf_removefov          : Remove the FOV data from the selected key\nkf_clear              : Remove all keyframes\nkf_insert             : Insert new keyframe after the selected key\nkf_replace            : Replace the selected key\nkf_replace_undo       : Undo last replace action\n                      :\nkf_compile            : Compile the keyframe data\nkf_play               : Play the compiled data\nkf_stop               : Stop playback\nkf_save               : Save the compiled data\nkf_savekeys           : Save the keyframe data\n                      :\nkf_mode_angle         : Toggle stabilised angles algorithm\n                      :\nkf_edit               : Toggle edit mode\nkf_select             : In edit mode, hold the current selection\nkf_see                : In edit mode, see the current selection\nkf_next               : While holding a key, select the next one\nkf_prev               : While holding a key, select the previous one\nkf_showkeys           : In edit mode, toggle showing keyframes\nkf_showpath           : In edit mode, toggle showing the path\n                      :\nscript fov(val)       : Set FOV data on the selected key\nscript roll(val)      : Set camera roll on the selected key\n                      :\nscript load(input)    : Load new data from file\n                      :\nkf_cmd                : List all commands\n\n--- --- --- --- --- ---\n\nMOUSE1                : kf_add\nMOUSE2                : kf_remove\nE                     : kf_see\nA / D                 : (In see mode) Set camera roll\nW / S                 : (In see mode) Set camera FOV\nMOUSE1                : (In see mode) kf_next\nMOUSE2                : (In see mode) kf_prev\n");
 }
 
 function PlaySound(s)
@@ -588,13 +588,13 @@ function _kf82bE8Z1BBA()
 	{
 		_kf82bE8Z1BB4.z = clamp(floor(_kf82bE8Z1BB4.z)+4, -180, 180);
 		VS.SetAngles(_kfB2B382lbB4, _kf82bE8Z1BB4);
-		Hint("Tilt "+_kf82bE8Z1BB4.z);
+		Hint("Roll "+_kf82bE8Z1BB4.z);
 	}
 	else if( __roll_L )
 	{
 		_kf82bE8Z1BB4.z = clamp(floor(_kf82bE8Z1BB4.z)-4, -180, 180);
 		VS.SetAngles(_kfB2B382lbB4, _kf82bE8Z1BB4);
-		Hint("Tilt "+_kf82bE8Z1BB4.z);
+		Hint("Roll "+_kf82bE8Z1BB4.z);
 	};;
 
 	PlaySound("UIPanorama.store_item_rollover");
@@ -979,13 +979,13 @@ function _kf82bE82lbBA(i=0)
 	PlaySound("UIPanorama.container_countdown");
 }
 
-function tilt(v)
+function roll(v)
 {
 	if( _kfB2B382lbB4.GetTeam() )
 		return MsgFail("Cannot modify keyframes while compiling!");
 
 	if( !_kfb283B2lbBa.GetTeam() )
-		return MsgFail("You need to be in edit mode to use camera tilt.");
+		return MsgFail("You need to be in edit mode to use camera roll.");
 
 	v = VS.AngleNormalize(v.tofloat());
 
@@ -1004,7 +1004,7 @@ function tilt(v)
 		VS.SetAngles(_kfB2B382lbB4, VS.QuaternionAngles2(__la_q[_kfb283821bBa]));
 	};
 
-	MsgHint("Set key #" + _kfb283821BB4 + " tilt to " + v);
+	MsgHint("Set key #" + _kfb283821BB4 + " roll to " + v);
 	PlaySound("UIPanorama.container_countdown");
 }
 
@@ -1771,7 +1771,7 @@ function _kf82b3B2lBb4( i = 0 )
 	_kf82b3b2lBb4 <- VS.Log.L;
 
 	VS.Log.Clear();
-	VS.Log.filePrefix = "kf_data";
+	VS.Log.filePrefix = "scripts/vscripts/kf_data";
 	VS.Log.condition = true;
 	VS.Log.export = true;
 	VS.Log.filter = "L ";
