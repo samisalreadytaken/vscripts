@@ -4,20 +4,32 @@
 //
 // CS:GO game event examples, using vscripts and vs_library
 //
-//  	https://youtube.com/watch?v=5KAygtqN8MI
+//    https://youtube.com/watch?v=5KAygtqN8MI
 //
-//  	https://github.com/samisalreadytaken/vs_library
-//  	https://github.com/samisalreadytaken/vscripts
+//------------------------------
 //
+// Creating a new event listener:       (example bomb_abortdefuse)
+//    targetname:     bomb_abortdefuse
+//    EventName:      bomb_abortdefuse
+//    FetchEventData: 1
+//    Output:         OnEventFired >
+//                        bomb_abortdefuse >
+//                            RunScriptCode >
+//                                OnGameEvent_bomb_abortdefuse(event_data)
 //
+// In code:
+//    ::OnGameEvent_bomb_abortdefuse <- function(data){}
 //
-// You must have read the vs_library documentation before continuing..!
+//------------------------------
 //
+// Read the vs_library documentation on setting up basis eventlisteners
+// for userid, SteamID and Steam name acquisition.
 //
 //------------------------------
 
 IncludeScript("vs_library")
 
+// test conditions
 SendToConsole("mp_warmup_pausetimer 1;bot_stop 1;mp_autoteambalance 0;mp_limitteams 0")
 
 // Add reference to your scope to access it from the event scopes.
@@ -32,7 +44,7 @@ SendToConsole("mp_warmup_pausetimer 1;bot_stop 1;mp_autoteambalance 0;mp_limitte
 // player_say
 //
 // Example 1.1: Execute script code on chat commands.
-// Does not require vs_library.
+// Does NOT require vs_library.
 //
 // Example 1.2: Changing the player health
 // Requirements:
@@ -49,13 +61,10 @@ SendToConsole("mp_warmup_pausetimer 1;bot_stop 1;mp_autoteambalance 0;mp_limitte
 	local msg = data.text
 
 	// if the message isn't a command, leave
-	if( msg.slice(0,1) != "!" ) return
-
-	// get the userid
-	local id = data.userid
+	if( msg[0] != '!' ) return
 
 	// get the player handle
-	local player = VS.GetPlayerByUserid( id )
+	local player = VS.GetPlayerByUserid(data.userid)
 
 	// execute
 	// pass the text after the command prefix (!)
@@ -115,7 +124,7 @@ function cmd_hp( health, player )
 	// invalid value
 	catch(e){return}
 
-	// setting health to a value lower than 1 causes problems
+	// setting health to a value lower than 1 causes problems, clamp it
 	if( health < 1 ) health = 1
 
 	player.SetHealth( health )
@@ -242,6 +251,8 @@ function SpawnMelon(pos)
 	list_melons.append(prop)
 }
 
+// Note that instead of constantly spawning and deleting props,
+// it is better to store as many as you need instead of killing, and reusing them.
 function KillMelon()
 {
 	list_melons.remove(0).Destroy()

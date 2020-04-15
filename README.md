@@ -8,7 +8,7 @@ These codes are published in the hope that they will be useful, without any warr
 
 ---
 
-* [**YouTube channel**][youtube]: Related videos and tutorials
+* [**YouTube channel**][youtube]
 * [**Notepad++ syntax highlighter**][npp]
 
 [youtube]: https://www.youtube.com/channel/UCHOaOBOuH02ZW44SG201d-g
