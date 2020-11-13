@@ -40,7 +40,7 @@ SendToConsole("mp_warmup_pausetimer 1;bot_stop 1;mp_autoteambalance 0;mp_limitte
 
 //------------------------------
 
-::OnGameEvent_round_freeze_end <- function(event)
+::OnGameEvent_round_freeze_end <- function(e)
 {
 	VS.ValidateUseridAll()
 }
@@ -61,7 +61,7 @@ SendToConsole("mp_warmup_pausetimer 1;bot_stop 1;mp_autoteambalance 0;mp_limitte
 //
 //------------------------------
 
-::OnGameEvent_player_say <- function(event)
+::OnGameEvent_player_say <- function( event )
 {
 	// get the chat message
 	local msg = event.text
@@ -71,15 +71,10 @@ SendToConsole("mp_warmup_pausetimer 1;bot_stop 1;mp_autoteambalance 0;mp_limitte
 	if ( msg[0] != '!' )
 		return
 
-	// get the player handle
-	local player = VS.GetPlayerByUserid(event.userid)
-
-	// execute
+	local player = VS.GetPlayerByUserid( event.userid )
 	SayCommand( player, msg )
 
-}.bindenv(this) // example binding
-// doing this, you don't need to worry about your working scope.
-// Useful if there are calls to variables in your script.
+}.bindenv(this)
 
 function SayCommand( player, msg )
 {
@@ -87,60 +82,62 @@ function SayCommand( player, msg )
 	local argv = ::split( msg.slice(1), " " )
 	local argc = argv.len()
 
-	// if there are no spaces in the message, meaning the message is just "hp"
-	// argv[1] will not exist. Then val = null
-	// other values that are separated with ' ' can be got with 'argv[2]' after checking '(argc > 2)'
+	// 'argv[0]' is the command
+	// values separated with " " can be accessed with 'argv[1]', 'argv[2]'...
 
-	// val = "1337"
-	local val
+	local value
 	if ( argc > 1 )
-		val = argv[1]
+		value = argv[1]
 
-	// Your chat commands are string cases in this switch statement
-	// Strings are case sensitive
-	// If you'd like to make them insensitive, you can add 'tolower' to the message string
-	// In this case, every case string needs to be lower case character
-	switch( argv[0].tolower() )
+	// Your chat commands are string cases in this switch statement.
+	// Strings are case sensitive.
+	// If you'd like to make them insensitive, you can add 'tolower' to the command string
+	// In this case, every case string needs to be lower case.
+	switch ( argv[0].tolower() )
 	{
 		// multiple chat messages can execute the same code
 		case "hp":
 		case "health":
-			cmd_hp( player, val )
+		{
+			CommandSetHealth( player, value )
 			break
-
+		}
 	//	default:
-	//		printl("Invalid command.")
+	//		Msg("Invalid command.\n")
 	}
 }
 
-function cmd_hp( player, health )
+function CommandSetHealth( player, health )
 {
-	// if health is null, the message did not have the value
-	// if player is null, the player was not found player disconnected, or unexpected error
+	// if health is null, the message did not have a value
+	// if player is null, the player was not found. Player disconnected, or unexpected error
 	if ( !health || !player )
 		return
 
-	// val is string, convert to int
+	// 'value' is string, convert to int
 	// if a character exists before the number, cannot convert - invalid input
-	// example wrong message: "!hp m26"
+	// example invalid message: "!hp m26"
 	// but this will work: "!hp 26m"
-	// health = 1337
 	try( health = health.tointeger() )
 
 	// invalid value
-	catch(e){return}
+	catch(e){ return }
 
-	// setting health to a value lower than 1 causes problems, clamp it
+	// clamp the value
 	if ( health < 1 )
 		health = 1
 
 	player.SetHealth( health )
+
+	local sc = player.GetScriptScope()
+
+	ScriptPrintMessageChatAll( sc.name + " (" + sc.networkid + ") set their health to " + health )
 }
 
 // toggle flashlight by inspecting
-::OnGameEvent_inspect_weapon <- function(event)
+::OnGameEvent_inspect_weapon <- function( event )
 {
-	local player = VS.GetPlayerByUserid(data.userid)
+	local player = VS.GetPlayerByUserid( event.userid )
 
 	if ( !player )
 		return
@@ -152,13 +149,13 @@ function cmd_hp( player, health )
 	local scope = player.GetScriptScope()
 
 	// ensure the flags key exists
-	if ( !("flags" in scope) )
-		scope.flags <- 0
+	if ( !("EFlags" in scope) )
+		scope.EFlags <- 0
 
 	// toggle
-	scope.flags = scope.flags ^ 4
+	scope.EFlags = scope.EFlags ^ 4
 
-	player.__KeyValueFromInt("effects", scope.flags)
+	player.__KeyValueFromInt( "effects", scope.EFlags )
 }
 
 //------------------------------
@@ -221,12 +218,12 @@ function cmd_hp( player, health )
 				{
 					local attacker = VS.GetPlayerByUserid(event.attacker)
 
-					EntFireByHandle(victim, "SetHealth", 0)
-					EntFire("your_game_score", "ApplyScore", "", 0, attacker)
+					EntFireByHandle( victim, "SetHealth", 0 )
+					EntFire( "your_game_score", "ApplyScore", "", 0, attacker )
 				}
 				else
 				{
-					victim.SetHealth(newhp)
+					victim.SetHealth( newhp )
 				}
 			}
 		}
@@ -250,18 +247,18 @@ function cmd_hp( player, health )
 const W_CUSTOM_GUN = "models/weapons/w_pist_deagle.mdl"
 const V_CUSTOM_GUN = "models/weapons/v_pist_deagle.mdl"
 
-PrecacheModel(W_CUSTOM_GUN)
-PrecacheModel(V_CUSTOM_GUN)
+PrecacheModel( W_CUSTOM_GUN )
+PrecacheModel( V_CUSTOM_GUN )
 
 // These can easily be changed into arrays for multiple players
 hCustomGunOwner <- null
 hCustomGunViewmodel <- null
 
-function PickupCustomGun()
+function PickupCustomGun( player )
 {
-	for( local ent; ent = Entities.FindByClassname(ent, "predicted_viewmodel"); )
+	for( local ent; ent = Entities.FindByClassname( ent, "predicted_viewmodel" ); )
 	{
-		if ( ent.GetMoveParent() == activator )
+		if ( ent.GetMoveParent() == player )
 		{
 			hCustomGunViewmodel = ent
 			break;
@@ -275,33 +272,33 @@ function PickupCustomGun()
 		return
 	}
 
-	hCustomGunOwner = activator
-	hCustomGunViewmodel.SetModel(V_CUSTOM_GUN)
+	hCustomGunOwner = player
+	hCustomGunViewmodel.SetModel( V_CUSTOM_GUN )
 }
 
 // OnWeaponSwitch
-::OnGameEvent_item_equip <- function(data)
+::OnGameEvent_item_equip <- function( data )
 {
 	if ( data.item == "glock" )
 	{
-		local ply = VS.GetPlayerByUserid(data.userid)
+		local ply = VS.GetPlayerByUserid( data.userid )
 
 		if ( ply )
 		{
 			if ( ply == hCustomGunOwner )
 			{
-				hCustomGunViewmodel.SetModel(V_CUSTOM_GUN)
+				hCustomGunViewmodel.SetModel( V_CUSTOM_GUN )
 			}
 		}
 	}
 }.bindenv(this)
 
 // OnWeaponDropped
-::OnGameEvent_item_remove <- function(data)
+::OnGameEvent_item_remove <- function( data )
 {
 	if ( data.item == "glock" )
 	{
-		local ply = VS.GetPlayerByUserid(data.userid)
+		local ply = VS.GetPlayerByUserid( data.userid )
 
 		if ( ply )
 		{
@@ -324,9 +321,9 @@ function OnPlayerDeath()
 }
 
 // Alternative way to listen to player death with no event listeners
-VS.AddOutput(Ent("game_playerdie") ? Ent("game_playerdie") :
-             VS.CreateEntity("trigger_brush",{targetname="game_playerdie"},true),
-             "OnUse", OnPlayerDeath)
+VS.AddOutput( Ent("game_playerdie") ? Ent("game_playerdie") :
+              VS.CreateEntity( "trigger_brush",{ targetname = "game_playerdie" },true ),
+              "OnUse", OnPlayerDeath )
 
 //------------------------------
 //
@@ -340,19 +337,17 @@ VS.AddOutput(Ent("game_playerdie") ? Ent("game_playerdie") :
 
 ::OnGameEvent_flashbang_detonate <- function(data)
 {
-	// VS.DumpScope(data)
-	printl(" --- ")
-	printl("Flash banged @ " + data.x + "," + data.y + "," + data.z)
-	printl("Thrown by " + VS.GetPlayerByUserid(data.userid).GetScriptScope().name)
+	printl( " --- " )
+	printl( "Flash banged @ " + data.x + "," + data.y + "," + data.z )
+	printl( "Thrown by " + VS.GetPlayerByUserid(data.userid).GetScriptScope().name )
 }
 
 ::OnGameEvent_player_blind <- function(data)
 {
-	// VS.DumpScope(data)
 	local player = VS.GetPlayerByUserid(data.userid)
 	local name = player.GetScriptScope().name
 
-	printl(name+" is blind for "+data.blind_duration+" seconds.")
+	printl( name+" is blind for " + data.blind_duration + " seconds." )
 }
 
 //------------------------------
