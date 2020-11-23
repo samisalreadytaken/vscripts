@@ -143,8 +143,6 @@ if ( !("_AIMBOT_" in this) || !_AIMBOT_ )
 	// for no low fov mode
 	m_hPlayer1Eye <- ::VS.CreateMeasure( NAME_P1,null,true ).weakref()
 
-	Msg <- ::printl
-
 	function Init()
 	{
 		::VS.OnTimer( m_hThink, Think2 )
@@ -154,17 +152,17 @@ if ( !("_AIMBOT_" in this) || !_AIMBOT_ )
 
 		if ( len == 0 )
 		{
-			Msg("[][] No players found!")
+			Msg("[][] No players found!\n")
 		}
 		else if ( len == 1 )
 		{
-			Msg("[][] Only 1 player found")
+			Msg("[][] Only 1 player found\n")
 
 			_P1( players[0] )
 		}
 		else if ( len >= 2 )
 		{
-			Msg("[][] "+len+" players found")
+			Msg("[][] "+len+" players found\n")
 
 			_P1( players[0] )
 			_P2( players[1] )
@@ -188,13 +186,13 @@ if ( !("_AIMBOT_" in this) || !_AIMBOT_ )
 			::VS.SetMeasure( m_hPlayer2Eye, NAME_P2 )
 		}
 
-		Msg("[][] aimbot script loaded")
+		Msg("[][] aimbot script loaded\n")
 	}
 
 	// kill and stop everything
 	function Kill()
 	{
-		Msg("Terminating...")
+		Msg("Terminating...\n")
 
 		SetGlow(null)
 
@@ -239,12 +237,12 @@ if ( !("_AIMBOT_" in this) || !_AIMBOT_ )
 	function P1(i)
 	{
 		if ( typeof i != "integer" )
-			return Msg("[][P1] Invalid value")
+			return Msg("[][P1] Invalid value\n")
 
 		local players = ::VS.GetAllPlayers()
 
 		if ( i > players.len() || i < 1 )
-			return Msg("[][P1] Invalid player id")
+			return Msg("[][P1] Invalid player id\n")
 
 		_P1(players[i-1])
 	}
@@ -268,12 +266,12 @@ if ( !("_AIMBOT_" in this) || !_AIMBOT_ )
 	function P2( i )
 	{
 		if ( typeof i != "integer" )
-			return Msg("[][P2] Invalid value")
+			return Msg("[][P2] Invalid value\n")
 
 		local players = ::VS.GetAllPlayers()
 
 		if ( i > players.len() || i < 1 )
-			return Msg("[][P2] Invalid player id")
+			return Msg("[][P2] Invalid player id\n")
 
 		_P2( players[i-1] )
 	}
@@ -309,8 +307,7 @@ if ( !("_AIMBOT_" in this) || !_AIMBOT_ )
 			// this script calculates 4 units backwards from the front of the face (facemask attachment)
 			if ( m_bAimAtHead )
 			{
-				h2 = ::VS.TraceDir( m_hPlayer2.GetAttachmentOrigin(15),
-								    m_hPlayer2Eye.GetForwardVector(),-4.0 ).GetPos()
+				h2 = m_hPlayer2.GetAttachmentOrigin(15) - m_hPlayer2Eye.GetForwardVector() * 4.0
 			}
 			else
 			{
@@ -319,10 +316,10 @@ if ( !("_AIMBOT_" in this) || !_AIMBOT_ )
 			}
 
 			local h1  = m_hPlayer1.EyePosition()
-			local ang = ::VS.GetAngle( h1, h2 )
+			local dt = h2 - h1
 
 			if ( m_bAimlock )
-				m_hPlayer1.SetAngles( ang.x, ang.y, 0 )
+				m_hPlayer1.SetForwardVector(dt)
 
 			local bLOS = ::VS.TraceLine( h1, h2 ).DidHit()
 
@@ -336,7 +333,7 @@ if ( !("_AIMBOT_" in this) || !_AIMBOT_ )
 							if ( !::VS.IsLookingAt( h1,h2,m_hPlayer1Eye.GetForwardVector(),VIEW_FOV ) )
 								return
 
-						m_hPlayer1.SetAngles( ang.x, ang.y, 0 )
+						m_hPlayer1.SetForwardVector(dt)
 						attack()
 						m_bAttacked = true
 						::VS.EventQueue.AddEvent( __AutoShootEnd, m_flAutoShootInterval, this )
@@ -349,16 +346,15 @@ if ( !("_AIMBOT_" in this) || !_AIMBOT_ )
 				::DebugDrawBox( m_hPlayer2.EyePosition(), VEC_MINS,VEC_MAXS, 25,255,25,255, 0.025 )
 
 				if ( bLOS )
-					::Glow.Set( ply, VEC_GREEN, 0, 3072 ) // green glow
+					::Glow.Set( ply, VEC_GREEN, 0, 3072 )
 				else
-					::Glow.Set( ply, VEC_RED, 0, 3072 ) // red glow
+					::Glow.Set( ply, VEC_RED, 0, 3072 )
 			}
 		}
 	}
 
 	function Think2():(VIEW_FOV)
 	{
-		local VS = ::VS
 		local h1 = m_hPlayer1.EyePosition()
 
 		// calculate LOS to every enemy player
@@ -419,7 +415,7 @@ if ( !("_AIMBOT_" in this) || !_AIMBOT_ )
 			m_hPlayer1.__KeyValueFromInt( "rendermode", 0 )
 		}
 
-		Msg("[][] Noclip " + (m_bNoclip ? "enabled" : "disabled"))
+		Msg("[][] Noclip " + (m_bNoclip ? "enabled\n" : "disabled\n"))
 	}
 
 	function targets()
@@ -439,14 +435,14 @@ if ( !("_AIMBOT_" in this) || !_AIMBOT_ )
 			EntFireByHandle( m_hThink, "enable" )
 		}
 
-		Msg("[][] " + (m_b1v1 ? "1v1 mode" : "all enemies mode"))
+		Msg("[][] " + (m_b1v1 ? "1v1 mode\n" : "all enemies mode\n"))
 	}
 
 	function mode()
 	{
 		m_bMode = !m_bMode
 
-		Msg("[][] Low fov " + (m_bMode ? "enabled" : "disabled"))
+		Msg("[][] Low fov " + (m_bMode ? "enabled\n" : "disabled\n"))
 	}
 
 	function speed():(INTERVAL_FIRE)
@@ -464,41 +460,41 @@ if ( !("_AIMBOT_" in this) || !_AIMBOT_ )
 			out = "faster"
 		}
 
-		Msg("[][] Shooting speed is now " + out)
+		Msg("[][] Shooting speed is now " + out + "\n")
 	}
 
 	function aim()
 	{
 		m_bAimAtHead = !m_bAimAtHead
 
-		Msg("[][] Aiming at " + (m_bAimAtHead ? "head" : "torso"))
+		Msg("[][] Aiming at " + (m_bAimAtHead ? "head\n" : "torso\n"))
 	}
 
 	function aimlock()
 	{
 		m_bAimlock = !m_bAimlock
 
-		Msg("[][] Aimlock " + (m_bAimlock ? "enabled" : "disabled"))
+		Msg("[][] Aimlock " + (m_bAimlock ? "enabled\n" : "disabled\n"))
 	}
 
 	function wh()
 	{
 		if ( ::VS.GetAllPlayers().len() > 2 )
-			return Msg("[][!] Cannot enable WH while there are more than 1 enemy")
+			return Msg("[][!] Cannot enable WH while there are more than 1 enemy\n")
 
 		m_bWH = !m_bWH
 
 		if (m_bWH) SetGlow(m_hPlayer2)
 		else ::Glow.Disable(m_hPlayer2)
 
-		Msg("[][] Wallhack " + (m_bWH ? "enabled" : "disabled"))
+		Msg("[][] Wallhack " + (m_bWH ? "enabled\n" : "disabled\n"))
 	}
 
 	function trigger()
 	{
 		if ( ::VS.IsDedicatedServer() )
 		{
-			return Msg("[][!] Cannot enable AutoShoot in a dedicated server")
+			return Msg("[][!] Cannot enable AutoShoot in a dedicated server\n")
 		}
 
 		if ( !m_hCMD )
@@ -508,7 +504,7 @@ if ( !("_AIMBOT_" in this) || !_AIMBOT_ )
 
 		m_bAutoShoot = !m_bAutoShoot
 
-		Msg("[][] AutoShoot " + (m_bAutoShoot ? "enabled" : "disabled"))
+		Msg("[][] AutoShoot " + (m_bAutoShoot ? "enabled\n" : "disabled\n"))
 	}
 
 	// save the environment so the script can be used anywhere

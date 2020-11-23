@@ -67,7 +67,7 @@ SendToConsole("mp_warmup_pausetimer 1;bot_stop 1;mp_autoteambalance 0;mp_limitte
 	local msg = event.text
 
 	// require all chat commands to be prepended with a symbol (!)
-	// if the message isn't a command, leave
+	// if the message is not a command, leave
 	if ( msg[0] != '!' )
 		return
 
@@ -78,8 +78,8 @@ SendToConsole("mp_warmup_pausetimer 1;bot_stop 1;mp_autoteambalance 0;mp_limitte
 
 function SayCommand( player, msg )
 {
-	// pass the text after the command symbol (slice '!'), split the message by spaces
-	local argv = ::split( msg.slice(1), " " )
+	// split the message by spaces
+	local argv = ::split( msg, " " )
 	local argc = argv.len()
 
 	// 'argv[0]' is the command
@@ -92,12 +92,12 @@ function SayCommand( player, msg )
 	// Your chat commands are string cases in this switch statement.
 	// Strings are case sensitive.
 	// If you'd like to make them insensitive, you can add 'tolower' to the command string
-	// In this case, every case string needs to be lower case.
+	// In that case, every case string needs to be lower case.
 	switch ( argv[0].tolower() )
 	{
 		// multiple chat messages can execute the same code
-		case "hp":
-		case "health":
+		case "!hp":
+		case "!health":
 		{
 			CommandSetHealth( player, value )
 			break
@@ -110,7 +110,7 @@ function SayCommand( player, msg )
 function CommandSetHealth( player, health )
 {
 	// if health is null, the message did not have a value
-	// if player is null, the player was not found. Player disconnected, or unexpected error
+	// if player is null, the player was not found
 	if ( !health || !player )
 		return
 
@@ -131,7 +131,7 @@ function CommandSetHealth( player, health )
 
 	local sc = player.GetScriptScope()
 
-	ScriptPrintMessageChatAll( sc.name + " (" + sc.networkid + ") set their health to " + health )
+	ScriptPrintMessageChatAll(format( "%s (%s) set their health to %d", sc.name, sc.networkid, health ))
 }
 
 // toggle flashlight by inspecting
@@ -219,7 +219,7 @@ function CommandSetHealth( player, health )
 					local attacker = VS.GetPlayerByUserid(event.attacker)
 
 					EntFireByHandle( victim, "SetHealth", 0 )
-					EntFire( "your_game_score", "ApplyScore", "", 0, attacker )
+					EntFire( "game_score", "ApplyScore", "", 0, attacker )
 				}
 				else
 				{
@@ -267,7 +267,7 @@ function PickupCustomGun( player )
 
 	if ( !hCustomGunViewmodel )
 	{
-		printl("Failed to pickup gun")
+		print("Failed to pickup gun\n")
 
 		return
 	}
@@ -313,7 +313,7 @@ function PickupCustomGun( player )
 
 function OnPlayerDeath()
 {
-	if ( activator == hCustomGunOwner )
+	if ( ::activator == hCustomGunOwner )
 	{
 		hCustomGunOwner = null
 		hCustomGunViewmodel = null
@@ -337,9 +337,11 @@ VS.AddOutput( Ent("game_playerdie") ? Ent("game_playerdie") :
 
 ::OnGameEvent_flashbang_detonate <- function(data)
 {
-	printl( " --- " )
-	printl( "Flash banged @ " + data.x + "," + data.y + "," + data.z )
-	printl( "Thrown by " + VS.GetPlayerByUserid(data.userid).GetScriptScope().name )
+	local name = VS.GetPlayerByUserid( data.userid ).GetScriptScope().name
+
+	print( " ---\n" )
+	print(format( "Flash banged at %g,%g,%g\n", data.x, data.y, data.z ))
+	print(format( "Thrown by %s\n", name ))
 }
 
 ::OnGameEvent_player_blind <- function(data)
@@ -347,7 +349,7 @@ VS.AddOutput( Ent("game_playerdie") ? Ent("game_playerdie") :
 	local player = VS.GetPlayerByUserid(data.userid)
 	local name = player.GetScriptScope().name
 
-	printl( name+" is blind for " + data.blind_duration + " seconds." )
+	print( name + " is blind for " + data.blind_duration + " seconds.\n" )
 }
 
 //------------------------------
