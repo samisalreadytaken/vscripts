@@ -29,7 +29,7 @@ list_ui_inuse <- []
 
 function Kill()
 {
-	::printl("RCAM::Kill:")
+	::print("RCAM::Kill:\n")
 
 	if (hEye) hEye.Destroy()
 
@@ -56,11 +56,11 @@ function TraceEye(ply)
 {
 	if ( !hEye )
 	{
-		::printl("RCAM::TraceEye: Creating new measure entity")
+		::print("RCAM::TraceEye: Creating new measure entity\n")
 		hEye = ::VS.CreateMeasure("").weakref()
 	}
 
-	::printl("RCAM::TraceEye: Setting measure")
+	::print("RCAM::TraceEye: Setting measure\n")
 
 	// if the player already has a name save it to revert back to it after trace
 	local name = ply.GetName()
@@ -76,7 +76,7 @@ function TraceEye(ply)
 
 function _TraceEye(ply,name)
 {
-	::printl("RCAM::TraceEye:")
+	::print("RCAM::TraceEye:\n")
 
 	trace = ::VS.TraceDir( ply.EyePosition(), hEye.GetForwardVector() )
 	::VS.SetName( ply, name )
@@ -93,14 +93,14 @@ function GetNewCamera(ply)
 	// found available
 	if ( list_cam_free.len() )
 	{
-		::printl("RCAM::GetNewCamera: Found free camera")
+		::print("RCAM::GetNewCamera: Found free camera\n")
 		cam = list_cam_free.pop().ref() // .top and .pop return weakref
 		ui = list_ui_free.pop().ref()
 	}
 	// create new
 	else
 	{
-		::printl("RCAM::GetNewCamera: Creating new camera entity")
+		::print("RCAM::GetNewCamera: Creating new camera entity\n")
 		cam = ::VS.CreateEntity( "point_viewcontrol",{ spawnflags = 1<<3 } )
 		ui = ::VS.CreateEntity( "game_ui",{ spawnflags = 0, fieldofview = -1.0 },true )
 
@@ -123,7 +123,7 @@ function GetOwnCamera(ply)
 	foreach( k,v in list_cam_inuse )
 		if ( v.GetOwner() == ply )
 		{
-			::printl("RCAM::GetOwnCamera: Found player's camera")
+			::print("RCAM::GetOwnCamera: Found player's camera\n")
 			return v
 		}
 }
@@ -134,7 +134,7 @@ function GetOwnIdx(ply)
 	foreach( k,v in list_cam_inuse )
 		if ( v.GetOwner() == ply )
 		{
-			::printl("RCAM::GetOwnIdx: " + k)
+			::print("RCAM::GetOwnIdx: " + k + "\n")
 			return k
 		}
 }
@@ -143,7 +143,7 @@ function FreeCamera(cam)
 {
 	foreach( k,v in list_cam_inuse ) if ( cam == v )
 	{
-		::printl("RCAM::FreeCamera:")
+		::print("RCAM::FreeCamera:\n")
 
 		local old = list_cam_inuse.remove(k)
 		list_cam_free.append(old.weakref())
@@ -156,7 +156,7 @@ function FreeCamera(cam)
 		return
 	}
 
-	::printl("RCAM::FreeCamera: Could not find camera to free")
+	::print("RCAM::FreeCamera: Could not find camera to free\n")
 }
 
 function Equip( ply = null )
@@ -164,14 +164,14 @@ function Equip( ply = null )
 	if ( !ply )
 	{
 		if ( !("activator" in ::getroottable()) )
-			return ::printl("RCAM::Equip: No player!")
+			return ::print("RCAM::Equip: No player!\n")
 
 		ply = ::activator
 	}
 	else if ( !ply.IsValid() || ply.GetClassname() != "player" )
-		return ::printl("RCAM::Equip: Invalid player!")
+		return ::print("RCAM::Equip: Invalid player!\n")
 
-	::printl("RCAM::Equip: Equipping player")
+	::print("RCAM::Equip: Equipping player\n")
 
 	GetNewCamera(ply)
 
@@ -190,7 +190,7 @@ function Fire( ply = null )
 	if ( !ply )
 	{
 		if ( !("activator" in ::getroottable()) )
-			return ::printl("RCAM::Fire: No player!")
+			return ::print("RCAM::Fire: No player!\n")
 
 		ply = ::activator
 	}
@@ -199,7 +199,7 @@ function Fire( ply = null )
 
 	if ( !cam )
 	{
-		return ::printl("RCAM::Fire: No camera found")
+		return ::print("RCAM::Fire: No camera found\n")
 	}
 
 	local sc = ply.GetScriptScope()
@@ -208,10 +208,10 @@ function Fire( ply = null )
 
 	if ( sc.using_cam )
 	{
-		return ::printl("RCAM::Fire: Already using camera")
+		return ::print("RCAM::Fire: Already using camera\n")
 	}
 
-	::printl("RCAM::Fire:")
+	::print("RCAM::Fire:\n")
 
 	return::VS.EventQueue.AddEvent( _Fire, RCAM_FIRE_DELAY, [this, ply] )
 }
@@ -226,7 +226,7 @@ function _Fire(ply)
 // executed one frame after getting the trace
 function __Fire(ply)
 {
-	::printl("RCAM::_Fire:")
+	::print("RCAM::_Fire:\n")
 
 	// trace should be ready by now
 	if ( !trace )
@@ -259,12 +259,12 @@ function __Fire(ply)
 
 function StopCamera( ply = null )
 {
-	::printl("RCAM::StopCamera:")
+	::print("RCAM::StopCamera:\n")
 
 	if ( !ply )
 	{
 		if ( !("activator" in ::getroottable()) )
-			return ::printl("RCAM::StopCamera: No player!")
+			return ::print("RCAM::StopCamera: No player!\n")
 
 		ply = ::activator
 	}
@@ -272,7 +272,7 @@ function StopCamera( ply = null )
 	local sc = ply.GetScriptScope()
 
 	if ( !sc.using_cam )
-		return ::printl("RCAM::StopCamera: Not using")
+		return ::print("RCAM::StopCamera: Not using\n")
 
 	local idx = ::RCAM.GetOwnIdx(ply)
 	local cam = ::RCAM.list_cam_inuse[idx]
@@ -284,7 +284,7 @@ function StopCamera( ply = null )
 	::EntFireByHandle( cam, "Disable", "", 0, ply )
 	::EntFireByHandle( ply, "SetHudVisibility", 1 )
 	if ( ply.IsValid() )::EntFireByHandle( ui, "Deactivate", "", 0, ply )
-	else ::printl("RCAM::StopCamera: Invalid player")
+	else ::print("RCAM::StopCamera: Invalid player\n")
 	cam.SetFov(90,0)
 	// cam.EmitSound("")
 	::RCAM.FreeCamera(cam)

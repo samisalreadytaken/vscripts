@@ -137,8 +137,8 @@ function RadiusDamage(vecSrc, flRadius, vecTarget)
 
 	local trunc = flHealthDmgRaw-flHealthDmg
 
-	print("dist [[ " + VS.FormatPrecision((vecSrc-vecTarget).Length(),6) + " ]]   ")
-	printl("truncated [[ " + VS.FormatPrecision(trunc,6) + " ]] " + flHealthDmgRaw + " -> " + flHealthDmg)
+	Msg(format( "dist [[ %.6f ]]   ", (vecSrc-vecTarget).Length() ))
+	Msg(format( "truncated [[ %.6f ]] %g -> %g\n", trunc, flHealthDmgRaw, flHealthDmg ))
 
 	return flHealthDmg
 }
@@ -168,13 +168,13 @@ VS.OnTimer(hThink,function()
 
 	// origin distance is printed for usage with 'test()'
 
-	print("\n")
-	printl("ori dist: [[ "+VS.FormatPrecision((HPlayer.GetOrigin()-vecBombPos).Length(),6)+" ]]")
-	print("eye: ")
+	Msg("\n")
+	Msg(format( "ori dist: [[ %.6f ]]\n", (HPlayer.GetOrigin()-vecBombPos).Length() ))
+	Msg("eye: ")
 	flDmg = RadiusDamage(vecBombPos, flBombRadius, HPlayer.EyePosition());
-	print("ctr: ")
+	Msg("ctr: ")
 	local dmg2 = RadiusDamage(vecBombPos, flBombRadius, HPlayer.GetCenter());
-	print("avg: ")
+	Msg("avg: ")
 	local dmg3 = RadiusDamage(vecBombPos, flBombRadius, (HPlayer.EyePosition()+HPlayer.GetCenter())*0.5);
 
 	VS.ShowGameText(hGameText,HPlayer, flDmg)
@@ -189,13 +189,13 @@ VS.OnTimer(hThink,function()
 		nLastDealtDmg = 100 - hp
 		flLastPredDmg = flDmg
 
-		printl("--[[          Resetting player")
+		Msg("--[[          Resetting player\n")
 		HPlayer.SetHealth(100)
 	}
 
 	if( nLastDealtDmg != -1 )
 	{
-		local str = "Dealt damage: "+nLastDealtDmg+"\nPredicted damage: "+flLastPredDmg
+		local str = format( "Dealt damage: %d\nPredicted damage: %g", nLastDealtDmg, flLastPredDmg )
 		VS.ShowGameText(hDisplayLastDmg, HPlayer, str)
 	}
 });

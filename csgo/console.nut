@@ -135,13 +135,13 @@ function Console::Run( sFuncLoop, sFuncUserUpdate, scope = null, freq = 0.1 )
 
 function Console::Start()
 {
-	if( !("THINK" in Console) ) return printl("ERROR: Not initiated.")
+	if( !("THINK" in Console) ) return Msg("ERROR: Not initiated.\n")
 	EntFireByHandle(THINK, "Enable")
 }
 
 function Console::Stop( i = 0 )
 {
-	if( !("THINK" in Console) ) return printl("ERROR: Not started.")
+	if( !("THINK" in Console) ) return Msg("ERROR: Not started.\n")
 	if(i) Clear()
 	EntFireByHandle(THINK, "Disable")
 }

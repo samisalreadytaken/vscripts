@@ -934,7 +934,7 @@ function DS_Remove( input )
 
 	if( msg[0] != '/' ) return
 
-	local buffer = split(msg.slice(1), " ")
+	local buffer = split(msg, " ")
 	local val, cmd = buffer[0]
 
 	if( buffer.len() > 1 )
@@ -943,7 +943,7 @@ function DS_Remove( input )
 	switch( cmd.tolower() )
 	{
 //------------------------------
-		case "size":
+		case "/size":
 			local buffer3 = GetInputXY( val, _MAZE_X, _MAZE_Y )
 			if ( !buffer3 ) return
 			_MAZE_X = buffer3[0]
@@ -953,7 +953,7 @@ function DS_Remove( input )
 			break
 
 //------------------------------
-		case "entrypos":
+		case "/entrypos":
 			local buffer3 = GetInputXY( val, _POS_START_X, _POS_START_Y )
 			if ( !buffer3 ) return
 			_POS_START_X = buffer3[0]
@@ -962,14 +962,14 @@ function DS_Remove( input )
 			printl( "Entry position \t: " + _POS_START_X + "," + _POS_START_Y )
 			break
 
-		case "entrydir":
+		case "/entrydir":
 			_ENTRYDIR = TranslateTextToDir( val )
 			Chat( "Entry direction\t: " + TranslateDirToText(_ENTRYDIR) )
 			printl( "Entry direction\t: " + TranslateDirToText(_ENTRYDIR) )
 			break
 
 //------------------------------
-		case "exitpos":
+		case "/exitpos":
 			local buffer3 = GetInputXY( val, _POS_EXIT_X, _POS_EXIT_Y )
 			if ( !buffer3 ) return
 			_POS_EXIT_X = buffer3[0]
@@ -978,51 +978,51 @@ function DS_Remove( input )
 			printl( "Exit position \t: " + _POS_EXIT_X + "," + _POS_EXIT_Y )
 			break
 
-		case "exitdir":
+		case "/exitdir":
 			_EXITDIR = TranslateTextToDir( val )
 			Chat( "Exit direction \t: " + TranslateDirToText(_EXITDIR) )
 			printl( "Exit direction \t: " + TranslateDirToText(_EXITDIR) )
 			break
 
 //------------------------------
-		case "create":
+		case "/create":
 			Command_create()
 			break
 
-		case "printdir":
+		case "/printdir":
 			PrintMaze_dir()
 			break
 
-		case "info":
+		case "/info":
 			PrintVars()
 			break
 
-		case "v2":
+		case "/v2":
 			bBreakWalls = !bBreakWalls
 			printl( "V2 "+TranslateBoolToText(bBreakWalls) )
 			Chat( "V2 "+TranslateBoolToText(bBreakWalls) )
 			break
 
-		case "init":
-		case "reset":
+		case "/init":
+		case "/reset":
 			Init(1)
 			break
 
-		case "findent":
+		case "/findent":
 			FindEnt()
 			break
 
-		case "cam":
-		case "tp":
+		case "/cam":
+		case "/tp":
 			Command_tp()
 			break
 
-		case "fp":
+		case "/fp":
 			Command_fp()
 			break
 
-		case "dyn":
-		case "dynamic":
+		case "/dyn":
+		case "/dynamic":
 			bDynamicSpawning = !bDynamicSpawning
 			printl("Dynamic spawning "+TranslateBoolToText(bDynamicSpawning))
 			Chat("Dynamic spawning "+TranslateBoolToText(bDynamicSpawning))

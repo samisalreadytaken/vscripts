@@ -50,7 +50,7 @@ function SetGlow(ply)
 
 function SayCommand( ply, msg )
 {
-	local argv = ::split( msg.slice(1), " " )
+	local argv = ::split( msg, " " )
 	local argc = argv.len()
 
 	local val
@@ -59,7 +59,7 @@ function SayCommand( ply, msg )
 
 	switch( argv[0].tolower() )
 	{
-		case "kill":
+		case ".kill":
 			if (IsAdmin(ply))
 			{
 				if (!val) val = ply;
@@ -72,7 +72,7 @@ function SayCommand( ply, msg )
 			};
 			break;
 
-		case "tank":
+		case ".tank":
 			local sc = ply.GetScriptScope();
 
 			if ( !sc.bIsTank && ply.GetHealth())
@@ -92,7 +92,7 @@ function SayCommand( ply, msg )
 			};
 			break;
 
-		case "fov":
+		case ".fov":
 			if (val)
 			{
 				try(val = val.tointeger())
@@ -106,13 +106,13 @@ function SayCommand( ply, msg )
 // -----------------------------------------------------------------------
 // voting system isn't fleshed out, there is a lot to improve
 // -----------------------------------------------------------------------
-		case "y":
-		case "yes":
+		case ".y":
+		case ".yes":
 			if (::Vote.bOngoing) ::Vote.Yes(ply);
 			else ::VS.ShowHudHint( m_hHudHint, ply, "No vote in progress." );
 			break;
 
-		case "vote":
+		case ".vote":
 			if (!val)return;
 
 			if (!::Vote.bOngoing)
@@ -190,7 +190,7 @@ function SayCommand( ply, msg )
 			break;
 // ------------------------------------------
 
-		case "noclip":
+		case ".noclip":
 			if (IsAdmin(ply))
 			{
 				if (!val) val = ply;
@@ -199,7 +199,7 @@ function SayCommand( ply, msg )
 			};
 			break;
 
-		case "equip":
+		case ".equip":
 			if (IsAdmin(ply))
 			{
 				if (!val) return;
@@ -219,7 +219,7 @@ function SayCommand( ply, msg )
 
 // execute arbitrary code if the message is sent by me
 // .ex @Chat("test")@
-		case "ex":
+		case ".ex":
 			if (!val)return;
 
 			if (ply.GetScriptScope().networkid == "STEAM_1:1:000")
@@ -562,36 +562,9 @@ function LaunchNuke(i)
 	};
 }
 
-// todo: make something proper
 function OnSecretLight(i)
 {
 	caller.EmitSound("LoudSpark");
-
-//	local sc = activator.GetScriptScope();
-//
-//	if ( !("secretlight" in sc) )
-//		sc.secretlight <- -1;
-//
-//	local curr = sc.secretlight;
-//
-//	// printl( i + " .. " + curr)
-//
-//	// 0 2 1
-//	if ( i == 0 && curr == -1 )
-//	{
-//		sc.secretlight = i;
-//	}
-//	else if ( i == 2 && curr == 0 )
-//	{
-//		sc.secretlight = i;
-//	}
-//	else if ( i == 1 && curr == 2 )
-//	{
-//		// success
-//		// printl("SUCCESS LIGHT EASTEREGG")
-//
-//		sc.secretlight = -2;
-//	};;;
 }
 
 local vlRGB = [Vector(255,42.5,0)Vector(255,85,0)Vector(255,127.5,0)Vector(255,170,0)Vector(255,212.5,0)Vector(255,255,0)Vector(212.5,255,0)Vector(170,255,0)Vector(127.5,255,0)Vector(85,255,0)Vector(42.5,255,0)Vector(0,255,0)Vector(0,255,42.5)Vector(0,255,85)Vector(0,255,127.5)Vector(0,255,170)Vector(0,255,212.5)Vector(0,255,255)Vector(0,212.5,255)Vector(0,170,255)Vector(0,127.5,255)Vector(0,85,255)Vector(0,42.5,255)Vector(0,0,255)Vector(42.5,0,255)Vector(85,0,255)Vector(127.5,0,255)Vector(170,0,255)Vector(212.5,0,255)Vector(255,0,255)Vector(255,0,212.5)Vector(255,0,170)Vector(255,0,127.5)Vector(255,0,85)Vector(255,0,42.5)Vector(255,0,0)];
@@ -745,7 +718,7 @@ function CheckTSpawn()
 		if ( ply.GetHealth() )
 			if ( (ply.GetOrigin()-pos).LengthSqr() < 0x400000 )
 			{
-				::printl("Found a T player at spawn after freeze");
+				::Msg("Found a T player at spawn after freeze\n");
 				::VS.EventQueue.AddEvent( OnTSpawn, i*ft, [ this, ply ] );
 			};;
 
@@ -1251,7 +1224,7 @@ function Precache():(list_tspawn,list_hostage_pos,list_hostage_ang)
 //	// optionally you can cast to int at the end of the loop,
 //	// when getting the final colour value, or just let the engine do it
 //	// if ( !VS.IsInteger(incr) )
-//	//	printl("SetupRGB: Some values will be clamped.");
+//	//	print("SetupRGB: Some values will be clamped.\n");
 //
 //	for( local _R = iR,
 //			   _G = iG,
