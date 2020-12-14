@@ -10,21 +10,14 @@ end
 local VS = require "vs_library-012"
 
 if g_iHackConvertEventWepSwitch then
-	StopListeningToGameEvent(g_iHackConvertEventWepSwitch)
+	StopListeningToGameEvent( g_iHackConvertEventWepSwitch )
 	g_iHackConvertEventWepSwitch = nil
 end
 
-local m_hPlayer, m_HMDAvatar
-local m_flThinkInterval = 2.0
-local m_iConvertFrom,m_iConvertTo = 0,3
-local m_szDiffName = "medium"
-local m_iIntroVar = 0
-local m_bEnabled = true
-
 local Entities,DoEntFireByInstanceHandle,SpawnEntityFromTableSynchronous,
-	Vector,Convars,Msg,Warning =
+	Vector,Msg,Warning,Fmt =
 	Entities,DoEntFireByInstanceHandle,SpawnEntityFromTableSynchronous,
-	Vector,Convars,Msg,Warning
+	Vector,Msg,Warning,string.format
 
 local HACK_TYPE =
 {
@@ -53,13 +46,32 @@ local OUTPUTS =
 	"OnPuzzleFailed"
 }
 
+local m_hPlayer, m_HMDAvatar
+local m_flThinkInterval = 2.0
+local m_iConvertFrom,m_iConvertTo = 0,3
+local m_szDiffName = "medium"
+local m_iIntroVar = 0
+local m_bEnabled = true
+
+local m_KeyValues =
+{
+	origin             = nil,
+	angles             = nil,
+	scales             = nil,
+	puzzletype         = nil,
+	introvariation     = nil,
+	hackdifficultyname = nil,
+	puzzlespawntarget  = nil,
+	starthacked        = 0
+}
+
 local function ConvertHack( hEnt, nType )
 
 	do local sc = hEnt:GetPrivateScriptScope()
-	if sc and sc.hHackConvertParent then
+	if sc and sc.m_hHackConvertParent then
 		Msg("hack_convert: converting a previously converted hack\n")
 		hEnt:Kill()
-		hEnt = sc.hHackConvertParent
+		hEnt = sc.m_hHackConvertParent
 	end end
 
 	local ori = hEnt:GetAbsOrigin()
@@ -70,14 +82,14 @@ local function ConvertHack( hEnt, nType )
 	-- and the BeginHack input is fired to the original plug, the replaced one will still be accessible
 	-- This could be fixed by executing this code block at the (iFrom == m_iConvertTo) check in Think
 	--
-	do local ents = Entities:FindAllByClassnameWithin("info_hlvr_holo_hacking_plug",ori,0.1)
+	do local ents = Entities:FindAllByClassnameWithin( "info_hlvr_holo_hacking_plug", ori, 0.1 )
 	for i = 1, #ents do
 
 		local p = ents[i]
 		if p ~= hEnt then
 
 			local sc = p:GetPrivateScriptScope()
-			if sc and sc.hHackConvertParent then
+			if sc and sc.m_hHackConvertParent then
 
 				Warning("hack_convert: found an unexpected previously converted hack\n")
 				p:Kill()
@@ -100,29 +112,28 @@ local function ConvertHack( hEnt, nType )
 	if nType ~= 3 and nType ~= 5 and nType ~= 6 then
 		szTarget = DoUniqueString("_target")
 		local pos = m_HMDAvatar:GetOrigin()
-		pos.z = pos.z - 12
+		pos.z = pos.z - 12.0
 
 		hTarget = SpawnEntityFromTableSynchronous("info_hlvr_holo_hacking_spawn_target",
 		{
 			targetname = szTarget,
-			origin = ori + (pos - ori):Normalized() * 24,
+			origin = ori + (pos - ori):Normalized() * 24.0,
 			angles = ang,
-			radius = 7
+			radius = 7.0
 		})
 	end
 
 	local scale = hEnt:GetLocalScale()
-	local hPlug = SpawnEntityFromTableSynchronous("info_hlvr_holo_hacking_plug",
-	{
-		origin = ori,
-		angles = ang,
-		scales = Vector(scale,scale,scale),
-		puzzletype = nType,
-		introvariation = m_iIntroVar,
-		hackdifficultyname = m_szDiffName,
-		starthacked = 0,
-		puzzlespawntarget = szTarget
-	})
+
+		m_KeyValues.origin             = ori
+		m_KeyValues.angles             = ang
+		m_KeyValues.scales             = Vector(scale,scale,scale)
+		m_KeyValues.puzzletype         = nType
+		m_KeyValues.introvariation     = m_iIntroVar
+		m_KeyValues.hackdifficultyname = m_szDiffName
+		m_KeyValues.puzzlespawntarget  = szTarget
+
+	local hPlug = SpawnEntityFromTableSynchronous( "info_hlvr_holo_hacking_plug", m_KeyValues )
 
 	-- add to hierarchy
 	hPlug:SetParent( hEnt:GetMoveParent() or hEnt, "" )
@@ -132,7 +143,7 @@ local function ConvertHack( hEnt, nType )
 	end
 
 	local sc = hPlug:GetOrCreatePrivateScriptScope()
-	sc.hHackConvertParent = hEnt
+	sc.m_hHackConvertParent = hEnt
 
 	for i = 1,13 do
 		local v = OUTPUTS[i]
@@ -172,14 +183,14 @@ local function ThinkHackConvert()
 
 	if iFrom == -1 then
 		for i = 0,6 do
-			holo = Entities:FindByClassname(nil,HACK_TYPE[i])
+			holo = Entities:FindByClassname( nil, HACK_TYPE[i] )
 			if holo then
 				iFrom = i
 				break
 			end
 		end
 	else
-		holo = Entities:FindByClassname(nil,HACK_TYPE[iFrom])
+		holo = Entities:FindByClassname( nil, HACK_TYPE[iFrom] )
 	end
 
 	if holo then
@@ -200,7 +211,7 @@ local function ThinkHackConvert()
 				end
 			end
 --]]
-			ConvertHack(plug,m_iConvertTo)
+			ConvertHack( plug, m_iConvertTo )
 			return 1.0
 		end
 
@@ -214,7 +225,7 @@ local function OnWeaponSwitch(event)
 	if event.item == "hlvr_multitool" then
 
 		m_flThinkInterval = 0.2
-		m_hPlayer:SetContextThink("ThinkHackConvert",ThinkHackConvert,0)
+		m_hPlayer:SetContextThink( "ThinkHackConvert", ThinkHackConvert, 0.0 )
 
 	elseif m_flThinkInterval ~= 2.0 then
 
@@ -224,7 +235,7 @@ local function OnWeaponSwitch(event)
 
 end
 
-local function Init(bLoadFile)
+local function Init( bLoadFile )
 
 	m_hPlayer = Entities:GetLocalPlayer()
 
@@ -236,13 +247,13 @@ local function Init(bLoadFile)
 
 			if m_bEnabled then
 
-				if Entities:FindByClassname(nil,"info_hlvr_holo_hacking_plug") then
+				if Entities:FindByClassname( nil, "info_hlvr_holo_hacking_plug" ) then
 
 					if not g_iHackConvertEventWepSwitch then
-						g_iHackConvertEventWepSwitch = ListenToGameEvent("weapon_switch", OnWeaponSwitch, nil)
+						g_iHackConvertEventWepSwitch = ListenToGameEvent( "weapon_switch", OnWeaponSwitch, nil )
 					end
 
-					m_hPlayer:SetContextThink("ThinkHackConvert",ThinkHackConvert,1)
+					m_hPlayer:SetContextThink( "ThinkHackConvert", ThinkHackConvert, 1.0 )
 
 					if bLoadFile then
 						Msg("hack_convert: activated\n")
@@ -270,7 +281,7 @@ local function Init(bLoadFile)
 	return false
 end
 
-Convars:RegisterCommand("hack_convert", function(cmd,iFrom,iTo)
+Convars:RegisterCommand("hack_convert", function( cmd, iFrom, iTo )
 
 	if not Init() then
 		return Warning("hack_convert: no player\n")
@@ -281,13 +292,13 @@ Convars:RegisterCommand("hack_convert", function(cmd,iFrom,iTo)
 
 	if iFrom == iTo or iFrom == nil or iTo == nil then
 
-		return Msg(cmd.." = "..tostring(m_iConvertFrom).." "..tostring(m_iConvertTo).."\n")
+		return Msg(Fmt( "%s = %d %d\n", cmd, m_iConvertFrom, m_iConvertTo ))
 
 	end
 
 	if iFrom < -1 or iFrom > 6 or iFrom == 5 or iTo < 0 or iTo > 6 then
 
-		Msg(cmd.." = "..tostring(m_iConvertFrom).." "..tostring(m_iConvertTo).."\n")
+		Msg(Fmt( "%s = %d %d\n", cmd, m_iConvertFrom, m_iConvertTo ))
 		return Warning("Invalid puzzle type\n")
 
 	end
@@ -295,15 +306,13 @@ Convars:RegisterCommand("hack_convert", function(cmd,iFrom,iTo)
 	m_iConvertFrom = iFrom
 	m_iConvertTo = iTo
 
-	if not Entities:FindByClassname(nil,"info_hlvr_holo_hacking_plug") then
-
-		local warn = "No hacking puzzles found in the map"
+	if not Entities:FindByClassname( nil, "info_hlvr_holo_hacking_plug" ) then
 
 		if m_bEnabled then
-			warn = warn.." (conversion is still enabled)"
+			Warning("No hacking puzzles found in the map (conversion is still enabled)\n")
+		else
+			Warning("No hacking puzzles found in the map\n")
 		end
-
-		Warning(warn.."\n")
 
 	end
 
@@ -313,10 +322,10 @@ Convars:RegisterCommand("hack_convert", function(cmd,iFrom,iTo)
 
 end, "hack_convert <[-1,6]> <[0,6]>", FCVAR_NONE)
 
-Convars:RegisterCommand("hack_convert_enable", function(cmd,input)
+Convars:RegisterCommand("hack_convert_enable", function( cmd, input )
 
 	if not input then
-		return Msg(cmd.." = "..vlua.select(m_bEnabled,"1\n","0\n"))
+		return Msg( cmd..vlua.select( m_bEnabled, " = 1\n", " = 0\n" ) )
 	end
 
 	if not Init() then
@@ -346,27 +355,27 @@ Convars:RegisterCommand("hack_convert_enable", function(cmd,input)
 	if m_bEnabled then
 
 		if not g_iHackConvertEventWepSwitch then
-			g_iHackConvertEventWepSwitch = ListenToGameEvent("weapon_switch", OnWeaponSwitch, nil)
+			g_iHackConvertEventWepSwitch = ListenToGameEvent( "weapon_switch", OnWeaponSwitch, nil )
 		end
 
 		m_flThinkInterval = 0.2
-		m_hPlayer:SetContextThink("ThinkHackConvert",ThinkHackConvert,0)
+		m_hPlayer:SetContextThink( "ThinkHackConvert", ThinkHackConvert, 0.0 )
 
-		if not Entities:FindByClassname(nil,"info_hlvr_holo_hacking_plug") then
+		if not Entities:FindByClassname( nil, "info_hlvr_holo_hacking_plug" ) then
 			Warning("Enabled hack conversion, but no puzzles found in the map\n")
 		end
 
 	else
 
 		if g_iHackConvertEventWepSwitch then
-			StopListeningToGameEvent(g_iHackConvertEventWepSwitch)
+			StopListeningToGameEvent( g_iHackConvertEventWepSwitch )
 			g_iHackConvertEventWepSwitch = nil
 		end
 
 		m_flThinkInterval = 2.0
 		m_hPlayer:StopThink("ThinkHackConvert")
 
-		if not Entities:FindByClassname(nil,"info_hlvr_holo_hacking_plug") then
+		if not Entities:FindByClassname( nil, "info_hlvr_holo_hacking_plug" ) then
 			Warning("Disabled hack conversion, but no puzzles found in the map\n")
 		end
 
@@ -374,10 +383,10 @@ Convars:RegisterCommand("hack_convert_enable", function(cmd,input)
 
 end, "Enable puzzle conversion", FCVAR_NONE)
 
-Convars:RegisterCommand("hack_convert_diff", function(cmd,input)
+Convars:RegisterCommand("hack_convert_diff", function( cmd, input )
 
 	if not input then
-		return Msg(cmd.." = "..m_szDiffName)
+		return Msg(Fmt( "%s = %s\n", cmd, m_szDiffName ))
 	end
 
 	m_szDiffName = input
@@ -388,10 +397,10 @@ Convars:RegisterCommand("hack_convert_diff", function(cmd,input)
 
 end, "Puzzle difficulty (first|easy|medium|hard|veryhard)", FCVAR_NONE)
 
-Convars:RegisterCommand("hack_convert_introvar", function(cmd,input)
+Convars:RegisterCommand("hack_convert_introvar", function( cmd, input )
 
 	if not input then
-		return Msg(cmd.." = "..tostring(m_iIntroVar))
+		return Msg(Fmt( "%s = %d\n", cmd, m_iIntroVar ))
 	end
 
 	m_iIntroVar = tonumber(input)

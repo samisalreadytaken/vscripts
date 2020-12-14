@@ -10,62 +10,83 @@ end
 local VS = require "vs_library-012"
 
 if g_iAutoPickupEventRelease then
-	StopListeningToGameEvent(g_iAutoPickupEventRelease)
+	StopListeningToGameEvent( g_iAutoPickupEventRelease )
+	StopListeningToGameEvent( g_iAutoPickupEventWepSwitch )
 	g_iAutoPickupEventRelease = nil
+	g_iAutoPickupEventWepSwitch = nil
 end
 
 if g_iAutoPickupEventLockOnStart then
-	StopListeningToGameEvent(g_iAutoPickupEventLockOnStart)
-	StopListeningToGameEvent(g_iAutoPickupEventLockOnStop)
+	StopListeningToGameEvent( g_iAutoPickupEventLockOnStart )
+	StopListeningToGameEvent( g_iAutoPickupEventLockOnStop )
 	g_iAutoPickupEventLockOnStart = nil
 	g_iAutoPickupEventLockOnStop = nil
 end
 
 local m_hPlayer, m_hHand0, m_hHand1, m_hBackpack
-local m_iPrimaryHand
-local OnRelease, OnLockOnStart, OnLockOnStop
-local flFrameTime = FrameTime()
+local m_iPrimaryHand, m_iHand0Idx, m_iHand1Idx
+local OnRelease, OnLockOnStart, OnLockOnStop, OnWeaponSwitch
+local IsResource, FadeAndPickupExternalNoSound
 
 local m_bEnabled = true
 local m_bModeLockOn = false
 
 do
 	local Entities,Convars,Warning = Entities,Convars,Warning
-	local IsResource =
+	IsResource =
 	{
-		item_hlvr_clip_generic_pistol = true,
+		item_hlvr_clip_generic_pistol          = true,
 		item_hlvr_clip_generic_pistol_multiple = true,
-		item_hlvr_clip_energygun = true,
-		item_hlvr_clip_energygun_multiple = true,
-		item_hlvr_clip_rapidfire = true,
-		item_hlvr_clip_shotgun_single = true,
-		item_hlvr_clip_shotgun_shellgroup = true,
-		item_hlvr_clip_shotgun_shells_pair = true,
-		item_hlvr_clip_shotgun_multiple = true,
-		item_hlvr_crafting_currency_small = true,
-		item_hlvr_crafting_currency_large = true
+		item_hlvr_clip_energygun               = true,
+		item_hlvr_clip_energygun_multiple      = true,
+		item_hlvr_clip_rapidfire               = true,
+		item_hlvr_clip_shotgun_single          = true,
+		item_hlvr_clip_shotgun_shellgroup      = true,
+		item_hlvr_clip_shotgun_shells_pair     = true,
+		item_hlvr_clip_shotgun_multiple        = true,
+		item_hlvr_crafting_currency_small      = true,
+		item_hlvr_crafting_currency_large      = true
 	}
 
-	local bFrame0 = false
+	local IsInsertable =
+	{
+		item_hlvr_clip_energygun          = true,
+		item_hlvr_clip_rapidfire          = true,
+		item_hlvr_clip_shotgun_single     = true,
+		item_hlvr_clip_shotgun_shellgroup = true,
+		item_hlvr_clip_generic_pistol     = true
+	}
+
+	local WeaponIndex =
+	{
+		hlvr_weapon_energygun      = 3,  -- vr_interact_clip
+		hlvr_weapon_rapidfire      = 14, -- reload_clip_attach_mag
+		hlvr_weapon_shotgun        = 9,  -- hinge_attach
+		hlvr_weapon_generic_pistol = 3   -- vr_interact_clip
+	}
+
+	local m_Frames = {}
 	local m_vecPrevOrigin
+	local m_vecShellPos
+	local m_szCurrWeapon
 
 	local FadeAndPickup = function(self)
 
 		local a = self:GetRenderAlpha()
 
 		if a > 32 then
-			self:SetRenderAlpha(a - 32)
-			return flFrameTime
+			self:SetRenderAlpha( a - 32 )
+			return 0.0
 		else
-			if bFrame0 then
+			if m_Frames[self] then
 				m_vecPrevOrigin = self:GetOrigin()
-				self:SetOrigin(m_hBackpack:GetCenter())
-				bFrame0 = false
-				return flFrameTime
+				self:SetOrigin( m_hBackpack:GetCenter() )
+				m_Frames[self] = nil
+				return 0.0
 			else
 				self:SetRenderAlpha(255)
-				self:SetOrigin(m_vecPrevOrigin)
-				self:EmitSound("JunctionBox.Clunk")
+				self:SetOrigin( m_vecPrevOrigin )
+				self:EmitSound( "JunctionBox.Clunk" )
 
 				local cv = Convars:GetInt("hlvr_left_hand_primary")
 
@@ -80,6 +101,53 @@ do
 		end
 	end
 
+	local PickupShellgroup = function()
+
+		local h1 = Entities:FindByClassnameWithin( nil, "item_hlvr_clip_shotgun_single", m_vecShellPos, 6.5 )
+
+		if h1 then
+
+			h1:SetContextThink( "AP_FadeAndPickup", FadeAndPickupExternalNoSound, 0.0 )
+
+			local h2 = Entities:FindByClassnameWithin( h1,  "item_hlvr_clip_shotgun_single", m_vecShellPos, 6.5 )
+
+			if h2 then
+
+				h2:SetContextThink( "AP_FadeAndPickup", FadeAndPickupExternalNoSound, 0.0 )
+
+				-- shellgroup draws 3 shells from backpack when shotgun is upgraded
+				if Entities:FindByModelWithin( nil, "models/weapons/vr_shotgun/shotgun_hopper.vmdl", m_hHand0:GetOrigin(), 6.0 ) then
+
+					h2 = Entities:FindByClassnameWithin( h2,  "item_hlvr_clip_shotgun_single", m_vecShellPos, 6.5 )
+
+					if h2 then
+
+						h2:SetContextThink( "AP_FadeAndPickup", FadeAndPickupExternalNoSound, 0.0 )
+
+					else
+
+						Warning("auto_pickup: could not find the 3rd shell in shellgroup!\n")
+
+					end
+
+				end
+
+			else
+
+				Warning("auto_pickup: could not find the 2nd shell in shellgroup!\n")
+
+			end
+
+			h1:EmitSound( "Inventory.DepositItem" )
+
+		else
+
+			Warning("auto_pickup: could not find any shells in shellgroup!\n")
+
+		end
+
+	end
+
 	OnRelease = function(data)
 
 		local item = data.item
@@ -87,73 +155,127 @@ do
 		if IsResource[item] then
 
 			local vecSpot
+			local bIsHand0 = data.vr_tip_attachment == 1
 
-			if data.vr_tip_attachment == 1 then
+			if bIsHand0 then
 				vecSpot = m_hHand0:GetAttachmentOrigin(3)
 			else
 				vecSpot = m_hHand1:GetAttachmentOrigin(3)
 			end
 
-			local ent = Entities:FindByClassnameNearest(item,vecSpot,8.0)
+			local ent = Entities:FindByClassnameNearest( item, vecSpot, 8.0 )
 
 			if not ent then
 				return Warning("auto_pickup: could not find item in hand, aborting\n")
 			end
 
-			if item == "item_hlvr_crafting_currency_large" then
-				-- Vector(5.5,5.0,3.0)
-				-- Vector(1.435570,1.437361,5.0)
-				if Entities:FindByClassnameWithin(nil,"trigger_crafting_station_object_placement",ent:GetOrigin(),16.0) then
-					return
+			if IsInsertable[item] then
+
+				if m_szCurrWeapon then
+
+					local hWep = Entities:FindByClassnameWithin( nil, m_szCurrWeapon, m_hHand0:GetOrigin(), 4.0 )
+
+					if hWep then
+
+						local vecEntPos
+
+						-- shellgroup origin is displaced, use middle finger
+						if item == "item_hlvr_clip_shotgun_shellgroup" then
+							vecEntPos = m_hHand1:GetAttachmentOrigin( m_iHand1Idx )
+						else
+							vecEntPos = ent:GetOrigin()
+						end
+
+						if ( hWep:GetAttachmentOrigin( WeaponIndex[m_szCurrWeapon] ) - vecEntPos ):Length() < 6.0 then
+							return -- Msg("auto_pickup: cancelled for ammo reload\n")
+						end
+
+					end
+
 				end
+
+				-- Entity is destroyed in the next frame
+				if item == "item_hlvr_clip_shotgun_shellgroup" then
+
+					if bIsHand0 then
+						m_vecShellPos = m_hHand0:GetAttachmentOrigin( m_iHand0Idx )
+					else
+						m_vecShellPos = m_hHand1:GetAttachmentOrigin( m_iHand1Idx )
+					end
+
+					m_hHand0:SetContextThink( "AP_PickupShellgroup", PickupShellgroup, 0.0 )
+
+					return -- Msg("auto_pickup: shellgroup pickup\n")
+
+				end
+
+			elseif item == "item_hlvr_crafting_currency_large" then
+
+				-- Vector(5.5, 5.0, 3.0)
+				-- Vector(1.435570, 1.437361, 5.0)
+				if Entities:FindByClassnameWithin( nil, "trigger_crafting_station_object_placement", ent:GetOrigin(), 32.0 ) then
+					return -- Msg("auto_pickup: cancelled for resin station\n")
+				end
+
 			end
 
-			bFrame0 = true
-			ent:SetContextThink("AP_FadeAndPickup",FadeAndPickup,flFrameTime)
+			m_Frames[ent] = true
+			ent:SetContextThink( "AP_FadeAndPickup", FadeAndPickup, 0.0 )
+
+		end
+	end
+
+	OnWeaponSwitch = function(ev)
+
+		local item = ev.item
+
+		if WeaponIndex[item] then
+
+			m_szCurrWeapon = item
+
+		elseif m_szCurrWeapon then
+
+			m_szCurrWeapon = nil
+
 		end
 	end
 end
 
 do
-	local EntIndexToHScript,Convars,SendToServerConsole,StartSoundEventFromPosition,FireGameEvent,tostring =
-	      EntIndexToHScript,Convars,SendToServerConsole,StartSoundEventFromPosition,FireGameEvent,tostring
+	local EntIndexToHScript,Convars,SendToServerConsole,FireGameEvent,Fmt =
+	      EntIndexToHScript,Convars,SendToServerConsole,FireGameEvent,string.format
 	local event_data = { userid = 1 }
 
-	local FadeAndKill = function(self)
+	local AddResourceAmmo = function( ent, pistol, rapidfire, shotgun, ammotype, bSnd )
 
-		local a = self:GetRenderAlpha()
-
-		if a > 32 then
-			self:SetRenderAlpha(a - 32)
-			return flFrameTime
-		else
-			self:Kill()
-		end
-	end
-
-	local AddResourceAmmo = function(ent,pistol,rapidfire,shotgun,ammotype)
-		SendToServerConsole("hlvr_addresources "..tostring(pistol).." "..tostring(rapidfire).." "..tostring(shotgun).." 0")
-		ent:EmitSound("Inventory.DepositItem")
+		SendToServerConsole(Fmt( "hlvr_addresources %d %d %d 0", pistol, rapidfire, shotgun ))
 		event_data.ammotype = ammotype
-		FireGameEvent("player_drop_ammo_in_backpack",event_data)
+		FireGameEvent( "player_drop_ammo_in_backpack", event_data )
 		event_data.ammotype = nil
 
-		-- FireGameEvent("item_pickup",event_data)
-		ent:FireOutput("OnPlayerPickup",m_hPlayer,ent,nil,0)
+		-- FireGameEvent( "item_pickup", event_data )
+		ent:FireOutput( "OnPlayerPickup", m_hPlayer, ent, nil, 0 )
 
-		ent:SetContextThink("AP_FadeAndKill",FadeAndKill,flFrameTime)
+		-- quick hack for shellgroup pickup
+		if not bSnd then
+			ent:EmitSound( "Inventory.DepositItem" )
+		end
+		ent:Kill()
+
 	end
 
-	local AddResourceResin = function(ent,amt)
-		SendToServerConsole("hlvr_addresources 0 0 0 "..tostring(amt))
-		ent:EmitSound("Inventory.BackpackGrabItemResin")
-		FireGameEvent("player_drop_resin_in_backpack",event_data)
+	local AddResourceResin = function( ent, amt )
 
-		-- FireGameEvent("item_pickup",event_data)
-		ent:FireOutput("OnPlayerPickup",m_hPlayer,ent,nil,0)
-		ent:FireOutput("OnPutInInventory",m_hPlayer,ent,nil,0)
+		SendToServerConsole(Fmt( "hlvr_addresources 0 0 0 %d", amt ))
+		FireGameEvent( "player_drop_resin_in_backpack", event_data )
 
-		ent:SetContextThink("AP_FadeAndKill",FadeAndKill,flFrameTime)
+		-- FireGameEvent( "item_pickup", event_data )
+		ent:FireOutput( "OnPlayerPickup",   m_hPlayer, ent, nil, 0 )
+		ent:FireOutput( "OnPutInInventory", m_hPlayer, ent, nil, 0 )
+
+		ent:EmitSound( "Inventory.BackpackGrabItemResin" )
+		ent:Kill()
+
 	end
 
 	local AddResource =
@@ -161,33 +283,56 @@ do
 		-- item_hlvr_clip_generic_pistol
 		-- item_hlvr_clip_generic_pistol_multiple
 		item_hlvr_clip_energygun = function(ent)
-			return AddResourceAmmo(ent,Convars:GetInt("vr_energygun_ammo_per_clip"),0,0,"Pistol")
+			return AddResourceAmmo( ent, Convars:GetInt("vr_energygun_ammo_per_clip"), 0, 0, "Pistol" )
 		end,
 		item_hlvr_clip_energygun_multiple = function(ent)
-			return AddResourceAmmo(ent,Convars:GetInt("vr_energygun_ammo_per_large_clip"),0,0,"Pistol")
+			return AddResourceAmmo( ent, Convars:GetInt("vr_energygun_ammo_per_large_clip"), 0, 0, "Pistol" )
 		end,
 		item_hlvr_clip_rapidfire = function(ent)
-			return AddResourceAmmo(ent,0,Convars:GetInt("vr_rapidfire_ammo_per_capsule"),0,"SMG1")
+			return AddResourceAmmo( ent, 0, Convars:GetInt("vr_rapidfire_ammo_per_capsule"), 0, "SMG1" )
 		end,
-		item_hlvr_clip_shotgun_single = function(ent)
-			return AddResourceAmmo(ent,0,0,1,"Buckshot")
+		item_hlvr_clip_shotgun_single = function(ent, snd)
+			return AddResourceAmmo( ent, 0, 0, 1, "Buckshot", snd )
 		end,
-		item_hlvr_clip_shotgun_shellgroup = function(ent)
-			return AddResourceAmmo(ent,0,0,2,"Buckshot")
-		end,
+		-- item_hlvr_clip_shotgun_shellgroup
 		item_hlvr_clip_shotgun_shells_pair = function(ent)
-			return AddResourceAmmo(ent,0,0,2,"Buckshot")
+			return AddResourceAmmo( ent, 0, 0, 2, "Buckshot" )
 		end,
 		item_hlvr_clip_shotgun_multiple = function(ent)
-			return AddResourceAmmo(ent,0,0,5,"Buckshot")
+			return AddResourceAmmo( ent, 0, 0, 5, "Buckshot" )
 		end,
 		item_hlvr_crafting_currency_small = function(ent)
-			return AddResourceResin(ent,1)
+			return AddResourceResin( ent, 1 )
 		end,
 		item_hlvr_crafting_currency_large = function(ent)
-			return AddResourceResin(ent,5)
+			return AddResourceResin( ent, 5 )
 		end
 	}
+
+	local FadeAndPickupExternal = function(self)
+
+		local a = self:GetRenderAlpha()
+
+		if a > 32 then
+			self:SetRenderAlpha( a - 32 )
+			return 0.0
+		else
+			AddResource[ self:GetClassname() ]( self )
+		end
+	end
+
+	FadeAndPickupExternalNoSound = function(self)
+
+		local a = self:GetRenderAlpha()
+
+		if a > 32 then
+			self:SetRenderAlpha( a - 32 )
+			return 0.0
+		else
+			-- Only works for single shell; set up the second parameters in AddResource for other resources
+			AddResource[ self:GetClassname() ]( self, true )
+		end
+	end
 
 	local entindex
 
@@ -201,12 +346,21 @@ do
 
 		if ent then
 
-			local AddResource = AddResource[ent:GetClassname()]
+			local szClass = ent:GetClassname()
 
-			if AddResource then
-				AddResource(ent)
+			if IsResource[ szClass ] then
+
+				if szClass == "item_hlvr_crafting_currency_large" then
+
+					if Entities:FindByClassnameWithin( nil, "trigger_crafting_station_object_placement", ent:GetOrigin(), 32.0 ) then
+						return -- Msg("auto_pickup: lock-on cancelled for resin station\n")
+					end
+
+				end
+
+				ent:SetContextThink( "AP_FadeAndPickup", FadeAndPickupExternal, 0.0 )
+
 			end
-
 		end
 	end
 end
@@ -214,51 +368,46 @@ end
 local function ListenToEventRelease(i)
 
 	if i then
-
 		if not g_iAutoPickupEventRelease then
 
-			g_iAutoPickupEventRelease = ListenToGameEvent("item_released", OnRelease, nil)
+			g_iAutoPickupEventRelease   = ListenToGameEvent( "item_released", OnRelease, nil )
+			g_iAutoPickupEventWepSwitch = ListenToGameEvent( "weapon_switch", OnWeaponSwitch, nil )
 
 		end
-
 	else
-
 		if g_iAutoPickupEventRelease then
 
-			StopListeningToGameEvent(g_iAutoPickupEventRelease)
+			StopListeningToGameEvent( g_iAutoPickupEventRelease )
+			StopListeningToGameEvent( g_iAutoPickupEventWepSwitch )
 			g_iAutoPickupEventRelease = nil
+			g_iAutoPickupEventWepSwitch = nil
 
 		end
-
 	end
 end
 
 local function ListenToEventLockOn(i)
 
 	if i then
-
 		if not g_iAutoPickupEventLockOnStart then
 
-			g_iAutoPickupEventLockOnStart = ListenToGameEvent("grabbity_glove_locked_on_start", OnLockOnStart,nil)
-			g_iAutoPickupEventLockOnStop  = ListenToGameEvent("grabbity_glove_locked_on_stop",  OnLockOnStop, nil)
+			g_iAutoPickupEventLockOnStart = ListenToGameEvent( "grabbity_glove_locked_on_start", OnLockOnStart, nil )
+			g_iAutoPickupEventLockOnStop  = ListenToGameEvent( "grabbity_glove_locked_on_stop",  OnLockOnStop,  nil )
 
 		end
-
 	else
-
 		if g_iAutoPickupEventLockOnStart then
 
-			StopListeningToGameEvent(g_iAutoPickupEventLockOnStart)
-			StopListeningToGameEvent(g_iAutoPickupEventLockOnStop)
+			StopListeningToGameEvent( g_iAutoPickupEventLockOnStart )
+			StopListeningToGameEvent( g_iAutoPickupEventLockOnStop )
 			g_iAutoPickupEventLockOnStart = nil
 			g_iAutoPickupEventLockOnStop = nil
 
 		end
-
 	end
 end
 
-local function Init(bLoadFile)
+local function Init( bLoadFile )
 
 	m_hPlayer = Entities:GetLocalPlayer()
 
@@ -278,14 +427,14 @@ local function Init(bLoadFile)
 				m_hHand1 = HMDAvatar:GetVRHand(1)
 			end
 
-			-- thumb
-			-- m_iHand0Idx = 11 - m_hHand0:GetHandID()
-			-- m_iHand1Idx = 11 - m_hHand1:GetHandID()
+			-- fingertip_middle
+			m_iHand0Idx = 8 - m_hHand0:GetHandID()
+			m_iHand1Idx = 8 - m_hHand1:GetHandID()
 
-			m_hBackpack = Entities:FindByClassname(nil,"player_backpack")
+			m_hBackpack = Entities:FindByClassname( nil, "player_backpack" )
 
 			if not m_hBackpack then
-				Warning("auto_pickup: could not find backpack!")
+				Warning("auto_pickup: could not find backpack!\n")
 				-- return false
 			end
 
@@ -312,10 +461,10 @@ local function Init(bLoadFile)
 	return false
 end
 
-Convars:RegisterCommand("auto_pickup_mode", function(cmd,input)
+Convars:RegisterCommand("auto_pickup_mode", function( cmd, input )
 
 	if not input then
-		return Msg(cmd.." = "..vlua.select(m_bModeLockOn,"1\n","0\n"))
+		return Msg( cmd..vlua.select( m_bModeLockOn, " = 1\n", " = 0\n" ) )
 	end
 
 	if not Init() then
@@ -357,10 +506,10 @@ Convars:RegisterCommand("auto_pickup_mode", function(cmd,input)
 	end
 end, "Set auto pickup lock on mode", FCVAR_NONE)
 
-Convars:RegisterCommand("auto_pickup_enable", function(cmd,input)
+Convars:RegisterCommand("auto_pickup_enable", function( cmd, input )
 
 	if not input then
-		return Msg(cmd.." = "..vlua.select(m_bEnabled,"1\n","0\n"))
+		return Msg( cmd..vlua.select( m_bEnabled, " = 1\n", " = 0\n" ) )
 	end
 
 	if not Init() then
