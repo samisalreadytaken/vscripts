@@ -7,7 +7,7 @@ if not IsServer() then
 	return
 end
 
-local VS = require "vs_library-012"
+local VS = require "vs_library-013"
 
 if g_iHackConvertEventWepSwitch then
 	StopListeningToGameEvent( g_iHackConvertEventWepSwitch )
@@ -19,15 +19,13 @@ local Entities,DoEntFireByInstanceHandle,SpawnEntityFromTableSynchronous,
 	Entities,DoEntFireByInstanceHandle,SpawnEntityFromTableSynchronous,
 	Vector,Msg,Warning,string.format
 
-local HACK_TYPE =
-{
-	[0] = "prop_hlvr_holo_hacking_sphere_trace",
-	[1] = "prop_hlvr_holo_hacking_point_search",
-	[2] = "prop_hlvr_holo_hacking_core_search",
-	[3] = "prop_hlvr_holo_hacking_rod_pull",
-	[4] = "prop_hlvr_holo_hacking_point_match",
-	[6] = "prop_hlvr_holo_hacking_point_drag"
-}
+local HACK_TYPE = {}
+HACK_TYPE[0] = "prop_hlvr_holo_hacking_sphere_trace"
+HACK_TYPE[1] = "prop_hlvr_holo_hacking_point_search"
+HACK_TYPE[2] = "prop_hlvr_holo_hacking_core_search"
+HACK_TYPE[3] = "prop_hlvr_holo_hacking_rod_pull"
+HACK_TYPE[4] = "prop_hlvr_holo_hacking_point_match"
+HACK_TYPE[6] = "prop_hlvr_holo_hacking_point_drag"
 
 local OUTPUTS =
 {
@@ -49,7 +47,7 @@ local OUTPUTS =
 local m_hPlayer, m_HMDAvatar
 local m_flThinkInterval = 2.0
 local m_iConvertFrom,m_iConvertTo = 0,3
-local m_szDiffName = "medium"
+local m_szDifficultyName = "medium"
 local m_iIntroVar = 0
 local m_bEnabled = true
 
@@ -130,7 +128,7 @@ local function ConvertHack( hEnt, nType )
 		m_KeyValues.scales             = Vector(scale,scale,scale)
 		m_KeyValues.puzzletype         = nType
 		m_KeyValues.introvariation     = m_iIntroVar
-		m_KeyValues.hackdifficultyname = m_szDiffName
+		m_KeyValues.hackdifficultyname = m_szDifficultyName
 		m_KeyValues.puzzlespawntarget  = szTarget
 
 	local hPlug = SpawnEntityFromTableSynchronous( "info_hlvr_holo_hacking_plug", m_KeyValues )
@@ -283,24 +281,20 @@ end
 
 Convars:RegisterCommand("hack_convert", function( cmd, iFrom, iTo )
 
-	if not Init() then
-		return Warning("hack_convert: no player\n")
-	end
-
 	iFrom = tonumber(iFrom)
 	iTo = tonumber(iTo)
 
 	if iFrom == iTo or iFrom == nil or iTo == nil then
-
 		return Msg(Fmt( "%s = %d %d\n", cmd, m_iConvertFrom, m_iConvertTo ))
-
 	end
 
 	if iFrom < -1 or iFrom > 6 or iFrom == 5 or iTo < 0 or iTo > 6 then
-
 		Msg(Fmt( "%s = %d %d\n", cmd, m_iConvertFrom, m_iConvertTo ))
 		return Warning("Invalid puzzle type\n")
+	end
 
+	if not Init() then
+		return Warning("hack_convert: no player\n")
 	end
 
 	m_iConvertFrom = iFrom
@@ -383,15 +377,15 @@ Convars:RegisterCommand("hack_convert_enable", function( cmd, input )
 
 end, "Enable puzzle conversion", FCVAR_NONE)
 
-Convars:RegisterCommand("hack_convert_diff", function( cmd, input )
+Convars:RegisterCommand("hack_convert_difficulty", function( cmd, input )
 
 	if not input then
-		return Msg(Fmt( "%s = %s\n", cmd, m_szDiffName ))
+		return Msg(Fmt( "%s = %s\n", cmd, m_szDifficultyName ))
 	end
 
-	m_szDiffName = input
+	m_szDifficultyName = input
 
-	if not m_szDiffName then
+	if not m_szDifficultyName then
 		m_iIntroVar = "medium"
 	end
 
