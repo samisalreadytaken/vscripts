@@ -13,10 +13,45 @@
 IncludeScript("vs_library");
 IncludeScript("glow");
 
-enum weapon{glock="glock",hkp2000="hkp2000",usp_silencer="usp_silencer",elite="elite",p250="p250",tec9="tec9",fn57="fn57",deagle="deagle",galilar="galilar",famas="famas",ak47="ak47",m4a1="m4a1",m4a1_silencer="m4a1_silencer",ssg08="ssg08",aug="aug",sg556="sg556",awp="awp",scar20="scar20",g3sg1="g3sg1",nova="nova",xm1014="xm1014",mag7="mag7",m249="m249",negev="negev",mac10="mac10",mp9="mp9",mp7="mp7",ump45="ump45",p90="p90",bizon="bizon",mp5sd="mp5sd",sawedoff="sawedoff",cz75a="cz75a"}
+enum weapon
+{
+	glock  =  "glock",
+	hkp2000 = "hkp2000",
+	usp_silencer = "usp_silencer",
+	elite = "elite",
+	p250 = "p250",
+	tec9 = "tec9",
+	fn57 = "fn57",
+	deagle = "deagle",
+	galilar = "galilar",
+	famas = "famas",
+	ak47 = "ak47",
+	m4a1 = "m4a1",
+	m4a1_silencer = "m4a1_silencer",
+	ssg08 = "ssg08",
+	aug = "aug",
+	sg556 = "sg556",
+	awp = "awp",
+	scar20 = "scar20",
+	g3sg1 = "g3sg1",
+	nova = "nova",
+	xm1014 = "xm1014",
+	mag7 = "mag7",
+	m249 = "m249",
+	negev = "negev",
+	mac10 = "mac10",
+	mp9 = "mp9",
+	mp7 = "mp7",
+	ump45 = "ump45",
+	p90 = "p90",
+	bizon = "bizon",
+	mp5sd = "mp5sd",
+	sawedoff = "sawedoff",
+	cz75a = "cz75a"
+}
 
-const T = 2;;
-const CT = 3;;
+const TEAM_T = 2;;
+const TEAM_CT = 3;;
 
 const CL_GREEN = "171 255 130";;
 const CL_WHITE = "255 255 255";;
@@ -41,7 +76,7 @@ m_list_bots   <- [];
 m_list_sounds <- [];
 m_szSndCurr   <- "";
 m_nSoundsLen  <- 0;
-m_bAimbotON   <- false;
+m_bAimlockON  <- false;
 vec3_origin   <- Vector();
 
 function Precache()
@@ -62,7 +97,7 @@ function Precache()
 			// vertical aim helper
 			hTimerAim = ::VS.Timer( 1, 0.1, delete CheckAng,null,false,true ).weakref(),
 
-			hAIMBOT = ::VS.Timer( 1, 0.01, delete ThinkAimbot,null,false,true ).weakref(),
+			hAIMLOCK = ::VS.Timer( 1, 0.01, delete ThinkAimlock,null,false,true ).weakref(),
 
 			// 1. set bot angles to the center of the map
 			// 2. sound-interval setting timer
@@ -76,7 +111,7 @@ function Precache()
 			// Display info on the music kits when looked at
 			hTimerLook = ::VS.Timer( 1, 0.1, delete Looking,null,false,true ).weakref(),
 
-			// for aimbot head measuring
+			// for aimlock head measuring
 			hBotEye = ::VS.CreateMeasure( "BOT",null,true ).weakref(),
 
 			// game_ui for sound-interval setting
@@ -151,15 +186,20 @@ function Init()
 
 	for ( local i = 9; i--; ) Chat(" ");
 
-	// catch if the player userid is not validated
 	local sc = HPlayer.GetScriptScope();
 	if ( "name" in sc )
 	{
-		Chat( txt.lightgreen + "● "+txt.lightblue+"Welcome, " + sc.name + "!" );
-		Chat( m_szChatPrefix + txt.yellow + "Using a silenced weapon is suggested to protect your hearing." );
+		if ( sc.name.len() )
+		{
+			Chat( txt.lightgreen + "● "+txt.lightblue+"Welcome, " + sc.name + "!" );
+			Msg( "\n\nWelcome, " + sc.name + "!\n" );
+		}
+		else
+		{
+			Chat( txt.lightgreen + "● "+txt.lightblue+"Welcome!" );
+			Msg( "\n\nWelcome!\n" );
+		};
 		Chat( "" );
-		Msg( "\n\nWelcome, " + sc.name + "!\n" );
-		Msg( "Using a silenced weapon is suggested to protect your hearing.\n" );
 		Msg( "\n" );
 	}
 	else VS.ValidateUseridAll();
@@ -192,7 +232,7 @@ function Init()
 	SendToConsole("game_mode 0;game_type 3;mp_warmup_end;mp_warmuptime 0;bot_join_after_player 0;bot_quota 6;bot_quota_mode fill;bot_stop 1;bot_dont_shoot 1;bot_chatter off;bot_knives_only;bot_join_after_player 1");
 }
 
-// FIXME
+// HACK
 // The first bot to join will not trigger the player_connect event,
 // thus cannot be validated. Force validate the userid, then kick it
 // so the newly connected bot will work.
@@ -200,17 +240,21 @@ function PurgeTheUnfit()
 {
 	local bots = ::VS.GetPlayersAndBots()[1];
 	local i = 0, b = false;
-
+try{
 	foreach( bot in bots )
 	{
-		if ( !bot.GetScriptScope() )
+		local sc = bot.GetScriptScope();
+		if ( !sc || !("name" in sc) )
 		{
 			VS.EventQueue.AddEvent( VS.ForceValidateUserid, TICK_INTERVAL * i++, [VS, bot] );
 			b = true;
 		}
-		else if ( bot.GetScriptScope().name.len() == 0 )
-			SendToConsole("kickid " + bot.GetScriptScope().userid + ";bot_add");;
+		else if ( sc.name.len() == 0 )
+		{
+			SendToConsole("kickid " + sc.userid + ";bot_add");
+		};;
 	}
+}catch(e){ Msg("exception " + e + "\n") }
 
 	if ( b )
 		VS.EventQueue.AddEvent( PurgeTheUnfit, TICK_INTERVAL * 2 * i, this );
@@ -330,7 +374,7 @@ function GetBot()
 	if ( m_list_bots.len() == 0 )
 		return SendToConsole("mp_restartgame 1;echo\"No bot found\"");
 
-	if ( m_bAimbotON )
+	if ( m_bAimlockON )
 	{
 		// blank previous named bots
 		// start measuring new
@@ -529,7 +573,8 @@ function Start()
 
 	// the only benefit of the training gamemode is the steam rich presence
 	// is it even worth when it causes so many problems?
-	SendToConsole("game_mode 0;game_type 2;r_cleardecals");
+	// NO
+	// SendToConsole("game_mode 0;game_type 3;r_cleardecals");
 
 	VS.EventQueue.AddEvent( _Start, 0.17, this );
 }
@@ -555,7 +600,10 @@ function _Start()
 
 function Stop()
 {
-	if ( !m_bStarted ) if ( m_bSettingUp ) return SetInterval(false); else return;;
+	if ( !m_bStarted )
+		if ( m_bSettingUp )
+			return SetInterval(false);
+		else return;;
 
 	Ent("d").EmitSound("Doors.Metal.Move1");
 
@@ -571,8 +619,8 @@ function Stop()
 	::EntFireByHandle( ::ENT.hTimerSnd,"disable" );
 	::EntFireByHandle( ::ENT.hTimerThink,"disable" );
 	::EntFireByHandle( ::ENT.hTimerAim,"disable" );
-	::EntFireByHandle( ::ENT.hAIMBOT,"disable" );
-	m_bAimbotON = false;
+	::EntFireByHandle( ::ENT.hAIMLOCK,"disable" );
+	m_bAimlockON = false;
 
 	::EntFireByHandle( ::ENT.hTimerLook,"enable" );
 
@@ -706,19 +754,33 @@ function ToggleTeam()
 {
 	local t = ::HPlayer.GetTeam();
 
-	if ( t == T ) SetTeam(CT);
-	else if ( t == CT ) SetTeam(T);;
+	if ( t == TEAM_T ) SetTeam(TEAM_CT);
+	else if ( t == TEAM_CT ) SetTeam(TEAM_T);;
 }
 
 function Equip( input )
 {
-	if (input==weapon.hkp2000||input==weapon.usp_silencer||input==weapon.fn57||input==weapon.famas||input==weapon.m4a1||input==weapon.m4a1_silencer||input==weapon.aug||input==weapon.scar20||input==weapon.mag7||input==weapon.mp9)
-		SetTeam(CT);
-	else SetTeam(T);
+	if (input == weapon.hkp2000 ||
+		input == weapon.usp_silencer ||
+		input == weapon.fn57 ||
+		input == weapon.famas ||
+		input == weapon.m4a1 ||
+		input == weapon.m4a1_silencer ||
+		input == weapon.aug ||
+		input == weapon.scar20 ||
+		input == weapon.mag7 ||
+		input == weapon.mp9)
+	{
+		SetTeam(TEAM_CT);
+	}
+	else
+	{
+		SetTeam(TEAM_T);
+	};
 
 	::EntFire( "equip", "triggerforactivatedplayer", "weapon_"+input, 0.0, ::HPlayer );
 
-	::VS.EventQueue.AddEvent( SetTeam, 0, [this, CT] );
+	::VS.EventQueue.AddEvent( SetTeam, 0, [this, TEAM_CT] );
 }
 
 function SetTeam(i)
@@ -729,7 +791,7 @@ function SetTeam(i)
 
 // See the standalone aimbot.nut script for a more advanced version
 // github.com/samisalreadytaken/vscripts
-function ThinkAimbot()
+function ThinkAimlock()
 {
 	if ( !m_bSpawned ) return;
 
@@ -740,14 +802,14 @@ function ThinkAimbot()
 	::HPlayer.SetAngles(ang.x,ang.y,0);
 }
 
-// When the aimbot is on, and the player kills every bot too fast,
+// When the aimlock is on, and the player kills every bot too fast,
 // without letting them respawn, the game will restart
-function EnableAimbot()
+function EnableAimlock()
 {
-	::EntFireByHandle( ::ENT.hAIMBOT, "enable" );
-	Chat( m_szChatPrefix + txt.green + "Aimbot enabled" );
+	::EntFireByHandle( ::ENT.hAIMLOCK, "enable" );
+	Chat( m_szChatPrefix + txt.green + "Aimlock enabled" );
 	::HPlayer.EmitSound("UIPanorama.container_weapon_ticker");
-	m_bAimbotON = true;
+	m_bAimlockON = true;
 }
 
 //-----------------------------------------------------------------------
@@ -925,7 +987,6 @@ function SetMusicType()
 	m_nMusicType %= 2;
 
 	// TODO: add all types
-	// switch( m_nMusicType ){}
 	if ( m_nMusicType == 0 )
 	{
 		Chat( m_szChatPrefix + "Music type: " + txt.yellow + "Bomb 10 second count" );
@@ -990,7 +1051,7 @@ function Looking()
 		{
 			if ( D.team != 3 )
 			{
-				local p = ::VS.GetPlayerByUserid( D.userid );
+				local p = Entc("player");
 
 				if (p)
 				{
