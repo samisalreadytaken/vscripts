@@ -2,7 +2,7 @@
 //                       github.com/samisalreadytaken
 //-----------------------------------------------------------------------
 //
-// CS:GO game event examples, using vscripts and vs_library
+// CS:GO game event examples
 //
 //------------------------------
 //
@@ -78,8 +78,8 @@ SendToConsole("mp_warmup_pausetimer 1;bot_stop 1;mp_autoteambalance 0;mp_limitte
 
 function SayCommand( player, msg )
 {
-	// split the message by spaces
-	local argv = ::split( msg, " " )
+	// tokenise the message (split by spaces)
+	local argv = split( msg, " " )
 	local argc = argv.len()
 
 	// 'argv[0]' is the command
@@ -115,9 +115,7 @@ function CommandSetHealth( player, health )
 		return
 
 	// 'value' is string, convert to int
-	// if a character exists before the number, cannot convert - invalid input
-	// example invalid message: "!hp m26"
-	// but this will work: "!hp 26m"
+	// invalid conversion throws excpetion
 	try( health = health.tointeger() )
 
 	// invalid value
@@ -149,13 +147,13 @@ function CommandSetHealth( player, health )
 	local scope = player.GetScriptScope()
 
 	// ensure the flags key exists
-	if ( !("EFlags" in scope) )
-		scope.EFlags <- 0
+	if ( !("fEffects" in scope) )
+		scope.fEffects <- 0
 
 	// toggle
-	scope.EFlags = scope.EFlags ^ 4
+	scope.fEffects = scope.fEffects ^ 4
 
-	player.__KeyValueFromInt( "effects", scope.EFlags )
+	player.__KeyValueFromInt( "effects", scope.fEffects )
 }
 
 //------------------------------
@@ -169,9 +167,10 @@ function CommandSetHealth( player, health )
 // Multiply every HP and damage by 10, so the original damages will in most cases not kill the player,
 // allowing you to set player health yourself.
 //
-// Event datas WILL be lost on multiple player penetration.
-//
 //------------------------------
+
+VS.FixupEventListener( Ent("player_spawn") )
+VS.FixupEventListener( Ent("player_hurt") )
 
 ::OnGameEvent_player_spawn <- function(event)
 {
@@ -329,11 +328,9 @@ VS.AddOutput( Ent("game_playerdie") ? Ent("game_playerdie") :
 //
 // player_blind
 //
-// Event datas get lost when multiple events happen in the same tick.
-// You can easily test this by throwing a flash in front of multiple players
-// and seeing only one player's event data being printed.
-//
 //------------------------------
+
+VS.FixupEventListener( Ent("player_blind") )
 
 ::OnGameEvent_flashbang_detonate <- function(data)
 {
@@ -359,6 +356,8 @@ VS.AddOutput( Ent("game_playerdie") ? Ent("game_playerdie") :
 // Spawn a watermelon on impact, kill it after 2 seconds
 //
 //------------------------------
+
+VS.FixupEventListener( Ent("bullet_impact") )
 
 PrecacheModel("models/props_junk/watermelon01.mdl")
 
@@ -390,7 +389,7 @@ function SpawnMelon(pos)
 }
 
 // Note that instead of constantly spawning and deleting props,
-// it is better to store as many as you need instead of killing, and reusing them.
+// it is better to store as many as you need and reuse them.
 // This is only a demonstration of events.
 function KillMelon()
 {
