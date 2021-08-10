@@ -19,8 +19,7 @@
 //    ::OnGameEvent_bomb_abortdefuse <- function(event_data){}
 //
 // If you will be calling other code in your script file,
-// you can either add a reference to 'this' to access your code, (example in bullet_impact below)
-// or bind the OnGameEvent function to 'this' (example in player_say)
+// bind callback function to 'this'
 //
 //    ::OnGameEvent_bomb_abortdefuse <- function(event_data){}.bindenv(this)
 // OR
@@ -29,7 +28,7 @@
 //------------------------------
 //
 // For userid, SteamID and Steam name acquisition,
-// read the vs_library documentation on setting up basis eventlisteners.
+// read the vs_library documentation on using VS.ListenToGameEvent
 //
 //------------------------------
 
@@ -38,12 +37,23 @@ IncludeScript("vs_library")
 // test conditions
 SendToConsole("mp_warmup_pausetimer 1;bot_stop 1;mp_autoteambalance 0;mp_limitteams 0")
 
-//------------------------------
 
-::OnGameEvent_round_freeze_end <- function(e)
+// Collect and register game event callbacks prefixed with "OnGameEvent_" in the root
+function OnPostSpawn()
 {
-	VS.ValidateUseridAll()
+	foreach( k,v in getroottable() )
+	{
+		if ( typeof v != "function" )
+			continue;
+
+		if ( k.find("OnGameEvent_") == null )
+			continue;
+
+		local event = k.slice(12);
+		VS.ListenToGameEvent( event, v, "GameEventCallbacks" );
+	}
 }
+
 
 //------------------------------
 //
@@ -103,7 +113,7 @@ function SayCommand( player, msg )
 			break
 		}
 	//	default:
-	//		Msg("Invalid command.\n")
+	//		Msg("Invalid chat command '"+msg+"'.\n")
 	}
 }
 
@@ -133,7 +143,7 @@ function CommandSetHealth( player, health )
 }
 
 // toggle flashlight by inspecting
-::OnGameEvent_inspect_weapon <- function( event )
+VS.ListenToGameEvent( "inspect_weapon", function( event )
 {
 	local player = VS.GetPlayerByUserid( event.userid )
 
@@ -154,7 +164,7 @@ function CommandSetHealth( player, health )
 	scope.fEffects = scope.fEffects ^ 4
 
 	player.__KeyValueFromInt( "effects", scope.fEffects )
-}
+}, "" )
 
 //------------------------------
 //
@@ -168,9 +178,6 @@ function CommandSetHealth( player, health )
 // allowing you to set player health yourself.
 //
 //------------------------------
-
-VS.FixupEventListener( Ent("player_spawn") )
-VS.FixupEventListener( Ent("player_hurt") )
 
 ::OnGameEvent_player_spawn <- function(event)
 {
@@ -321,7 +328,7 @@ function OnPlayerDeath()
 
 // Alternative way to listen to player death with no event listeners
 VS.AddOutput( Ent("game_playerdie") ? Ent("game_playerdie") :
-              VS.CreateEntity( "trigger_brush",{ targetname = "game_playerdie" },true ),
+              VS.CreateEntity( "trigger_brush",{ targetname = "game_playerdie" } ),
               "OnUse", OnPlayerDeath )
 
 //------------------------------
@@ -329,8 +336,6 @@ VS.AddOutput( Ent("game_playerdie") ? Ent("game_playerdie") :
 // player_blind
 //
 //------------------------------
-
-VS.FixupEventListener( Ent("player_blind") )
 
 ::OnGameEvent_flashbang_detonate <- function(data)
 {
@@ -357,21 +362,14 @@ VS.FixupEventListener( Ent("player_blind") )
 //
 //------------------------------
 
-VS.FixupEventListener( Ent("bullet_impact") )
-
 PrecacheModel("models/props_junk/watermelon01.mdl")
-
-// If you don't bind your event functions,
-// Add reference to your scope to access it from the event scopes.
-// The variable name is arbitrary
-::SEvents <- this
 
 ::OnGameEvent_bullet_impact <- function(data)
 {
 	local pos = Vector(data.x,data.y,data.z)
+	OnImpact(pos)
 
-	SEvents.OnImpact(pos)
-}
+}.bindenv(this)
 
 function OnImpact(pos)
 {
@@ -389,7 +387,8 @@ function SpawnMelon(pos)
 }
 
 // Note that instead of constantly spawning and deleting props,
-// it is better to store as many as you need and reuse them.
+// it is better to store as many as you need and reuse them (if running independent scripts);
+// or use templates if it is on your own map.
 // This is only a demonstration of events.
 function KillMelon()
 {
