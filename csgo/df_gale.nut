@@ -10,7 +10,6 @@
 
 IncludeScript("vs_library");
 IncludeScript("glow");
-IncludeScript("fov");
 IncludeScript("turret");
 
 const BOOST_HP_ADD = 5;;
@@ -21,15 +20,21 @@ const CL_T = "255 138 0";;
 const CL_CT = "138 255 0";;
 ::MAX_COORD_VEC <- Vector(MAX_COORD_FLOAT-4096,MAX_COORD_FLOAT-4096,MAX_COORD_FLOAT-4096);
 
-// Glow.DEBUG = true;
 
 // There are multiple ways of calling code from the map.
 // This changed a couple times during development, but I settled on this method.
-::SGale <- this;
+// It is not the most ideal, but it is what I chose in this made-in-a-day map.
+::Gale <- this;
 
 m_admins <- ["STEAM_1:1:000"];
 
 m_bAllinRGB <- false;
+
+function ShowHudHint( ent, ply, msg )
+{
+	ent.__KeyValueFromString("message", msg);
+	return EntFireByHandle( ent, "ShowHudHint", "", 0, ply );
+}
 
 function SetGlow(ply)
 {
@@ -40,22 +45,22 @@ function SetGlow(ply)
 
 	if ( team == 2 )
 	{
-		::Glow.Set( ply, ::CONST.CL_T, 1, ::CONST.GLOW_DIST );
+		::Glow.Set( ply, CL_T, 1, GLOW_DIST );
 	}
 	else if ( team == 3 )
 	{
-		::Glow.Set( ply, ::CONST.CL_CT, 1, ::CONST.GLOW_DIST );
+		::Glow.Set( ply, CL_CT, 1, GLOW_DIST );
 	};;
 }
 
 function SayCommand( ply, msg )
 {
-	local argv = ::split( msg, " " )
-	local argc = argv.len()
+	local argv = ::split( msg, " " );
+	local argc = argv.len();
 
-	local val
+	local val;
 	if ( argc > 1 )
-		val = argv[1]
+		val = argv[1];
 
 	switch( argv[0].tolower() )
 	{
@@ -86,8 +91,8 @@ function SayCommand( ply, msg )
 					};
 
 				sc.bIsTank = true;
-				::Glow.Set(ply, ::Vector(255,25,25), 1, ::CONST.GLOW_DIST);
-				ply.SetHealth(::CONST.TANK_HP);
+				::Glow.Set(ply, ::Vector(255,25,25), 1, GLOW_DIST);
+				ply.SetHealth(TANK_HP);
 				ply.EmitSound("coop_apc.gateLever");
 			};
 			break;
@@ -104,12 +109,12 @@ function SayCommand( ply, msg )
 			break;
 
 // -----------------------------------------------------------------------
-// voting system isn't fleshed out, there is a lot to improve
+// very basic voting system
 // -----------------------------------------------------------------------
 		case ".y":
 		case ".yes":
 			if (::Vote.bOngoing) ::Vote.Yes(ply);
-			else ::VS.ShowHudHint( m_hHudHint, ply, "No vote in progress." );
+			else ShowHudHint( m_hHudHint, ply, "No vote in progress." );
 			break;
 
 		case ".vote":
@@ -259,7 +264,7 @@ function GiveBreachcharges()
 	if ( weplist.len() < plylist.len() )
 	{
 		local err = "ERROR, aborting... ["+weplist.len()+","+plylist.len()+"]";
-		::Chat(txt.red+err);
+		::Chat(TextColor.Red+err);
 		::DEBUG_PRINT(err);
 		return;
 	};
@@ -289,7 +294,7 @@ function GiveBreachcharges()
 
 	foreach(ply in plylist)
 		if (ply.GetHealth())
-			ply.SetHealth(::CONST.TANK_HP);
+			ply.SetHealth(TANK_HP);
 
 	// ::SendToConsoleServer("sv_infinite_ammo 1");
 	::Entc("game_player_equip").SetTeam(1);
@@ -342,7 +347,7 @@ ToggleActiveShuffle <- function(lo=8,hi=12)
 {
 	if ( !m_hShuffler.GetTeam() )
 	{
-		::Chat( ::txt.lightblue + "Static hostages "+::txt.lightgreen+"disabled." );
+		::Chat( TextColor.Uncommon + "Static hostages "+TextColor.Achievement+"disabled." );
 		m_hShuffler.__KeyValueFromFloat( "lowerrandombound",lo );
 		m_hShuffler.__KeyValueFromFloat( "upperrandombound",hi );
 		::EntFireByHandle( m_hShuffler,"Enable" );
@@ -350,7 +355,7 @@ ToggleActiveShuffle <- function(lo=8,hi=12)
 	}
 	else
 	{
-		::Chat( ::txt.lightblue + "Static hostages "+::txt.lightred+"enabled." );
+		::Chat( TextColor.Uncommon + "Static hostages "+TextColor.Penalty+"enabled." );
 		::EntFireByHandle( m_hShuffler,"Disable" );
 		m_hShuffler.SetTeam(0);
 	};
@@ -381,7 +386,7 @@ function Boost(x,y,z)
 
 	activator.SetVelocity( curr + ::Vector(x,y,z) );
 	activator.EmitSound("Survival.JumpAbility");
-	activator.SetHealth( activator.GetHealth() + ::CONST.BOOST_HP_ADD );
+	activator.SetHealth( activator.GetHealth() + BOOST_HP_ADD );
 }
 
 // trigger_multiple: OnStartTouch > !activator > RunScriptCode > Break()
@@ -433,7 +438,7 @@ function SecretUse()
 		::activator.EmitSound("UIPanorama.XrayStart");
 
 		::Msg(name + " picked up reduced glow.\n");
-		::VS.ShowHudHint( m_hHudHint, ::activator, "You have picked up reduced glow." );
+		ShowHudHint( m_hHudHint, ::activator, "You have picked up reduced glow." );
 
 		local team = ::activator.GetTeam();
 
@@ -448,31 +453,31 @@ function SecretUse()
 		// else if ( "ScrollRGB" in sc && ScrollRGB != ::dummy ){}
 		else if ( team == 2 )
 		{
-			::Glow.Set( ::activator, ::CONST.CL_T, 1, 256 );
+			::Glow.Set( ::activator, CL_T, 1, 256 );
 		}
 		else if ( team == 3 )
 		{
-			::Glow.Set( ::activator, ::CONST.CL_CT, 1, 256 );
+			::Glow.Set( ::activator, CL_CT, 1, 256 );
 		};;;;
 	}
 	else if ( rand < 0.23 )
 	{
 		::Msg(name + " picked up a weapon.\n");
-		::VS.ShowHudHint( m_hHudHint, ::activator, "You have picked up a weapon." );
+		ShowHudHint( m_hHudHint, ::activator, "You have picked up a weapon." );
 		::EntFireByHandle(::Entc("game_player_equip"), "TriggerForActivatedPlayer", "weapon_ak47", 0, ::activator);
 	}
 	else if ( rand < 0.56 )
 	{
 		::Msg(name + " picked up health refill.\n");
-		::VS.ShowHudHint( m_hHudHint, ::activator, "You have picked up health refill." );
+		ShowHudHint( m_hHudHint, ::activator, "You have picked up health refill." );
 
 		if ( IsClutchPlayer(::activator) )
 		{
-			::activator.SetHealth(::CONST.CLUTCH_HP);
+			::activator.SetHealth(CLUTCH_HP);
 		}
 		else if ( sc.bIsTank )
 		{
-			::activator.SetHealth(::CONST.TANK_HP);
+			::activator.SetHealth(TANK_HP);
 		}
 		else
 		{
@@ -483,25 +488,25 @@ function SecretUse()
 	{
 		if ( "ScrollRGB" in sc && sc.ScrollRGB != ::dummy )
 		{
-			::VS.ShowHudHint( m_hHudHint, ::activator, "You did not find anything here." );
+			ShowHudHint( m_hHudHint, ::activator, "You did not find anything here." );
 			::activator.EmitSound("ambient.electrical_zap_3");
 			return;
 		};
 
 		::Msg(name + " picked up RGB glow.\n");
-		::VS.ShowHudHint( m_hHudHint, ::activator, "You have picked up RGB glow." );
+		ShowHudHint( m_hHudHint, ::activator, "You have picked up RGB glow." );
 		::Glow.AddRGB(::activator);
 	}
 	else
 	{
-		::VS.ShowHudHint( m_hHudHint, ::activator, "You did not find anything here." );
+		ShowHudHint( m_hHudHint, ::activator, "You did not find anything here." );
 		::activator.EmitSound("ambient.electrical_zap_3");
 		return;
 	};;;;;
 
 	::activator.EmitSound("HUDQuickInfo.LowHealth");
 
-	::Chat( ::txt.yellow + name + ::txt.lightblue + " has found something." );
+	::Chat( TextColor.Gold + name + TextColor.Uncommon + " has found something." );
 }
 
 function IsClutchPlayer(ply)
@@ -515,7 +520,7 @@ function LaunchNuke(i)
 	{
 		::Alert("A nuke has been launched!");
 
-		::ENT_SCRIPT.EmitSound("df_gale/siren.mp3");
+		self.EmitSound("df_gale/siren.mp3");
 
 		// set tonemap and move speed on every player
 		::EntFire( "relay_tonemap_flash","Disable" );
@@ -539,7 +544,7 @@ function LaunchNuke(i)
 	}
 	else
 	{
-		::ENT_SCRIPT.EmitSound("c4.explode");
+		self.EmitSound("c4.explode");
 
 		foreach( ply in ::VS.GetAllPlayers() )
 		{
@@ -582,7 +587,7 @@ function Glow::AddRGB(ply):(vlRGB)
 
 	sc.ScrollRGB <- function():(vlRGB)
 	{
-		::Glow.Set( self, vlRGB[++_X%36], 1, ::CONST.GLOW_DIST );
+		::Glow.Set( self, vlRGB[++_X%36], 1, GLOW_DIST );
 
 		return::VS.EventQueue.AddEvent( ScrollRGB, 0.078125, this );
 	}
@@ -630,8 +635,6 @@ function InitPlayerScope(ply)
 	sc.hostagehurt <- 0;
 	sc._radio_ee <- 0;
 	sc.bIsTank <- false;
-	if ( !("networkid" in sc) ) sc.networkid <- "";
-	if ( !("name" in sc) ) sc.name <- "";
 
 	return sc;
 }
@@ -640,7 +643,8 @@ function InitPlayerScope(ply)
 {
 	local ply = ::VS.GetPlayerByUserid(data.userid);
 
-	if (!ply) return;
+	if (!ply)
+		return;
 
 	InitPlayerScope(ply);
 
@@ -678,8 +682,6 @@ function InitPlayerScope(ply)
 
 ::OnGameEvent_round_freeze_end <- function(data)
 {
-	::VS.ValidateUseridAll();
-
 	if ( m_bAllinRGB )
 	{
 		local ft = ::FrameTime()*11;
@@ -869,7 +871,7 @@ function _OnTSpawn(activator)
 	nRequiredAmt = 0,
 	exec = null,
 	voters = [],
-	szChatPrefix = txt.lightred + "●" + txt.lightblue + " ",
+	szChatPrefix = TextColor.Penalty + "●" + TextColor.Uncommon + " ",
 
 	function Yes(id)
 	{
@@ -900,19 +902,19 @@ function _OnTSpawn(activator)
 		// for testing offline
 		// nRequiredAmt = ::floor(::VS.GetAllPlayers().len() * 0.5).tointeger();
 
-		::Chat( szChatPrefix + "A vote has started! Type " + ::txt.yellow + ".yes" + ::txt.lightblue + " to vote" );
+		::Chat( szChatPrefix + "A vote has started! Type " + TextColor.Gold + ".yes" + TextColor.Uncommon + " to vote" );
 
 		switch(i)
 		{
 			case 0:
 				Chat( szChatPrefix +
-					(::SGale.m_hShuffler.GetTeam() ? ::txt.lightred+"Enable" : txt.lightgreen+"Disable") +
-					::txt.lightblue+ " static hostages? " +
-					::txt.yellow + nRequiredAmt +
-					::txt.lightblue + " votes required" );
+					(::Gale.m_hShuffler.GetTeam() ? TextColor.Penalty+"Enable" : TextColor.Achievement+"Disable") +
+					TextColor.Uncommon+ " static hostages? " +
+					TextColor.Gold + nRequiredAmt +
+					TextColor.Uncommon + " votes required" );
 				break;
 			case 1:
-				Chat( szChatPrefix + "Toggle RGB glow on every player? " + ::txt.yellow + nRequiredAmt + ::txt.lightblue + " votes required" );
+				Chat( szChatPrefix + "Toggle RGB glow on every player? " + TextColor.Gold + nRequiredAmt + TextColor.Uncommon + " votes required" );
 				break;
 			case 2:
 				Chat( szChatPrefix+"Enable breach charge only mode?" );
@@ -994,7 +996,7 @@ function _OnTSpawn(activator)
 		if (!i.IsNoclipping()) i.__KeyValueFromInt("movetype", 8);
 		else i.__KeyValueFromInt("movetype", 2);
 
-		::VS.ShowHudHint( ::SGale.m_hHudHint, i, "Toggled noclip" );
+		ShowHudHint( ::Gale.m_hHudHint, i, "Toggled noclip" );
 	}
 
 	function equip(i,s)
@@ -1054,9 +1056,9 @@ function OnPlayerDeath()
 			m_hSpeedmod.SetTeam( ply.GetTeam() );
 
 			::EntFireByHandle( m_hSpeedmod, "ModifySpeed", 1.25, 0, ply );
-			ply.SetHealth(::CONST.CLUTCH_HP);
+			ply.SetHealth(CLUTCH_HP);
 
-			::Glow.Set( ply, Vector(255,255,255), 0, ::CONST.GLOW_DIST );
+			::Glow.Set( ply, Vector(255,255,255), 0, GLOW_DIST );
 
 			::Alert("Clutch powerups activated!");
 
@@ -1105,12 +1107,10 @@ function Precache():(list_tspawn,list_hostage_pos,list_hostage_ang)
 		m_hTurret0 <- TURRET.Create("turret_gun_0",
 									"turret_fire_0",
 									"turret_target_0",
-									"turret_user_0",
 									"df_gale/crosshair").weakref();
 		m_hTurret1 <- TURRET.Create("turret_gun_1",
 									"turret_fire_1",
 									"turret_target_1",
-									"turret_user_1",
 									"df_gale/crosshair",
 									"Weapon_M249.Pump",
 									"Weapon_AK47.Single").weakref();
@@ -1203,6 +1203,22 @@ function Precache():(list_tspawn,list_hostage_pos,list_hostage_ang)
 		list_hostage_ang.append(e.GetAngles().y);
 	};
 }
+
+function OnPostSpawn()
+{
+	foreach( k,v in getroottable() )
+	{
+		if ( typeof v != "function" )
+			continue;
+
+		if ( k.find("OnGameEvent_") == null )
+			continue;
+
+		local event = k.slice(12);
+		VS.ListenToGameEvent( event, v, "GameEventCallbacks" );
+	}
+}
+
 
 //function SetupRGB(step, iR = null, iG = null, iB = null)
 //{
@@ -1300,7 +1316,7 @@ function Precache():(list_tspawn,list_hostage_pos,list_hostage_ang)
 	local wrldtxt3 = ::Ent("debugtxt3");
 
 	if ( !wrldtxt || !wrldtxt.IsValid() )
-		return::Chat(txt.red+"INITIALISATION ERROR");
+		return::Chat(TextColor.Red+"INITIALISATION ERROR");
 
 	local stack1 = ::getstackinfos(2);
 	local stack2 = ::getstackinfos(3);
@@ -1373,7 +1389,7 @@ function Precache():(list_tspawn,list_hostage_pos,list_hostage_ang)
 //		wrldtxt.__KeyValueFromString("message","#"+dout);
 //
 //		::print("---\n!!! Dump script error: " + dout + "\n");
-//		::Chat(txt.red+dout);
+//		::Chat(TextColor.Red+dout);
 //	}
 //	else
 //	{

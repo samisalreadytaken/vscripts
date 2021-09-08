@@ -3,541 +3,825 @@
 //                       github.com/samisalreadytaken
 //-----------------------------------------------------------------------
 //
-// The server host can execute the script without sv_cheats enabled
-//
-// Player 1 has the cheats enabled against every enemy player
-//
-// By default, the first player that has joined the server is chosen as player1
-// and the second player as player2
+// The server host can execute the script without sv_cheats enabled.
 //
 // Persistent through rounds, needs to be executed only once.
 //
-// To install it, place 'aimbot.nut', 'glow.nut' and 'vs_library.nut' in /csgo/scripts/vscripts/
+// To install it, place 'aimbot.nut' and 'vs_library.nut' in /csgo/scripts/vscripts/
 //
-// Video:
-//  	https://www.youtube.com/watch?v=j3sOgjRgoJ0
+// It can be embedded in maps.
 //
-//------------------------------
+// Run it locally with 'script_execute aimbot'
 //
-// Commands:
+// For example executing a preset:
+//		script aimbot_preset_assist()
 //
-//    script_execute aimbot
-// Load the script
-//
-//    script aimlock()
-// Toggle aimlock
-// Lock onto the enemy
-//
-//    script trigger()
-// Toggle auto shoot
-// weapons are 100% accurate while this is active and shooting
-// unaffected by any inaccuracies
-// Automatically aims at the enemy and shoots
-// You can escape the auto aim while not in low fov mode,
-// but moving will most likely make the you miss the shot
-//
-//    script wh()
-// Toggle wallhack - show the position of player 2 (1v1 only)
-//
-//    script aim()
-// Toggle aiming at head and torso
-//
-//    script mode()
-// Toggle low fov mode
-//
-//    script speed()
-// Toggle shooting speed
-//
-//    script noclip()
-// Toggle noclip
-//
-//    script P1(i)
-//    script P2(i)
-// Manually set players
-//
-//    script targets()
-// Toggle between 1v1 and all-enemies
+// or toggling wh for the local player
+//		script aimbot_wh()
 //
 //
-// Setting players:
+// Player adding functions can take player names if the map is configured correctly.
+// Otherwise they take player indices.
 //
-// Manual setup:
-// Get the player's index from the status command (NOT userid)
-/*
+//
 
-#userid name     uniqueid connected ping loss state rate adr
-#21 1   "Sam"    STEAM_1:0:11101
-#22     "Brandon"BOT
-#23     "Keith"  BOT
-#24     "Perry"  BOT
-#25     "Shawn"  BOT
-#26     "Martin" BOT
-#27     "Wyatt"  BOT
-#28     "Ethan"  BOT
-#29     "Adam"   BOT
-#30     "Norm"   BOT
-#31     "ExamplePlayer" STEAM_1:0:11101
-#end
+IncludeScript("vs_library");
 
-*/
-// For example Brandon's ID is 2, Perry's is 4
-// Sam's ID is 1, ExamplePlayer's is 11
-//
-//
-//    script P2(8)
-// Set Ethan as player2
-//
-//    script P2(11)
-// Set ExamplePlayer as player2
-//
-//    script P1(11)
-// Set ExamplePlayer as player1
-//
-//    script P1(1)
-// Set Sam as player1
-//
-//------------------------------
 
-IncludeScript("vs_library")
-IncludeScript("glow")
+const MASK_NPCWORLDSTATIC = 0x2000b;;
+const MASK_SOLID = 0x200400b;;
 
-if ( !("_AIMBOT_" in this) || !_AIMBOT_ )
+if ( !("__AIMBOT" in getroottable()) || !::__AIMBOT )
 {
-	_AIMBOT_ <-
-	{
-		NAME_P1 = "_aimbot_p1"
-		NAME_P2 = "_aimbot_p2"
+	const AIMBOT_CONTEXT = "ScriptAimbot";;
+	const AIMBOT_DEFAULT_FIRE_INTERVAL = 0.0625;
+	local VEC_PLAYER_MINS = Vector( -16.5,-16.5, -0.5 );
+	local VEC_PLAYER_MAXS = Vector(  16.5, 16.5, 72.5 );
+	local VEC_DRAW_MINS = Vector( 0, -16, 0  );
+	local VEC_DRAW_MAXS = Vector( 0,  16, 72 );
+	local VEC_DRAW_TARGET_MINS = Vector();
+	local VEC_DRAW_TARGET_MAXS = Vector();
+	local flCmdDelay = FrameTime() * 3;
 
-		m_hPlayer1 = null
-		m_hPlayer2 = null
-		m_nTeamP1 = 0
-		m_list_enemy_players = []
-		m_b1v1 = false
-		m_bNoclip = false
-		m_bAimAtHead = true
-		m_flAutoShootInterval = -1.0
-		m_bAutoShoot = false
-		m_bAimlock = false
-		m_bWH = false
-		m_bMode = false
-		m_bAttacked = false
-		m_hCMD = null
+	::__AIMBOT <-
+	{
+		m_hThink = null,
+		m_Player1List = null,	// perpetrators
+		m_Player2List = null,	// victims
+		UseCallback = null,
+
+		// local player controls
+		m_bWH = false,
+		m_bDrawTarget = false,
+		m_flAutoShootInterval = AIMBOT_DEFAULT_FIRE_INTERVAL,
+		m_bAutoShoot = false,
+		m_bAttacked = false,
+		m_cachedTarget = null
 	}
 
-	local _ = function(){
-
-	local VIEW_FOV  = 0.995
-	local VEC_MINS  = Vector(-2,-2,-2)
-	local VEC_MAXS  = Vector(2,2,2)
-	local VEC_RED   = Vector(255,25,25)
-	local VEC_GREEN = Vector(25,255,25)
-	local flFrameTime2 = FrameTime()*3
-	local INTERVAL_FIRE = 0.0625
-	m_flAutoShootInterval = INTERVAL_FIRE
-
-	m_hThink <- ::VS.Timer( 0,0,null,null,false,true ).weakref()
-
-	// to calculate player2's head origin
-	m_hPlayer2Eye <- ::VS.CreateMeasure( NAME_P2,null,true ).weakref()
-
-	// for no low fov mode
-	m_hPlayer1Eye <- ::VS.CreateMeasure( NAME_P1,null,true ).weakref()
-
-	function Init()
+	function __AIMBOT::Init()
 	{
-		::VS.OnTimer( m_hThink, Think2 )
+		m_Player1List = [];
+		m_Player2List = [];
 
-		local players = ::VS.GetAllPlayers()
-		local len = players.len()
-
-		if ( len == 0 )
+		if ( !m_hThink )
 		{
-			Msg("[][] No players found!\n")
-		}
-		else if ( len == 1 )
-		{
-			Msg("[][] Only 1 player found\n")
+			m_hThink = VS.CreateTimer( 0, 0.0, null, null, null, 1 ).weakref();
+		};
 
-			_P1( players[0] )
-		}
-		else if ( len >= 2 )
-		{
-			Msg("[][] "+len+" players found\n")
-
-			_P1( players[0] )
-			_P2( players[1] )
-
-			if ( len == 2 )
-			{
-				m_b1v1 = true
-				::VS.OnTimer( m_hThink, Think )
-			}
-		}
-
-		UpdateEnemyPlayers()
-
-		if ( !m_hPlayer2 || !m_list_enemy_players.len() )
-		{
-			EntFireByHandle( m_hThink, "disable" )
-		}
-		else
-		{
-			if ( m_hThink ) EntFireByHandle( m_hThink, "enable" )
-			::VS.SetMeasure( m_hPlayer2Eye, NAME_P2 )
-		}
+		VS.OnTimer( m_hThink, Think );
+		EntFireByHandle( m_hThink, "Enable" );
 
 		Msg("[][] aimbot script loaded\n")
 	}
 
 	// kill and stop everything
-	function Kill()
+	function __AIMBOT::Kill()
 	{
 		Msg("Terminating...\n")
 
-		SetGlow(null)
+		if ( m_hThink )
+			m_hThink.Destroy();
 
-		m_hThink.Destroy()
-		m_hCMD.Destroy()
-		m_hPlayer1Eye.Destroy()
-		m_hPlayer2Eye.Destroy()
-
-		// delete ::noclip
-		// delete ::targets
-		// delete ::wh
-		// delete ::trigger
-		// delete ::aim
-		// delete ::aimlock
-
-		delete _env._AIMBOT_
+		::__AIMBOT = null;
 	}
 
-	function SetGlow(ply)
+	function __AIMBOT::AddPlayer1ByName( i )
 	{
-		if (!ply)
-			return
+		if ( typeof i != "string" )
+			return Msg("[][AddPlayer1ByName] Invalid value\n");
 
-		::Glow.Set( ply, ::Vector(255,25,25), 0, 3072 )
-	}
-
-	function CMD( cmd, delay = 0.0 )
-	{
-		return::DoEntFireByInstanceHandle( m_hCMD, "Command", cmd, delay, m_hPlayer1, null )
-	}
-
-	local param_attack = [null, "weapon_accuracy_nospread 0;weapon_recoil_scale 2.0"]
-
-	function attack():(flFrameTime2,param_attack)
-	{
-		::SendToConsoleServer("weapon_accuracy_nospread 1;weapon_recoil_scale 0.0")
-		CMD("+attack")
-		CMD("-attack", flFrameTime2)
-		::VS.EventQueue.AddEvent( ::SendToConsoleServer, flFrameTime2, param_attack )
-	}
-
-	function P1(i)
-	{
-		if ( typeof i != "integer" )
-			return Msg("[][P1] Invalid value\n")
-
-		local players = ::VS.GetAllPlayers()
-
-		if ( i > players.len() || i < 1 )
-			return Msg("[][P1] Invalid player id\n")
-
-		_P1(players[i-1])
-	}
-
-	function _P1(h)
-	{
-		m_hPlayer1 = h.weakref()
-
-		m_nTeamP1 = m_hPlayer1.GetTeam()
-
-		for(local i; i = ::Ent(NAME_P1,i); )
+		foreach( p in VS.GetAllPlayers() )
 		{
-			::VS.SetName(i, "")
-			::Glow.Disable(i)
-		}
-
-		::VS.SetName(m_hPlayer1, NAME_P1)
-		::VS.SetMeasure(m_hPlayer1Eye, NAME_P1)
-	}
-
-	function P2( i )
-	{
-		if ( typeof i != "integer" )
-			return Msg("[][P2] Invalid value\n")
-
-		local players = ::VS.GetAllPlayers()
-
-		if ( i > players.len() || i < 1 )
-			return Msg("[][P2] Invalid player id\n")
-
-		_P2( players[i-1] )
-	}
-
-	function _P2(h)
-	{
-		m_hPlayer2 = h.weakref()
-
-		for ( local i; i = ::Ent(NAME_P2,i); )
-		{
-			::VS.SetName(i, "")
-			::Glow.Disable(i)
-		}
-
-		::VS.SetName( m_hPlayer2, NAME_P2 )
-		::VS.SetMeasure( m_hPlayer2Eye, NAME_P2 )
-
-		if (m_bWH) SetGlow( m_hPlayer2 )
-	}
-
-	local __AutoShootEnd = function()
-	{
-		m_bAttacked = false
-	}
-
-	function Think():(VIEW_FOV,VEC_MINS,VEC_MAXS,VEC_RED,VEC_GREEN,__AutoShootEnd)
-	{
-		if ( m_hPlayer2.GetHealth() )
-		{
-			local h2
-
-			// Since it is not possible to get the position of the head bone of a player,
-			// this script calculates 4 units backwards from the front of the face (facemask attachment)
-			if ( m_bAimAtHead )
+			local t = p.GetScriptScope();
+			if ( t && ("name" in t) && (t.name == i) )
 			{
-				h2 = m_hPlayer2.GetAttachmentOrigin(15) - m_hPlayer2Eye.GetForwardVector() * 4.0
+				return AddPlayer1ByHandle( p );
+			}
+		}
+		return Msg("[][AddPlayer1ByName] could not find player by name\n");
+	}
+
+	function __AIMBOT::AddPlayer1ByIndex( i )
+	{
+		if ( typeof i != "integer" )
+			return Msg("[][AddPlayer1ByIndex] Invalid value\n");
+
+		local p = VS.GetPlayerByIndex(i);
+		if ( !p )
+			return Msg("[][AddPlayer1ByIndex] Invalid player id\n");
+
+		return AddPlayer1ByHandle( p );
+	}
+
+	function __AIMBOT::AddPlayer1ByHandle( p )
+	{
+		if ( !(p = ToExtendedPlayer(p)) )
+			return Msg("[][AddPlayer1ByHandle] Invalid player handle\n");
+
+		for ( local i = m_Player1List.len(); i--; )
+		{
+			local v = m_Player1List[i];
+
+			if ( !v.IsValid() || v == p )
+				m_Player1List.remove(i);
+
+			v.SetInputCallback( "+use", null, AIMBOT_CONTEXT );
+		}
+
+		if ( UseCallback )
+			p.SetInputCallback( "+use", UseCallback, AIMBOT_CONTEXT );
+		UseCallback = null;
+
+		// each player can have different settings
+		p.m_ScriptScope.m_nAimlock <- false;
+		p.m_ScriptScope.m_nLockSpeedLevel <- 0;
+		p.m_ScriptScope.m_bLockSmooth <- false;
+		p.m_ScriptScope.m_flFov <- 0.0;
+		p.m_ScriptScope.m_nAimTarget <- 0;
+
+		m_Player1List.append( p );
+
+		return p;
+	}
+
+	function __AIMBOT::AddPlayer2ByName( i )
+	{
+		if ( typeof i != "string" )
+			return Msg("[][AddPlayer2ByName] Invalid value\n");
+
+		foreach( p in VS.GetAllPlayers() )
+		{
+			local t = p.GetScriptScope();
+			if ( t && ("name" in t) && (t.name == i) )
+			{
+				return AddPlayer2ByHandle( p );
+			}
+		}
+		return Msg("[][AddPlayer2ByName] could not find player by name\n");
+	}
+
+	function __AIMBOT::AddPlayer2ByIndex( i )
+	{
+		if ( typeof i != "integer" )
+			return Msg("[][AddPlayer2ByIndex] Invalid value\n");
+
+		local p = VS.GetPlayerByIndex(i);
+		if ( !p )
+			return Msg("[][AddPlayer2ByIndex] Invalid player id\n");
+
+		return AddPlayer2ByHandle( p );
+	}
+
+	function __AIMBOT::AddPlayer2ByHandle( p )
+	{
+		if ( !(p = ToExtendedPlayer(p)) )
+			return Msg("[][AddPlayer1ByHandle] Invalid player handle\n");
+
+		for ( local i = m_Player2List.len(); i--; )
+		{
+			local v = m_Player2List[i];
+
+			if ( !v.IsValid() )
+				m_Player2List.remove(i);
+
+			if ( v == p )
+				return p;
+		}
+
+		m_Player2List.append( p );
+
+		return p;
+	}
+
+	function __AIMBOT::ClearPlayers()
+	{
+		foreach( p in m_Player1List )
+			p.SetInputCallback( "+use", null, AIMBOT_CONTEXT );
+
+		m_Player1List.clear();
+		m_Player2List.clear();
+	}
+
+	function __AIMBOT::SetFov( deg )
+	{
+		foreach ( p in m_Player1List )
+		{
+			local sc = p.m_ScriptScope;
+
+			if ( deg == 0.0 )
+			{
+				sc.m_flFov = 0.0;
 			}
 			else
 			{
-				h2 = m_hPlayer2.EyePosition()
-				h2.z -= 16.0
-			}
+				sc.m_flFov = cos( deg.tofloat() * DEG2RAD );
+			};
 
-			local h1  = m_hPlayer1.EyePosition()
-			local dt = h2 - h1
+			Msg("[]["+p.m_EntityIndex+"] fov " + deg.tofloat() + " degrees\n");
+		}
+	}
 
-			if ( m_bAimlock )
-				m_hPlayer1.SetForwardVector(dt)
+	function __AIMBOT::SetAimTarget( b = null )
+	{
+		foreach ( p in m_Player1List )
+		{
+			local sc = p.m_ScriptScope;
 
-			local bLOS = ::VS.TraceLine( h1, h2 ).DidHit()
+			if ( b == null )
+				b = !sc.m_nAimTarget;
 
-			if ( m_bAutoShoot )
+			sc.m_nAimTarget = !!b;
+
+			Msg("[]["+p.m_EntityIndex+"] aim target " + (sc.m_nAimTarget ? "body\n" : "head\n"));
+		}
+	}
+
+	function __AIMBOT::SetAimLock( i )
+	{
+		foreach ( p in m_Player1List )
+		{
+			local sc = p.m_ScriptScope;
+
+			sc.m_nAimlock = clamp( i.tointeger(), 0, 3 );
+
+			Msg("[]["+p.m_EntityIndex+"] aimlock " + sc.m_nAimlock + "\n");
+		}
+	}
+
+	function __AIMBOT::SetLockSpeed( i )
+	{
+		foreach ( p in m_Player1List )
+		{
+			local sc = p.m_ScriptScope;
+
+			sc.m_nLockSpeedLevel = clamp( i.tointeger(), 0, 4 );
+
+			Msg("[]["+p.m_EntityIndex+"] lock speed " + sc.m_nLockSpeedLevel + "\n");
+		}
+	}
+
+	function __AIMBOT::SetLockSmoothing( i )
+	{
+		foreach ( p in m_Player1List )
+		{
+			local sc = p.m_ScriptScope;
+
+			sc.m_bLockSmooth = !!i;
+
+			Msg("[]["+p.m_EntityIndex+"] lock smoothing " + sc.m_bLockSmooth + "\n");
+		}
+	}
+
+	function __AIMBOT::SetWallhack( b = null )
+	{
+		if ( b == null )
+			b = !m_bWH;
+
+		m_bWH = !!b;
+		m_bDrawTarget = m_bWH;
+
+		Msg("[][] Wallhack " + (m_bWH ? "enabled\n" : "disabled\n"));
+	}
+
+	function __AIMBOT::SetAutoShoot( b = null )
+	{
+		if ( b == null )
+			b = !m_bAutoShoot;
+
+		m_bAutoShoot = !!b;
+		m_cachedTarget = [null,null];
+
+		Msg("[][] Auto shoot " + (m_bAutoShoot ? "enabled\n" : "disabled\n"));
+	}
+
+	function __AIMBOT::AutoShootSpeed()
+	{
+		local out;
+
+		if ( m_flAutoShootInterval == AIMBOT_DEFAULT_FIRE_INTERVAL )
+		{
+			m_flAutoShootInterval = AIMBOT_DEFAULT_FIRE_INTERVAL + 0.25;
+			out = "slower";
+		}
+		else
+		{
+			m_flAutoShootInterval = AIMBOT_DEFAULT_FIRE_INTERVAL;
+			out = "faster";
+		};
+
+		Msg("[][] Shooting speed is now " + out + "\n");
+	}
+
+	function __AIMBOT::__OnAttackFrame()
+	{
+		local p1 = m_cachedTarget[0];
+		local p2 = m_cachedTarget[1];
+
+		local targetPos;
+
+		if ( !p1.m_ScriptScope.m_nAimTarget )
+		{
+			local iAttachment = ply2.LookupAttachment("facemask");
+			targetPos = p2.GetAttachmentOrigin(iAttachment) - p2.EyeForward() * 4.0;
+		}
+		else
+		{
+			targetPos = p2.EyePosition();
+			targetPos.z -= 16.0;
+		};
+
+		local targetDir = VS.ApproachVector
+		(
+			targetPos - p1.EyePosition(),
+			p1.EyeForward(),
+			0.25
+		);
+		p1.SetForwardVector( targetDir );
+	}
+
+	local attack_out = [null, "weapon_accuracy_nospread 0;weapon_recoil_scale 2.0;-attack"];
+
+	local __AutoShootEnd = function()
+	{
+		m_bAttacked = false;
+	}
+
+	function __AIMBOT::Attack() : ( flCmdDelay, attack_out, __AutoShootEnd )
+	{
+		m_bAttacked = true;
+		SendToConsole("weapon_accuracy_nospread 1;weapon_recoil_scale 0.0;+attack;script __AIMBOT.__OnAttackFrame()");
+		VS.EventQueue.AddEvent( SendToConsole, flCmdDelay, attack_out );
+		VS.EventQueue.AddEvent( __AutoShootEnd, m_flAutoShootInterval, this );
+	}
+
+	local ts = [0.0, 0.0];
+
+	class __AIMBOT.Target_t
+	{
+		self = null;
+		dot = null;
+		targetPos = null;
+		targetRadius = null;
+		shotPos = null;
+		isVisible = null;
+		priority = 0;
+	}
+
+	local TargetSort = function( a, b )
+	{
+		local pa = a.priority;
+		local pb = b.priority;
+
+		if ( pa < pb )
+			return 1;
+		if ( pa > pb )
+			return -1;
+		return 0;
+	}
+
+
+	// TODO: memory to keep tracking after target goes invisible?
+
+	function __AIMBOT::Think()
+		: ( ts, TargetSort, VEC_PLAYER_MINS, VEC_PLAYER_MAXS,
+			VEC_DRAW_MINS, VEC_DRAW_MAXS,
+			VEC_DRAW_TARGET_MINS, VEC_DRAW_TARGET_MAXS )
+	{
+		foreach( ply1 in m_Player1List )
+		{
+			if ( !ply1.GetHealth() )
+				continue;
+
+			local ply1_ScriptScope = ply1.m_ScriptScope;
+
+			local eyeAng = ply1.EyeAngles();
+			local eyePos = ply1.EyePosition();
+			local eyeDir = ply1.EyeForward();
+			local eyeRay = eyeDir * MAX_TRACE_LENGTH;
+
+			local targets = [];
+
+			foreach( ply2 in m_Player2List )
 			{
-				if ( !m_bAttacked )
+				if ( !ply2.GetHealth() )
+					continue;
+
+				local p = Target_t();
+				targets.append( p );
+				p.self = ply2;
+
+				local targetPos;
+
+				if ( !ply1_ScriptScope.m_nAimTarget )
 				{
-					if ( !bLOS )
-					{
-						if ( !m_bMode )
-							if ( !::VS.IsLookingAt( h1,h2,m_hPlayer1Eye.GetForwardVector(),VIEW_FOV ) )
-								return
-
-						m_hPlayer1.SetForwardVector(dt)
-						attack()
-						m_bAttacked = true
-						::VS.EventQueue.AddEvent( __AutoShootEnd, m_flAutoShootInterval, this )
-					}
+					// Since it is not possible to get the position of the head bone of a player,
+					// this script calculates 4 units backwards from the front of the face (facemask attachment)
+					local iAttachment = ply2.LookupAttachment("facemask");
+					targetPos = ply2.GetAttachmentOrigin(iAttachment) - ply2.EyeForward() * 4.0;
+					p.targetRadius = 4.0;
 				}
-			}
-
-			if ( m_bWH )
-			{
-				::DebugDrawBox( m_hPlayer2.EyePosition(), VEC_MINS,VEC_MAXS, 25,255,25,255, 0.025 )
-
-				if ( bLOS )
-					::Glow.Set( ply, VEC_GREEN, 0, 3072 )
 				else
-					::Glow.Set( ply, VEC_RED, 0, 3072 )
+				{
+					targetPos = ply2.EyePosition();
+					targetPos.z -= 16.0;
+					p.targetRadius = 8.0;
+				};
+
+				p.targetPos = targetPos;
+
+				local vecDelta = targetPos - eyePos;
+				local distToPlayer = vecDelta.Norm();
+
+				p.dot = eyeDir.Dot( vecDelta );
+
+				local targetEyeDir = ply2.EyeForward();
+
+				// am I in danger?
+				local isLookingAtPlayer = VS.IsLookingAt( ply2.EyePosition(), eyePos, targetEyeDir, 0.89 );
+
+				local isVisible = ( VS.TraceLine( eyePos, targetPos, ply1.self, MASK_NPCWORLDSTATIC ).fraction > 0.97 );
+
+				VEC_PLAYER_MAXS.z = VEC_DRAW_MAXS.z = ply2.GetBoundingMaxs().z;
+
+				// see if MASK_SOLID can pass instead (it can be blocked by player AABBs)
+				if ( !isVisible )
+				{
+					local tr = VS.TraceLine( eyePos, targetPos, ply1.self, MASK_SOLID );
+					local org = ply2.GetOrigin();
+					isVisible = VS.IsPointInBox( tr.GetPos(), org + VEC_PLAYER_MINS, org + VEC_PLAYER_MAXS );
+				};
+
+				// is player aiming directly at the target?
+				if ( isVisible &&
+					VS.IntersectInfiniteRayWithSphere( eyePos, eyeRay, targetPos, p.targetRadius, ts ) &&
+					(ts[0] > 0.0) )
+				{
+					local hitpos = eyePos + eyeRay * ts[0];
+					p.shotPos = hitpos;
+				};
+
+				p.isVisible = isVisible;
+
+				// rudimentary priority system
+				if ( p.shotPos )
+					p.priority += 100;
+
+				if ( !p.dot || p.dot >= ply1_ScriptScope.m_flFov )
+					p.priority += 100;
+
+				if ( !isVisible )
+					p.priority -= 8;
+
+				if ( distToPlayer < 256.0 )
+					p.priority += 5;
+
+				if ( isLookingAtPlayer )
+					p.priority += 4;
+
+				// listen server host only
+				if ( m_bWH )
+				{
+					local drawAng = eyeAng * 1;
+					drawAng.x = 0.0;
+
+					if ( isVisible )
+					{
+						DebugDrawBoxAngles( ply2.GetOrigin(), VEC_DRAW_MINS, VEC_DRAW_MAXS, drawAng, 25,255,25,4, -1 );
+						// Glow.Set( ply2.self, COLOR_GREEN, 0, 4096.0 );
+					}
+					else
+					{
+						local v = ply2.GetOrigin();
+						VS.DrawBoxAngles( v, VEC_DRAW_MINS, VEC_DRAW_MAXS, drawAng, 0,255,255,true, -1 );
+						DebugDrawBoxAngles( v, VEC_DRAW_MINS, VEC_DRAW_MAXS, drawAng, 255,25,25,127, -1 );
+						// Glow.Set( ply2.self, COLOR_RED, 0, 4096.0 );
+					};
+				};
+			}
+
+			if ( !(0 in targets) )
+				continue;
+			targets.sort( TargetSort );
+
+			local hTarget = targets[0];
+			if ( hTarget )
+			{
+				local targetPos = hTarget.targetPos;
+				local targetRadius = hTarget.targetRadius;
+				local hitpos = hTarget.shotPos;
+				local bLock;
+				// local distToCrosshair = 8.0 / (eyeRay * ( eyeRay.Dot( targetPos - eyePos ) / 3.22122e+9 )).Length();
+
+				if ( m_bDrawTarget )
+				{
+					VEC_DRAW_TARGET_MINS.y = VEC_DRAW_TARGET_MINS.z = 1.0-targetRadius;
+					VEC_DRAW_TARGET_MAXS.y = VEC_DRAW_TARGET_MAXS.z = targetRadius-1.0;
+					DebugDrawBoxAngles( targetPos, VEC_DRAW_TARGET_MINS, VEC_DRAW_TARGET_MAXS, eyeAng, 255,255,0,255, -1 );
+				};
+
+				switch ( ply1_ScriptScope.m_nAimlock )
+				{
+					// if visible
+					case 1:
+						bLock = hTarget.isVisible;
+						break;
+					// if aiming at
+					case 2:
+						bLock = !hTarget.dot || hTarget.dot >= ply1_ScriptScope.m_flFov;
+						break;
+					// if visible and aiming at
+					case 3:
+						bLock = hTarget.isVisible && (!hTarget.dot || hTarget.dot >= ply1_ScriptScope.m_flFov);
+						break;
+				}
+
+				if ( bLock )
+				{
+					local frac;
+
+					switch ( ply1_ScriptScope.m_nLockSpeedLevel )
+					{
+						case 0:
+							frac = 1.0;
+							break;
+						case 1:
+							frac = 0.28125; // fast
+							break;
+						case 2:
+							frac = 0.15125;
+							break;
+						case 3:
+							frac = 0.01625;
+							break;
+						case 4:
+							frac = 0.00525; // slow
+							break;
+					}
+
+					local targetDir = targetPos - eyePos;
+					targetDir.Norm();
+
+					if ( ply1_ScriptScope.m_bLockSmooth )
+						targetDir = VS.VectorLerp( eyeDir, targetDir, frac );
+					else
+						targetDir = VS.ApproachVector( targetDir, eyeDir, frac );
+
+					ply1.SetForwardVector( targetDir );
+				};
+
+				if ( hitpos )
+				{
+					// listen server host only
+					if ( m_bAutoShoot &&
+						!m_bAttacked )
+					{
+						// set player angles on the attacking frame,
+						// otherwise the shots miss when angles change too fast
+						m_cachedTarget[0] = ply1;
+						m_cachedTarget[1] = hTarget.self;
+
+						Attack();
+					};
+				};
 			}
 		}
 	}
 
-	function Think2():(VIEW_FOV)
+	// =============================
+	// =============================
+
+	// toggle noclip on player
+	::noclip <- function( i = 1 )
 	{
-		local h1 = m_hPlayer1.EyePosition()
-
-		// calculate LOS to every enemy player
-		foreach( player in m_list_enemy_players )
-			if ( player )
+		local p;
+		switch (typeof i)
+		{
+		case "integer":
+			p = VS.GetPlayerByIndex(i); break;
+		case "string":
+			foreach( v in VS.GetAllPlayers() )
 			{
-				// if alive
-				if ( player.GetHealth() )
+				local t = v.GetScriptScope();
+				if ( t && ("name" in t) && (t.name == i) )
 				{
-					local h2 = player.GetAttachmentOrigin(15)
-
-					// if direct LOS
-					if ( !VS.TraceLine(h1, h2).DidHit() )
-					{
-						if ( !m_bMode )
-							if ( !VS.IsLookingAt( h1,h2,m_hPlayer1Eye.GetForwardVector(),VIEW_FOV ) )
-								continue
-
-						// set P2 if not already set
-						if ( player.GetName() != NAME_P2 )
-							_P2(player)
-
-						// logic
-						return Think()
-					}
+					p = v;
+					break;
 				}
 			}
-			else continue
+			break;
+		case "instance":
+			p = i; break;
+		default:
+			throw "::noclip invalid input";
+		}
+
+		if ( !p || !(p = ToExtendedPlayer(p)) )
+			return;
+
+		if ( !p.IsNoclipping() )
+		{
+			p.SetMoveType( 8 );
+			p.SetEffects( 32 ); // EF_NODRAW
+			Msg("[][] Noclip enabled\n");
+		}
+		else
+		{
+			p.SetMoveType( 2 );
+			p.SetEffects( 0 );
+			Msg("[][] Noclip disabled\n");
+		};
 	}
 
-	function UpdateEnemyPlayers()
+	// 1 versus enemy team
+	::aimbot_1vEnemy <- function( i = 1 )
 	{
-		m_list_enemy_players.clear()
+		ClearPlayers();
+		local p1 = ::aimbot_add_p1(i);
+		if ( !p1 )
+			return Msg("no p1 found\n");
 
-		foreach( player in ::VS.GetAllPlayers() )
+		local t1 = p1.GetTeam();
+		local c = 0;
+
+		foreach( p in VS.GetAllPlayers() )
 		{
-			if ( player.GetTeam() != m_nTeamP1 )
+			local t2 = p.GetTeam();
+
+			if ( (t2 == 2 || t2 == 3) && (t2 != t1) )
 			{
-				m_list_enemy_players.append( player.weakref() )
+				AddPlayer2ByHandle(p);
+				c++;
 			}
 		}
+
+		Msg("[][] 1v"+c + "\n");
+
+	}.bindenv(__AIMBOT);
+
+	// clear all players
+	::aimbot_clear <- __AIMBOT.ClearPlayers.bindenv(__AIMBOT);
+
+	// add player 1 (perpetrator)
+	::aimbot_add_p1 <- function(i)
+	{
+		switch (typeof i)
+		{
+		case "integer":
+			return AddPlayer1ByIndex(i);
+		case "string":
+			return AddPlayer1ByName(i);
+		case "instance":
+			return AddPlayer1ByHandle(i);
+		}
+	}.bindenv(__AIMBOT)
+
+	// add player 2 (victim)
+	::aimbot_add_p2 <- function(i)
+	{
+		switch (typeof i)
+		{
+		case "integer":
+			return AddPlayer2ByIndex(i);
+		case "string":
+			return AddPlayer2ByName(i);
+		case "instance":
+			return AddPlayer2ByHandle(i);
+		}
+	}.bindenv(__AIMBOT)
+
+	// set wh (listen server host only)
+	::aimbot_wh <- function(i="null") { return SendToConsole("script __AIMBOT.SetWallhack(" + i + ")") }
+
+	// set trigger (listen server host only)
+	::aimbot_trigger <- function(i="null") { return SendToConsole("script __AIMBOT.SetAutoShoot(" + i + ")") }
+	::aimbot_trigger_speed <- __AIMBOT.AutoShootSpeed.bindenv(__AIMBOT);
+
+	// set lock FOV in degrees
+	::aimbot_fov <- __AIMBOT.SetFov.bindenv(__AIMBOT);
+
+	// set aim target - head / body
+	::aimbot_target <- __AIMBOT.SetAimTarget.bindenv(__AIMBOT);
+
+	// set aimlock
+	::aimbot_lock <- __AIMBOT.SetAimLock.bindenv(__AIMBOT);
+
+	// set aimlock speed level [0,4]
+	::aimbot_lock_speed <- __AIMBOT.SetLockSpeed.bindenv(__AIMBOT);
+
+	// set aimlock smoothing
+	::aimbot_lock_smooth <- __AIMBOT.SetLockSmoothing.bindenv(__AIMBOT);
+
+	//
+	// example +use callbacks
+	//
+
+	::aimbot_use_toggle_lock <- function()
+	{
+		__AIMBOT.UseCallback = function(self)
+		{
+			if ( self.m_ScriptScope.m_nAimlock == 0 )
+			{
+				self.m_ScriptScope.m_nAimlock = 2;
+			}
+			else
+			{
+				self.m_ScriptScope.m_nAimlock = 0;
+			};
+
+			printl("\t\taim lock : " + self.m_ScriptScope.m_nAimlock);
+		}
 	}
 
-// controls =============================
-
-	function noclip()
+	::aimbot_use_toggle_wh <- function()
 	{
-		m_bNoclip = !m_bNoclip
-
-		if ( m_bNoclip )
+		__AIMBOT.UseCallback = function(self)
 		{
-			m_hPlayer1.__KeyValueFromInt( "movetype", 8 )
-			m_hPlayer1.__KeyValueFromInt( "rendermode", 10 )
-		}
-		else
-		{
-			m_hPlayer1.__KeyValueFromInt( "movetype", 2 )
-			m_hPlayer1.__KeyValueFromInt( "rendermode", 0 )
-		}
+			__AIMBOT.m_bWH = !__AIMBOT.m_bWH;
+			__AIMBOT.m_bDrawTarget = __AIMBOT.m_bWH;
 
-		Msg("[][] Noclip " + (m_bNoclip ? "enabled\n" : "disabled\n"))
+			printl("\t\twh : " + __AIMBOT.m_bWH);
+		}
 	}
 
-	function targets()
-	{
-		m_b1v1 = !m_b1v1
-
-		if ( m_b1v1 )
-		{
-			P2(2)
-			::VS.OnTimer( m_hThink, "Think" )
-		}
-		else
-		{
-			UpdateEnemyPlayers()
-			m_bWH = false
-			::VS.OnTimer( m_hThink, "Think2" )
-			EntFireByHandle( m_hThink, "enable" )
-		}
-
-		Msg("[][] " + (m_b1v1 ? "1v1 mode\n" : "all enemies mode\n"))
-	}
-
-	function mode()
-	{
-		m_bMode = !m_bMode
-
-		Msg("[][] Low fov " + (m_bMode ? "enabled\n" : "disabled\n"))
-	}
-
-	function speed():(INTERVAL_FIRE)
-	{
-		local out
-
-		if ( m_flAutoShootInterval == INTERVAL_FIRE )
-		{
-			m_flAutoShootInterval = INTERVAL_FIRE + 0.25
-			out = "slower"
-		}
-		else
-		{
-			m_flAutoShootInterval = INTERVAL_FIRE
-			out = "faster"
-		}
-
-		Msg("[][] Shooting speed is now " + out + "\n")
-	}
-
-	function aim()
-	{
-		m_bAimAtHead = !m_bAimAtHead
-
-		Msg("[][] Aiming at " + (m_bAimAtHead ? "head\n" : "torso\n"))
-	}
-
-	function aimlock()
-	{
-		m_bAimlock = !m_bAimlock
-
-		Msg("[][] Aimlock " + (m_bAimlock ? "enabled\n" : "disabled\n"))
-	}
-
-	function wh()
-	{
-		if ( ::VS.GetAllPlayers().len() > 2 )
-			return Msg("[][!] Cannot enable WH while there are more than 1 enemy\n")
-
-		m_bWH = !m_bWH
-
-		if (m_bWH) SetGlow(m_hPlayer2)
-		else ::Glow.Disable(m_hPlayer2)
-
-		Msg("[][] Wallhack " + (m_bWH ? "enabled\n" : "disabled\n"))
-	}
-
-	function trigger()
-	{
-		if ( ::VS.IsDedicatedServer() )
-		{
-			return Msg("[][!] Cannot enable AutoShoot in a dedicated server\n")
-		}
-
-		if ( !m_hCMD )
-		{
-			m_hCMD = ::VS.CreateEntity( "point_clientcommand",null,true ).weakref()
-		}
-
-		m_bAutoShoot = !m_bAutoShoot
-
-		Msg("[][] AutoShoot " + (m_bAutoShoot ? "enabled\n" : "disabled\n"))
-	}
-
-	// save the environment so the script can be used anywhere
-	_env <- this
-
-	if ( this != getroottable() )
-		::_AIMBOT_ <- this.weakref()
-
-	// add the list of control functions inside _AIMBOT_ to the root for easy access
-	// don't call if implementing this in a map
-	local addtoroot = function()
-	{
-		local list = ["P1",
-		              "P2",
-		              "trigger",
-		              "wh",
-		              "aimlock",
-		              "aim",
-		              "speed",
-		              "mode",
-		              "targets",
-		              "noclip"]
-
-		local root = getroottable()
-
-		foreach( k in list )
-		{
-			this[k] = this[k].bindenv(this) // strong ref
-			root[k] <- this[k].weakref()
-		}
-	}()
-
-	}.call(_AIMBOT_)
+	__AIMBOT.Init();
 }
 
-VS.EventQueue.AddEvent( _AIMBOT_.Init, VS.flCanCheckForDedicatedAfterSec, _AIMBOT_ )
+//
+// Some preset templates below. It is best to change these to your liking and gameplay.
+// Local player index is always 1.
+//
+// +use callbacks need to be set before adding each player.
+//
+
+// press USE key to feel the closest enemy
+::aimbot_preset_wide_lock <- function()
+{
+	aimbot_clear();
+	aimbot_use_toggle_lock();
+	aimbot_1vEnemy( 1 );
+	aimbot_wh( 0 );
+	aimbot_target( 0 );
+	aimbot_fov( 25.0 );
+	aimbot_lock( 0 );
+	aimbot_lock_speed( 3 );
+	aimbot_lock_smooth( 0 );
+	aimbot_trigger( 0 );
+}
+
+// body target, large fov, trigger, use toggles lock
+::aimbot_preset_awp <- function()
+{
+	aimbot_clear();
+	aimbot_use_toggle_lock();
+	aimbot_1vEnemy( 1 );
+	aimbot_wh( 1 );
+	aimbot_target( 1 );
+	aimbot_fov( 25.0 );
+	aimbot_lock( 0 );
+	aimbot_lock_speed( 1 );
+	aimbot_lock_smooth( 1 );
+	aimbot_trigger( 1 );
+}
+
+// lock and trigger low fov headshot
+::aimbot_preset_assist <- function()
+{
+	aimbot_clear();
+	aimbot_use_toggle_lock();
+	aimbot_1vEnemy( 1 );
+	aimbot_wh( 1 );
+	aimbot_target( 0 );
+	aimbot_fov( 2.0 );
+	aimbot_lock( 2 );
+	aimbot_lock_speed( 2 );
+	aimbot_lock_smooth( 0 );
+	aimbot_trigger( 1 );
+}
+
+// just trigger
+::aimbot_preset_trigger <- function()
+{
+	aimbot_clear();
+	aimbot_use_toggle_wh();
+	aimbot_1vEnemy( 1 );
+	aimbot_wh( 0 );
+	aimbot_target( 0 );
+	aimbot_lock( 0 );
+	aimbot_trigger( 1 );
+}
+
+// instant lock and trigger on all targets
+::aimbot_preset_rage <- function()
+{
+	aimbot_clear();
+	aimbot_1vEnemy( 1 );
+	aimbot_wh( 1 );
+	aimbot_target( 0 );
+	aimbot_fov( 0.0 );
+	aimbot_lock( 1 );
+	aimbot_lock_speed( 0 );
+	aimbot_lock_smooth( 0 );
+	aimbot_trigger( 1 );
+}
+

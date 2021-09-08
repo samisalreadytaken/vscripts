@@ -179,16 +179,16 @@ VS.ListenToGameEvent( "inspect_weapon", function( event )
 //
 //------------------------------
 
-::OnGameEvent_player_spawn <- function(event)
+VS.ListenToGameEvent( "player_spawn", function( event )
 {
 	local ply = VS.GetPlayerByUserid(event.userid)
 
 	// if exists and alive
 	if ( ply && ply.GetHealth() )
 		ply.SetHealth(1000)
-}
+}, "SetHealthOnSpawn" );
 
-::OnGameEvent_player_hurt <- function(event)
+VS.ListenToGameEvent( "player_hurt", function( event )
 {
 	// if the victim is alive
 	if ( event.health )
@@ -234,7 +234,7 @@ VS.ListenToGameEvent( "inspect_weapon", function( event )
 			}
 		}
 	}
-}
+}, "OnPlayerHurt" );
 
 //------------------------------
 //

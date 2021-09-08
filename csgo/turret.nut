@@ -1,7 +1,7 @@
 //-----------------------------------------------------------------------
 //------------------- Copyright (c) samisalreadytaken -------------------
 //                       github.com/samisalreadytaken
-//- v0.5.3 --------------------------------------------------------------
+//- v0.5.4 --------------------------------------------------------------
 //
 // Player controlled turret (multiplayer compatible)
 //
@@ -32,22 +32,17 @@
 //
 // Disable on round start to make sure there are no players left using the
 // turret from the previous round
-//	::OnGameEvent_round_start <- function(event)
+//	VS.ListenToGameEvent( "round_start", function(ev)
 //	{
 //		::TURRET.Disable( #YOUR_TURRET_VAR# )
-//	}
+//	}, "TurretDisable" );
 //
-// If there are multiple turrets in the map, set the user name as well
-//
-//	hTurret1 <- ::TURRET.Create( "turret_gun_1", "turret_fire_1", "turret_target_1", "turret_user_1" );
-//	hTurret2 <- ::TURRET.Create( "turret_gun_2", "turret_fire_2", "turret_target_2", "turret_user_2" );
 //
 // Crosshair overlay and sounds can also be set exclusively for each turret
 //
 //	hTurret2 <- ::TURRET.Create( "turret_gun_2",
 //	                             "turret_fire_2",
 //	                             "turret_target_2",
-//	                             "turret_user_2",
 //	                             "mymap/overlay",
 //	                             "Weapon_M249.Pump",
 //	                             "Weapon_AK47.Single" );
@@ -57,59 +52,57 @@
 local SND_USE = "Weapon_M249.Pump";
 local SND_FIRE = "Weapon_M249.Single";
 local TURRET_USE_OVERLAY = "";
-local TURRET_USER_NAME = "turret_user";
 
 IncludeScript("vs_library");
 
-if( !("TURRET" in getroottable()) )
-{
-::TURRET <- {}
+if ( !("g_TurretList" in getroottable()) )
+	::g_TurretList <- {};;
 
-local _ = function():(SND_USE,SND_FIRE,TURRET_USER_NAME,TURRET_USE_OVERLAY){
+if ( !("g_pClientCommand" in getroottable()) )
+	::g_pClientCommand <- VS.CreateEntity( "point_clientcommand", null, true );;
 
-local m_list = {}
-local m_hCommand = ::VS.CreateEntity("point_clientcommand",null,true);
+if ( !("TURRET" in getroottable()) )
+	::TURRET <- {}
 
-function Create(szNameGunMDL,
-				szNameGunFire,
-				szNameGunTarget,
-				szUserName = TURRET_USER_NAME,
-				szOverlayOn = TURRET_USE_OVERLAY,
-				szSndUse = SND_USE,
-				szSndFire = SND_FIRE):(m_list)
+else return;;
+
+
+function TURRET::Create(
+			szNameGunMDL,
+			szNameGunFire,
+			szNameGunTarget,
+			szOverlayOn = TURRET_USE_OVERLAY,
+			szSndUse = SND_USE,
+			szSndFire = SND_FIRE
+		)
 {
 	local hGunProp = ::Ent(szNameGunMDL);
 	local hGunFire = ::Ent(szNameGunFire);
 	local hTarget = ::Ent(szNameGunTarget);
 
-	if( !hGunProp || !hTarget || !hGunFire )
-		throw "TURRET: could not find entities";
+	if ( !hGunProp || !hTarget || !hGunFire )
+		return Msg("TURRET: could not find entities\n");
 
-	local bCreateNew = true;
 	local hCtrl;
 
-	foreach( k,v in m_list )
+	foreach( k,v in g_TurretList )
 	{
-		if( k.GetScriptScope().m_hGunProp.GetName() == szNameGunMDL )
+		if ( k.IsValid() && (k.GetScriptScope().m_hGunProp.GetName() == szNameGunMDL) )
 		{
-			bCreateNew = false;
 			hCtrl = k;
 			break;
 		};
 	}
 
-	if( bCreateNew )
+	if ( !hCtrl )
 	{
-		local hEye = ::VS.CreateMeasure( szUserName, null, true );
 		hCtrl = ::VS.CreateEntity( "game_ui",{ spawnflags = (1<<5)|(1<<6)|(1<<7), fieldofview = -1.0 },true );
 
-		m_list[hCtrl] <-
+		g_TurretList[hCtrl] <-
 		{
 			szSndFire = szSndFire,
 			szSndUse = szSndUse,
 			szOverlayOn = szOverlayOn,
-			szUserName = szUserName,
-			hEye = hEye.weakref(),
 			szNameGunMDL = szNameGunMDL,
 			szNameGunFire = szNameGunFire,
 			szNameGunTarget = szNameGunTarget
@@ -121,58 +114,41 @@ function Create(szNameGunMDL,
 	return hCtrl;
 }
 
-function Reset( hCtrl ):(m_list)
+function TURRET::Reset( hCtrl ) : (g_TurretList)
 {
 	hCtrl.ValidateScriptScope();
 	local sc = hCtrl.GetScriptScope();
-	local ls = m_list[hCtrl];
+	local ls = g_TurretList[hCtrl];
 
-	local hGunProp = ::Ent(ls.szNameGunMDL);
-	local hGunFire = ::Ent(ls.szNameGunFire);
-	local hTarget = ::Ent(ls.szNameGunTarget);
+	local hGunProp = ::Ent( ls.szNameGunMDL );
+	local hGunFire = ::Ent( ls.szNameGunFire );
+	local hTarget = ::Ent( ls.szNameGunTarget );
 
 	sc.m_bShooting <- false;
 	sc.m_hUser <- null;
-	sc.m_hEye <- ls.hEye.weakref();
 	sc.m_hGunProp <- hGunProp.weakref();
 	sc.m_hGunFire <- hGunFire.weakref();
 	sc.m_hTarget <- hTarget.weakref();
-	sc.m_szUserName <- ls.szUserName;
 	sc.m_szOverlayOn <- ls.szOverlayOn;
 	sc.m_szSndFire <- ls.szSndFire;
 	sc.m_szSndUse <- ls.szSndUse;
 
-	AddOutputs(hCtrl);
-
-	for( local ent; ent = ::Entities.FindByName( ent, sc.m_szUserName ); )
-		::VS.SetName( ent, "" );
+	AddOutputs( hCtrl );
 }
 
-function Disable( hCtrl,bForceDeactivate = true ) : (m_hCommand)
+function TURRET::Disable( hCtrl, bForceDeactivate = true ) : (g_pClientCommand)
 {
 	local sc = hCtrl.GetScriptScope();
 
-	if ( sc.m_hUser )
+	if ( sc.m_hUser && sc.m_hUser.IsValid() )
 	{
 		// +use already deactivates itself (spawnflag 7)
 		// but this is required if the player did not deactivate, but was killed or round ended
 		if ( bForceDeactivate )
-			::DoEntFireByInstanceHandle( hCtrl, "Deactivate", "", 0, sc.m_hUser, null );
+			::DoEntFireByInstanceHandle( hCtrl, "Deactivate", "", 0, sc.m_hUser.self, null );
 
-		::DoEntFireByInstanceHandle( m_hCommand, "Command", "r_screenoverlay\"\"", 0, sc.m_hUser, null );
-		::VS.SetName( sc.m_hUser, "" );
-
-//		local scPlayer = sc.m_hUser.GetScriptScope();
-//		if( "hControlledTurret" in scPlayer )
-//		{
-//			scPlayer.hControlledTurret = null;
-//		};
-
-		sc.m_hUser = null;
+		::DoEntFireByInstanceHandle( g_pClientCommand, "Command", "r_screenoverlay\"\"", 0, sc.m_hUser.self, null );
 	};
-
-	for ( local ent; ent = ::Entities.FindByName( ent, sc.m_szUserName ); )
-		::VS.SetName( ent, "" );
 
 	if ( sc.m_hGunFire )
 		::EntFireByHandle( sc.m_hGunFire, "Disable" );
@@ -181,7 +157,7 @@ function Disable( hCtrl,bForceDeactivate = true ) : (m_hCommand)
 	sc.m_hUser = null;
 }
 
-function Use( hCtrl, ply = null )
+function TURRET::Use( hCtrl, ply = null )
 {
 	if ( !ply )
 	{
@@ -191,28 +167,31 @@ function Use( hCtrl, ply = null )
 		}
 		else
 		{
-			throw "TURRET: could not find player to use";
+			return Msg("TURRET: could not find player to use\n");
 		};
 	};
 
 	local sc = hCtrl.GetScriptScope();
 
 	// this block will not be called because +use already disables the turret (spawnflag 7)
-	if( sc.m_hUser == ply )
+	if ( sc.m_hUser )
 	{
-		::Msg("TURRET: unexpected execution!\n");
-		::DoEntFireByInstanceHandle( sc.self, "Deactivate", "", 0, ply, null );
-		return;
-	}
-	else if( sc.m_hUser )
-	{
-		return::Msg("TURRET: Someone tried to use the turret while it was already in use\n");
-	};;
+		if ( sc.m_hUser.self == ply )
+		{
+			Msg("TURRET: unexpected execution!\n");
+			DoEntFireByInstanceHandle( sc.self, "Deactivate", "", 0, ply, null );
+			return;
+		}
+		else if ( sc.m_hUser.IsValid() )
+		{
+			return Msg("TURRET: Someone tried to use the turret while it was already in use\n");
+		};;
+	};
 
-	if( ply && ply.IsValid() && ply.GetClassname() == "player" )
+	if ( ply && ply.IsValid() && ply.GetClassname() == "player" )
 	{
 		// round restart, gunfire and prop are respawned, previous references are invalid
-		if( !sc.m_hGunFire )
+		if ( !sc.m_hGunFire )
 		{
 			Reset(hCtrl);
 		};
@@ -229,79 +208,73 @@ function Use( hCtrl, ply = null )
 
 // internal functions --------------------------------------
 
-function OnUse():(m_hCommand)
+function TURRET::OnUse() : (g_pClientCommand)
 {
-	m_hUser = ::activator.weakref();
+	m_hUser = ToExtendedPlayer( ::activator );
 	m_bShooting = false;
 
-	::VS.SetName( m_hUser,m_szUserName );
-	::VS.SetMeasure( m_hEye,m_szUserName );
-
 	::EntFireByHandle( m_hGunFire, "Disable" );
-	::DoEntFireByInstanceHandle( m_hCommand,"Command","r_screenoverlay\""+m_szOverlayOn+"\"",0,m_hUser,null );
+	::DoEntFireByInstanceHandle( g_pClientCommand,
+		"Command",
+		"r_screenoverlay\""+m_szOverlayOn+"\"",
+		0, m_hUser.self, null );
 
-	m_hGunProp.EmitSound(m_szSndUse);
+	m_hGunProp.EmitSound( m_szSndUse );
+
+	// start thinking
 	Think();
 }
 
-function OnAttack()
+function TURRET::OnAttackPressed()
 {
 	::EntFireByHandle( m_hGunFire, "Enable" );
 	m_bShooting = true;
 }
 
-function OnAttackRelease()
+function TURRET::OnAttackRelease()
 {
 	::EntFireByHandle( m_hGunFire, "Disable" );
 	m_bShooting = false;
 }
 
-local TraceDir = ::VS.TraceDir.bindenv(::VS);
-local VSAddEvent = ::VS.EventQueue.AddEvent;
-
-function Think() : (TraceDir, VSAddEvent)
+function TURRET::Think()
 {
-	if( !m_hUser )
+	if ( !m_hUser || !m_hUser.IsValid() )
 		return;
 
-	if( !m_hUser.GetHealth() )
-		return::TURRET.Disable(self);
+	if ( !m_hUser.GetHealth() )
+		return ::TURRET.Disable(self);
 
 //	if( m_nFireCount ++>= m_nCooldownLimit )
 //	{
-//		return VSAddEvent( Think, m_flRecoverTime, this );
+//		return VS.EventQueue.AddEvent( Think, m_flRecoverTime, this );
 //	};
 
-	local vecTargetPos = TraceDir(m_hUser.EyePosition(),m_hEye.GetForwardVector()).GetPos();
-	m_hTarget.SetOrigin(vecTargetPos);
+	local vecTargetPos = VS.TraceDir(
+		m_hUser.EyePosition(),
+		m_hUser.EyeForward(),
+		MAX_TRACE_LENGTH,
+		m_hUser.self,
+		MASK_SOLID ).GetPos();
 
-	// get the correct shooting angle
-	// This will cause the gun orientation to 'jump' as it aims at where the target is
-	// local vAng = ::VS.GetAngle(m_hGunProp.GetOrigin(),vecTargetPos);
+	m_hTarget.SetOrigin( vecTargetPos );
+	m_hGunProp.SetForwardVector( vecTargetPos - m_hGunProp.GetOrigin() );
 
-	// Player eye angle can be used to keep the movement smooth, but misaligned with shot direction
-	// (shots will not come straight out of the barrel)
-	local vAng = m_hEye.GetAngles();
-
-	m_hGunProp.SetAngles(vAng.x,vAng.y,vAng.z);
-
-	if( m_bShooting )
+	if ( m_bShooting )
 	{
 		m_hGunProp.EmitSound(m_szSndFire);
 	};
 
-	return VSAddEvent( Think, 0.05, this );
+	return VS.EventQueue.AddEvent( Think, 0.05, this );
 }
 
-function AddOutputs(hCtrl)
+function TURRET::AddOutputs( hCtrl )
 {
-	::VS.AddOutput( hCtrl, "PressedAttack", OnAttack, null, true );
-	::VS.AddOutput( hCtrl, "UnpressedAttack", OnAttackRelease, null, true );
-	::VS.AddOutput( hCtrl, "PlayerOn", OnUse, null, true );
-	::VS.AddOutput( hCtrl, "PlayerOff", function(){ ::TURRET.Disable( self, false ) }, null, true );
-
-	hCtrl.GetScriptScope().Think <- Think.bindenv( hCtrl.GetScriptScope() );
+	local sc = hCtrl.GetScriptScope();
+	VS.AddOutput( hCtrl, "PressedAttack", OnAttackPressed, sc );
+	VS.AddOutput( hCtrl, "UnpressedAttack", OnAttackRelease, sc );
+	VS.AddOutput( hCtrl, "PlayerOn", OnUse, sc );
+	VS.AddOutput( hCtrl, "PlayerOff", function(){ return ::TURRET.Disable( self, false ) }, sc );
+	sc.Think <- Think.bindenv( sc );
 }
 
-}.call(::TURRET);
-};;

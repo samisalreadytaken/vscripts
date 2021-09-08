@@ -5,206 +5,216 @@
 //
 // Directional Sound Training Map ( + music kits )
 //
-// This map doesn't really have a purpose. It's kind of a collection of various tests.
-// Things WILL be broken and suboptimal.
+// This map is kind of a collection of various small tests; it is a mess.
 //
 //------------------------------
 
 IncludeScript("vs_library");
-IncludeScript("glow");
 
 enum weapon
 {
-	glock  =  "glock",
-	hkp2000 = "hkp2000",
-	usp_silencer = "usp_silencer",
-	elite = "elite",
-	p250 = "p250",
-	tec9 = "tec9",
-	fn57 = "fn57",
-	deagle = "deagle",
-	galilar = "galilar",
-	famas = "famas",
-	ak47 = "ak47",
-	m4a1 = "m4a1",
-	m4a1_silencer = "m4a1_silencer",
-	ssg08 = "ssg08",
-	aug = "aug",
-	sg556 = "sg556",
-	awp = "awp",
-	scar20 = "scar20",
-	g3sg1 = "g3sg1",
-	nova = "nova",
-	xm1014 = "xm1014",
-	mag7 = "mag7",
-	m249 = "m249",
-	negev = "negev",
-	mac10 = "mac10",
-	mp9 = "mp9",
-	mp7 = "mp7",
-	ump45 = "ump45",
-	p90 = "p90",
-	bizon = "bizon",
-	mp5sd = "mp5sd",
-	sawedoff = "sawedoff",
-	cz75a = "cz75a"
+	glock = "weapon_glock",
+	hkp2000 = "weapon_hkp2000",
+	usp_silencer = "weapon_usp_silencer",
+	elite = "weapon_elite",
+	p250 = "weapon_p250",
+	tec9 = "weapon_tec9",
+	fn57 = "weapon_fn57",
+	deagle = "weapon_deagle",
+	galilar = "weapon_galilar",
+	famas = "weapon_famas",
+	ak47 = "weapon_ak47",
+	m4a1 = "weapon_m4a1",
+	m4a1_silencer = "weapon_m4a1_silencer",
+	ssg08 = "weapon_ssg08",
+	aug = "weapon_aug",
+	sg556 = "weapon_sg556",
+	awp = "weapon_awp",
+	scar20 = "weapon_scar20",
+	g3sg1 = "weapon_g3sg1",
+	nova = "weapon_nova",
+	xm1014 = "weapon_xm1014",
+	mag7 = "weapon_mag7",
+	m249 = "weapon_m249",
+	negev = "weapon_negev",
+	mac10 = "weapon_mac10",
+	mp9 = "weapon_mp9",
+	mp7 = "weapon_mp7",
+	ump45 = "weapon_ump45",
+	p90 = "weapon_p90",
+	bizon = "weapon_bizon",
+	mp5sd = "weapon_mp5sd",
+	sawedoff = "weapon_sawedoff",
+	cz75a = "weapon_cz75a"
 }
 
 const TEAM_T = 2;;
 const TEAM_CT = 3;;
 
-const CL_GREEN = "171 255 130";;
-const CL_WHITE = "255 255 255";;
+const CLR_GREEN = "171 255 130 255";;
+const CLR_WHITE = "255 255 255 255";;
+
+// TextColor.Immortal
+const CHAT_PREFIX = "\x10● ";;
+
+const SND_WALLS_MOVE = "Doors.Metal.Move1";;
+const SND_HIT = "ui/hitsound.wav";;
+const SND_CRITHIT = "player/crit_hit.wav";; // "TFPlayer.CritHit"
+
+const BOT_HEALTH = 1;;
+
+enum SOUNDTYPE
+{
+	AK47_SINGLE			= 0,
+	M4A4_SINGLE			= 6,
+	HEADSHOT			= 2,
+	STEP_CONCRETE		= 1,
+	STEP_METAL			= 7,
+	FLASHBANG_BOUNCE	= 4,
+	FLASHBANG_EXPLODE	= 5
+}
 
 ::TR_SND <- this;
 
-_MAX <- -1;
-_MIN <- -1;
-MAX  <- -1;
-MIN  <- -1;
-m_nResolution <- 128;
-m_fIntvlCurr  <- 1.0;
-m_bBlindMode  <- false;
-m_bStarted    <- false;
-m_bSpawned    <- false;
-m_bAimHelper  <- false;
-m_bRange      <- false;
-m_bSettingUp  <- false;
-m_nCtrlIntvl  <- 0;
-m_nThinkCount <- 0;
-m_list_bots   <- [];
-m_list_sounds <- [];
-m_szSndCurr   <- "";
-m_nSoundsLen  <- 0;
-m_bAimlockON  <- false;
-vec3_origin   <- Vector();
+m_flRadiusMax		<- -1.0;
+m_flRadiusMin		<- -1.0;
+m_fIntvlCurr		<- 1.0;
+m_bBlindMode		<- false;
+m_bStarted			<- false;
+m_bSpawned			<- false;
+m_bAimHelper		<- false;
+m_bRange			<- false;
+m_bAtControls		<- false;
+m_nCtrlIntvl		<- 0;
+m_nThinkCount		<- 0;
+m_Bots				<- [];
+m_Sounds			<- [];
+m_szSndCur			<- null;
+m_bAimLockEnabled	<- false;
+m_pCritSpawner		<- null;
+player				<- null;
+m_hPlatformWalls	<- null;
+m_hStopText			<- null;
+
+vec3_origin <- Vector();
+Fmt <- format;
 
 function Precache()
 {
-	if ( !("ENT" in getroottable()) )
+	if ( !("g_hHudHint" in getroottable()) )
 	{
-		::ENT <-
+		// sound target
+		// alternatively the bot's origin could be used,
+		// but using an external entity allows playing the sound
+		// even when the bot is not placed.
+		::g_hTarget <- ::VS.CreateEntity( "info_target" ).weakref();
+
+		// play sound
+		::g_hTimerSnd <- ::VS.Timer( 1, m_fIntvlCurr, PlayTargetSoundThink, null, false, true ).weakref();
+
+		// vertical aim helper
+		::g_hTimerHelper <- ::VS.Timer( 1, 0.1, AimHelperThink, null, false, true ).weakref();
+
+		::g_hTimerAimLock <- ::VS.Timer( 1, 0.0, ThinkAimlock, null, false, true ).weakref();
+
+		// 1. set bot angles to the center of the map
+		// 2. sound-interval setting timer
+		::g_hTimerThink <- ::VS.Timer( 1, 0.01, BotAngleThink, null, false, true ).weakref();
+
+		// Music kit 10 second countdown timer
+		::g_hTimer10 <- ::VS.Timer( 1, 0.0, Tick, null, false, true ).weakref();
+
+		// Countdown message
+		::g_hMsgTen <- null;
+
+		// Display info on the music kits when looked at
+		::g_hTimerLook <- ::VS.Timer( 1, 0.1, Looking, null, false, true ).weakref();
+
+		// "You killed X"
+		::g_hGameText <- ::VS.CreateEntity( "game_text",
 		{
-			// sound target
-			// alternatively the bot's origin could be used,
-			// but using an external entity allows playing the sound
-			// even when the bot is not placed.
-			hTarget = ::VS.CreateEntity( "info_target",{targetname = "t"},true ).weakref(),
+			channel = 1,
+			color = "255 255 255",
+			color2 = "250 250 250",
+			fadeout = 0.4,
+			holdtime = 1.4,
+			x = 0.435,
+			y = 0.7
+		},true ).weakref();
 
-			// play sound
-			hTimerSnd = ::VS.Timer( 1, m_fIntvlCurr, delete PlaySound,null,false,true ).weakref(),
-
-			// vertical aim helper
-			hTimerAim = ::VS.Timer( 1, 0.1, delete CheckAng,null,false,true ).weakref(),
-
-			hAIMLOCK = ::VS.Timer( 1, 0.01, delete ThinkAimlock,null,false,true ).weakref(),
-
-			// 1. set bot angles to the center of the map
-			// 2. sound-interval setting timer
-			hTimerThink = ::VS.Timer( 1, 0.01, BotAng,null,false,true ).weakref(),
-
-			// Music kit 10 second countdown timer
-			hTimer10 = ::VS.Timer( 1, TICK_INTERVAL, delete Tick,null,false,true ).weakref(),
-			// hMsgTen = ::VS.CreateEntity("point_worldtext", {origin = Vector(-179 -172 100), angles = Vector(0 -120 0), message = "10.0000"},true ).weakref(),
-			hMsgTen = ::Ent("msg10" ).weakref(),
-
-			// Display info on the music kits when looked at
-			hTimerLook = ::VS.Timer( 1, 0.1, delete Looking,null,false,true ).weakref(),
-
-			// for aimlock head measuring
-			hBotEye = ::VS.CreateMeasure( "BOT",null,true ).weakref(),
-
-			// game_ui for sound-interval setting
-			hGameUI = ::VS.CreateEntity( "game_ui",{spawnflags = 1<<5, fieldofview = -1.0},true ).weakref(),
-
-			// "You killed X"
-			hGametext = ::VS.CreateEntity( "game_text",
-			{
-				channel = 1,
-				color = "255 255 255",
-				color2 = "250 250 250",
-				fadeout = 0.4,
-				holdtime = 1.4,
-				x = 0.435,
-				y = 0.7
-			},true ).weakref()
-		}
-
-		// player eye angles
-		::HPlayerEye <- ::VS.CreateMeasure( "",null,true ).weakref();
+		// helper arrows
+		::g_hGameText2 <- ::VS.CreateEntity( "game_text",
+		{
+			channel = 2,
+			color = "255 255 255",
+			color2 = "250 250 250",
+			fadeout = 0.2,
+			holdtime = 0.2,
+			x = 0.55,
+			y = 0.47
+		},true ).weakref();
 
 		// hud hint
-		::g_hHudhint <- ::VS.CreateEntity( "env_hudhint",null,true ).weakref();
+		::g_hHudHint <- ::VS.CreateEntity( "env_hudhint",null,true ).weakref();
 
 		// Team coin
 		::VS.CreateEntity( "env_texturetoggle",{targetname = "texture_c", target="c"},true ).weakref();
 
 		::VS.CreateEntity( "game_player_equip",{targetname = "equip", spawnflags = 5, weapon_knife = 1},true ).weakref();
-
-		// ::VS.CreateEntity("point_worldtext",{targetname="s0",origin=Vector(152.966,187.136,93),angles=Vector(0,60,0),textsize=3.5,message="AK47"},true);
-		// ::VS.CreateEntity("point_worldtext",{targetname="s6",origin=Vector(152.966,187.136,85),angles=Vector(0,60,0),textsize=3.5,message="M4A4"},true);
-		// ::VS.CreateEntity("point_worldtext",{targetname="s1",origin=Vector(152.966,187.136,77),angles=Vector(0,60,0),textsize=3.5,message="Footsteps (concrete)"},true);
-		// ::VS.CreateEntity("point_worldtext",{targetname="s7",origin=Vector(152.966,187.136,69),angles=Vector(0,60,0),textsize=3.5,message="Footsteps (metal)"},true);
-		// ::VS.CreateEntity("point_worldtext",{targetname="s2",origin=Vector(152.966,187.136,61),angles=Vector(0,60,0),textsize=3.5,message="Headshot"},true);
-		// ::VS.CreateEntity("point_worldtext",{targetname="s4",origin=Vector(152.966,187.136,53),angles=Vector(0,60,0),textsize=3.5,message="Flashbang (bounce)"},true);
-		// ::VS.CreateEntity("point_worldtext",{targetname="s5",origin=Vector(152.966,187.136,45),angles=Vector(0,60,0),textsize=3.5,message="Flashbang (explode)"},true);
-
-		// ::VS.CreateEntity("point_worldtext",{targetname="t0",origin=Vector(199.002,81,33),angles=Vector(),textsize=10,message="HELPER"},true);
-		// ::VS.CreateEntity("point_worldtext",{targetname="t1",origin=Vector(199.002,14,33),angles=Vector(),textsize=10,message="BLIND"},true);
-		// ::VS.CreateEntity("point_worldtext",{targetname="t2",origin=Vector(199,-40,33),angles=Vector(),textsize=10,message="DISTANCE"},true);
-		// ::VS.CreateEntity("point_worldtext",{targetname="t3",origin=Vector(45.396,247.136,57),angles=Vector(0,60,0),textsize=5,message="sound interval"},true);
 	};
 
-	::VS.AddOutput( ::ENT.hGameUI, "PressedForward",  delete SetInterval_add );
-	::VS.AddOutput( ::ENT.hGameUI, "PressedBack",     delete SetInterval_sub );
-	::VS.AddOutput( ::ENT.hGameUI, "UnpressedForward",       SetInterval_rel );
-	::VS.AddOutput( ::ENT.hGameUI, "UnpressedBack",   delete SetInterval_rel );
-
-	PrecacheScriptSound("Doors.Metal.Move1");
+	PrecacheScriptSound( SND_WALLS_MOVE );
+	PrecacheScriptSound( SND_HIT );
+	PrecacheScriptSound( SND_CRITHIT );
 
 	// these should already be set in the map config
 	SendToConsoleServer("sv_cheats 1;achievement_disable 1;mp_autokick 0;mp_limitteams 0;mp_autoteambalance 0;sv_disable_radar 0;sv_infinite_ammo 1;mp_ignore_round_win_conditions 1;mp_teammates_are_enemies 1;mp_solid_teammates 0;mp_respawn_immunitytime 0;mp_give_player_c4 0;mp_respawn_on_death_t 1;mp_respawn_on_death_ct 1;weapon_accuracy_nospread 0;sv_auto_adjust_bot_difficulty 0");
-	SendToConsoleServer("mp_buytime 216000;mp_maxmoney 32000;mp_startmoney 32000;mp_death_drop_gun 0;mp_playercashawards 0;mp_freezetime 0;mp_maxrounds 1;mp_roundtime 60");
+	SendToConsoleServer("mp_buy_anywhere 1;mp_buytime 216000;mp_maxmoney 32000;mp_startmoney 32000;mp_death_drop_gun 0;mp_playercashawards 0;mp_freezetime 0;mp_maxrounds 1;mp_roundtime 60");
 }
+
+function OnPostSpawn()
+{
+	Msg("TR_SND spawn\n");
+}
+
 
 // CT spawned
 function Init()
 {
-	VS.GetLocalPlayer();
+	player = ToExtendedPlayer( VS.GetPlayerByIndex(1) );
 
 	SendToConsole("r_screenoverlay\"\"");
 
 	// default values
 	SetRange(0,0);
 	SetSoundType(0,0);
-	VS.SetMeasure( HPlayerEye, HPlayer.GetName() );
 
-	::EntFireByHandle( ENT.hTimerLook, "enable" );
+	EntFireByHandle( g_hTimerLook, "enable" );
 
 	Equip( weapon.m4a1 );
 	Equip( weapon.usp_silencer );
 
-	for ( local i = 9; i--; ) Chat(" ");
+	for ( local i = 9; i--; ) Chat("");
 
-	local sc = HPlayer.GetScriptScope();
-	if ( "name" in sc )
-	{
-		if ( sc.name.len() )
-		{
-			Chat( txt.lightgreen + "● "+txt.lightblue+"Welcome, " + sc.name + "!" );
-			Msg( "\n\nWelcome, " + sc.name + "!\n" );
-		}
-		else
-		{
-			Chat( txt.lightgreen + "● "+txt.lightblue+"Welcome!" );
-			Msg( "\n\nWelcome!\n" );
-		};
-		Chat( "" );
-		Msg( "\n" );
-	}
-	else VS.ValidateUseridAll();
+	Chat( TextColor.Achievement + "● "+TextColor.Uncommon+"Welcome, " + player.GetPlayerName() + "!" );
+	Msg( "\n\nWelcome, " + player.GetPlayerName() + "! ["+ player.GetNetworkIDString() +"]\n" );
+	Chat( "" );
+	Msg( "\n" );
 
-	VS.EventQueue.AddEvent( PurgeTheUnfit, 1.25, this );
+
+	// -------------------------------------------------------------------
+
+	local template = Ent("crit_template");
+	template.ValidateScriptScope();
+	local sc = template.GetScriptScope();
+	sc.PreSpawnInstance <- dummy;
+	sc.PostSpawn <- __PostSpawn;
+	m_pCritSpawner = Ent("crit_spawner");
+
+	// -------------------------------------------------------------------
+
+	m_hPlatformWalls = Ent("d");
+	m_hStopText = Ent("stoptext");
 
 	// -------------------------------------------------------------------
 	// must be executed every round, so do it on player spawn
@@ -212,128 +222,59 @@ function Init()
 		m_hCurrMusicKit = Ent("m0");
 
 	foreach( i, v in MusicI )
-		VS.AddOutput2( Ent("m"+i), "OnPressed", "TR_SND.PickMusicKit(" + (i++) + ")", null, true );
+		EntFire( "m"+i, "AddOutput", "OnPressed !self,RunScriptCode,TR_SND.PickMusicKit("+(i++)+")" );
 
-	ENT.hMsgTen = Ent("msg10");
-//	for( local d = Ent("d"), i = 0; i < 8; ++i )
-//	{
-//		local e1 = Ent("s"+i);
-//		local e2 = Ent("t"+i);
-//		if (e1) VS.SetParent(e1,d);
-//		if (e2) VS.SetParent(e2,d);
-//	}
-//
-//	VS.SetParent(ENT.hMsgTen,Ent("d"));
+	g_hMsgTen = Ent("msg10");
+
 	// -------------------------------------------------------------------
 
 	// in case server settings are not set
 	// the map may already be broken if these were not set
-	// maybe restartgame once after these?
 	SendToConsole("game_mode 0;game_type 3;mp_warmup_end;mp_warmuptime 0;bot_join_after_player 0;bot_quota 6;bot_quota_mode fill;bot_stop 1;bot_dont_shoot 1;bot_chatter off;bot_knives_only;bot_join_after_player 1");
 }
 
-// HACK
-// The first bot to join will not trigger the player_connect event,
-// thus cannot be validated. Force validate the userid, then kick it
-// so the newly connected bot will work.
-function PurgeTheUnfit()
-{
-	local bots = ::VS.GetPlayersAndBots()[1];
-	local i = 0, b = false;
-try{
-	foreach( bot in bots )
-	{
-		local sc = bot.GetScriptScope();
-		if ( !sc || !("name" in sc) )
-		{
-			VS.EventQueue.AddEvent( VS.ForceValidateUserid, TICK_INTERVAL * i++, [VS, bot] );
-			b = true;
-		}
-		else if ( sc.name.len() == 0 )
-		{
-			SendToConsole("kickid " + sc.userid + ";bot_add");
-		};;
-	}
-}catch(e){ Msg("exception " + e + "\n") }
 
-	if ( b )
-		VS.EventQueue.AddEvent( PurgeTheUnfit, TICK_INTERVAL * 2 * i, this );
-}
-
-// distance between spawn points
-function SetResolution( d )
-{
-	m_nResolution = d;
-	MAX = _MAX / d;
-	MIN = _MIN / d;
-}
-
-// true : spawn around the center
+// true : spawn close
 // false: spawn everywhere
 function SetRange( b, m = true )
 {
 	if ( !b )
 	{
-		// hard set values, dependant of the map
-		_MAX = 896;
-		_MIN = 384;
+		// hard set values, dependant on the map
+		m_flRadiusMax = 960.0;
+		m_flRadiusMin = 320.0;
 
-		Ent("t2").__KeyValueFromString( "color",CL_WHITE );
-		if (m) Chat( m_szChatPrefix + txt.yellow + "Enemies can now spawn everywhere" );
+		Ent("t2").__KeyValueFromString( "color",CLR_WHITE );
+		if (m) Chat( CHAT_PREFIX + TextColor.Gold + "Enemies will spawn everywhere" );
 	}
 	else
 	{
-		// if _MAX == _MIN, spawn only one line
-		_MAX = 384;
-		_MIN = 384;
+		m_flRadiusMax = 320.0;
+		m_flRadiusMin = 320.0;
 
-		Ent("t2").__KeyValueFromString( "color",CL_GREEN );
-		if (m) Chat( m_szChatPrefix + txt.yellow + "Enemies will only spawn around you" );
+		Ent("t2").__KeyValueFromString( "color",CLR_GREEN );
+		if (m) Chat( CHAT_PREFIX + TextColor.Gold + "Enemies will only spawn nearby" );
 	};
 
 	if (m) Chat("");
 
 	m_bRange = b;
-	SetResolution( m_nResolution );
 }
-
 
 // Pick a random position vector
 //
-// xxxxxxxxxxxxxxx
-// xxxxxxxxxxxxxxx
-// xx           xx
-// xx           xx
-// xx           xx
-// xx           xx
-// xx           xx
-// xx     o     xx
-// xx           xx
-// xx           xx
-// xx           xx
-// xx           xx
-// xx           xx
-// xxxxxxxxxxxxxxx
-// xxxxxxxxxxxxxxx
-//
-// Alternatively, a more complex shape could be calculated
-// and the positions could be added to a list,
-// where random vectors could be picked to get random positions
-//
-function RandomPos()
+function GetRandomPosition()
 {
-	switch ( ::RandomInt(0,3) )
-	{
-		case 0: return::Vector( ::RandomInt(-MAX, MAX)*m_nResolution,::RandomInt( MIN, MAX)*m_nResolution,16 );
-		case 1: return::Vector( ::RandomInt( MIN, MAX)*m_nResolution,::RandomInt(-MAX, MAX)*m_nResolution,16 );
-		case 2: return::Vector( ::RandomInt(-MAX, MAX)*m_nResolution,::RandomInt(-MAX,-MIN)*m_nResolution,16 );
-		case 3: return::Vector( ::RandomInt(-MAX,-MIN)*m_nResolution,::RandomInt(-MAX, MAX)*m_nResolution,16 );
-	};
+	local a = RandomFloat( -PI, PI );
+	return Vector(
+		cos( a ) * RandomFloat( m_flRadiusMin, m_flRadiusMax ),
+		sin( a ) * RandomFloat( m_flRadiusMin, m_flRadiusMax ),
+		0.5
+	);
 }
 
-// place the bot and sound target (at head level)
+// place the bot and sound target
 // play the sound, enable sound timer
-// until the bot is killed
 function Process()
 {
 	if ( !m_bStarted )
@@ -342,123 +283,113 @@ function Process()
 	if ( m_bBlindMode )
 		SendToConsole("r_screenoverlay\"tools/toolsblack\"");
 
-	local v = RandomPos();
-
+	local pos = GetRandomPosition();
 	local bot = GetBot();
+	if ( !bot || !bot.IsValid() )
+		return Stop();
 
-	::Glow.Set( bot, Vector(255,78,78), 1, 4096.0 );
+	// Glow.Set( bot.self, Vector(255,78,78), 1, 4096.0 );
 
-	bot.SetOrigin(v);
-	::ENT.hTarget.SetOrigin( Vector(v.x,v.y,64) );
-	::ENT.hTarget.EmitSound( GetSound() );
+	bot.SetEffects( 0 );
+	bot.SetAbsOrigin(pos);
 
-	::EntFireByHandle( ::ENT.hTimerSnd,"enable" );
+	local sndPos = pos*1;
+	sndPos.z = 64.0;
+	g_hTarget.SetOrigin( sndPos );
+	g_hTarget.EmitSound( GetSound() );
+	EntFireByHandle( g_hTimerSnd,"enable" );
 
-	::EntFireByHandle( ::ENT.hTimerThink,"enable" );
+	EntFireByHandle( g_hTimerThink,"enable" );
 
 	m_bSpawned = true;
 }
 
-// if m_nSoundsLen has a value,
-// randomise the sounds in m_list_sounds.
-// else use m_szSndCurr
+// if m_nSounds is not empty, randomise from it.
+// else use m_szSndCur
 function GetSound()
 {
-	if ( m_nSoundsLen ) return m_list_sounds[::RandomInt(0,m_nSoundsLen-1)];
-	return m_szSndCurr;
+	if ( 0 in m_Sounds )
+		return m_Sounds[ RandomInt( 0, m_Sounds.len()-1 ) ];
+	return m_szSndCur;
 }
 
 function GetBot()
 {
-	// redundant?
-	if ( m_list_bots.len() == 0 )
-		return SendToConsole("mp_restartgame 1;echo\"No bot found\"");
-
-	if ( m_bAimlockON )
-	{
-		// blank previous named bots
-		// start measuring new
-		local i; while( i = Ent("BOT",i) ) ::VS.SetName( i, "" );
-		::VS.SetName( m_list_bots[0], "BOT" );
-		::VS.SetMeasure( ::ENT.hBotEye, "BOT" );
-	};
-
-	return m_list_bots[0];
+	if ( !(0 in m_Bots) )
+		return Msg("No bot found\n");
+	return m_Bots[0];
 }
 
 function SetSoundType( i, m = true )
 {
-	m_list_sounds.clear();
+	m_Sounds.clear();
 
 	switch( i )
 	{
-		// headshot
-		case 2:
-			m_list_sounds.append("Player.DamageHelmet");
-			m_list_sounds.append("Player.DamageHeadShot");
+		case SOUNDTYPE.HEADSHOT:
+			m_Sounds.append("Player.DamageHelmet");
+			m_Sounds.append("Player.DamageHeadShot");
 			SetInterval_set(1.0);
 			SetRange(0,0);
 			break;
 
-		case 0:
-			m_szSndCurr = "Weapon_AK47.Single";
+		case SOUNDTYPE.AK47_SINGLE:
+			m_szSndCur = "Weapon_AK47.Single";
 			SetInterval_set(0.2);
 			SetRange(0,0);
 			break;
 
-		case 6:
-			m_szSndCurr = "Weapon_M4A1.Single";
+		case SOUNDTYPE.M4A4_SINGLE:
+			m_szSndCur = "Weapon_M4A1.Single";
 			SetInterval_set(0.2);
 			SetRange(0,0);
 			break;
 
-		case 1:
-			m_szSndCurr = "CT_Concrete.StepRight";
+		case SOUNDTYPE.STEP_CONCRETE:
+			m_szSndCur = "CT_Concrete.StepRight";
 			SetInterval_set(0.3);
 			SetRange(1,0);
 			break;
 
-		case 7:
-			m_szSndCurr = "CT_SolidMetal.StepRight";
+		case SOUNDTYPE.STEP_METAL:
+			m_szSndCur = "CT_SolidMetal.StepRight";
 			SetInterval_set(0.3);
 			SetRange(1,0);
 			break;
 
-		case 4:
-			m_szSndCurr = "Flashbang.Bounce";
+		case SOUNDTYPE.FLASHBANG_BOUNCE:
+			m_szSndCur = "Flashbang.Bounce";
 			SetInterval_set(0.5);
 			break;
 
-		case 5:
-			m_szSndCurr = "Flashbang.Explode";
+		case SOUNDTYPE.FLASHBANG_EXPLODE:
+			m_szSndCur = "Flashbang.Explode";
 			SetInterval_set(1.5);
 			break;
 	};
 
-	m_nSoundsLen = m_list_sounds.len();
-
 	for( local j = 0; j <= 7; j++ )
 	{
 		local e = ::Ent("s"+j);
-		if (e) e.__KeyValueFromString( "color", CL_WHITE );
+		if (e) e.__KeyValueFromString( "color", CLR_WHITE );
 		// else Msg("Entity <"+"s"+j+"> does not exist.\n");
 	}
 
-	::Ent("s"+i).__KeyValueFromString("color", CL_GREEN );
+	::Ent("s"+i).__KeyValueFromString("color", CLR_GREEN );
 }
 
 function ToggleBlindMode( b )
 {
 	if ( !b )
 	{
-		Ent("t1").__KeyValueFromString("color",CL_WHITE );
-		Chat( m_szChatPrefix + txt.yellow + "Blind mode " + txt.lightred + "disabled" );
+		Ent("t1").__KeyValueFromString("color",CLR_WHITE );
+		Chat( CHAT_PREFIX + TextColor.Gold + "Blind mode " + TextColor.Penalty + "disabled" );
 	}
 	else
 	{
-		Ent("t1").__KeyValueFromString("color",CL_GREEN );
-		Chat( m_szChatPrefix + txt.yellow + "Blind mode " + txt.lightgreen + "enabled" );
-		if (!m_bAimHelper)Chat( m_szChatPrefix + txt.lightblue + "Suggested: " + txt.yellow + "enabling aim helper" );
+		Ent("t1").__KeyValueFromString("color",CLR_GREEN );
+		Chat( CHAT_PREFIX + TextColor.Gold + "Blind mode " + TextColor.Achievement + "enabled" );
+		if (!m_bAimHelper)Chat( CHAT_PREFIX + TextColor.Uncommon + "Suggested: " + TextColor.Gold + "enabling aim helper" );
 	};
 
 	Chat("");
@@ -469,55 +400,64 @@ function ToggleAimHelper( b )
 {
 	if ( b )
 	{
-		Ent("t0").__KeyValueFromString("color",CL_GREEN );
-		Chat( m_szChatPrefix + txt.yellow + "Vertical aim helper " + txt.lightgreen + "enabled" );
-		::EntFireByHandle( ::ENT.hTimerAim,"enable" );
+		Ent("t0").__KeyValueFromString("color",CLR_GREEN );
+		Chat( CHAT_PREFIX + TextColor.Gold + "Aim helper " + TextColor.Achievement + "enabled" );
+		EntFireByHandle( g_hTimerHelper,"enable" );
 	}
 	else
 	{
-		Ent("t0").__KeyValueFromString("color",CL_WHITE );
-		Chat( m_szChatPrefix + txt.yellow + "Vertical aim helper " + txt.lightred + "disabled" );
-		::VS.HideHudHint( ::g_hHudhint,::HPlayer );
-		::EntFireByHandle( ::ENT.hTimerAim,"disable" );
+		Ent("t0").__KeyValueFromString("color",CLR_WHITE );
+		Chat( CHAT_PREFIX + TextColor.Gold + "Aim helper " + TextColor.Penalty + "disabled" );
+		HideHudHint();
+		EntFireByHandle( g_hTimerHelper,"disable" );
 	};
 
-	Chat("");
 	m_bAimHelper = b;
 }
 
-//--------------------------
-// Hold-button to modify
-
-function SetInterval(b)
+function SetInterval( b )
 {
 	if ( b )
 	{
-		for ( local i = 9; i--; ) Chat(" ");
-		Chat( m_szChatPrefix + txt.yellow + "Set the time between sounds playing." );
-		Chat( m_szChatPrefix + txt.yellow + "Hold "+txt.lightgreen+"W"+txt.yellow+" to increase" );
-		Chat( m_szChatPrefix + txt.yellow + "Hold "+txt.lightgreen+"S"+txt.yellow+" to decrease" );
+		player.SetMoveType(0);
+		player.SetVelocity( vec3_origin );
 
-		::VS.ShowHudHint( ::g_hHudhint,::HPlayer,m_fIntvlCurr );
-		Ent("t3").__KeyValueFromString("color",CL_GREEN );
+		Chat( CHAT_PREFIX + TextColor.Gold + "Set the time between sounds playing." );
+		Chat( CHAT_PREFIX + TextColor.Gold + "Hold "+TextColor.Achievement+"W"+TextColor.Gold+" to increase" );
+		Chat( CHAT_PREFIX + TextColor.Gold + "Hold "+TextColor.Achievement+"S"+TextColor.Gold+" to decrease" );
 
-		::VS.OnTimer( ::ENT.hTimerThink,ThinkButton );
-		::EntFireByHandle( ::ENT.hTimerThink,"enable" );
-		::EntFireByHandle( ::ENT.hTimerLook,"disable" );
-		::EntFireByHandle( ::ENT.hGameUI,"activate","",0.0,::HPlayer );
+		ShowHudHint( m_fIntvlCurr );
+		Ent("t3").__KeyValueFromString("color",CLR_GREEN );
+
+		VS.OnTimer( g_hTimerThink,ThinkButton );
+		EntFireByHandle( g_hTimerThink,"enable" );
+		// EntFireByHandle( g_hTimerLook,"disable" );
+
+		player.SetInputCallback( "+forward", function(...){ return SetInterval_add() }, this );
+		player.SetInputCallback( "+back", function(...){ return SetInterval_sub() }, this );
+		local unpressed = function(...){ return SetInterval_rel() };
+		player.SetInputCallback( "-forward", unpressed, this );
+		player.SetInputCallback( "-back", unpressed, this );
 	}
 	else
 	{
-		::VS.HideHudHint( ::g_hHudhint,::HPlayer );
-		Ent("t3").__KeyValueFromString("color",CL_WHITE );
+		player.SetMoveType(2);
 
-		::EntFireByHandle( ::ENT.hTimerThink,"disable" );
-		::EntFireByHandle( ::ENT.hTimerLook,"enable" );
-		::EntFireByHandle( ::ENT.hGameUI,"deactivate","",0.0,::HPlayer );
+		HideHudHint();
+		Ent("t3").__KeyValueFromString("color",CLR_WHITE );
+
+		EntFireByHandle( g_hTimerThink,"disable" );
+		// EntFireByHandle( g_hTimerLook,"enable" );
+
+		player.SetInputCallback( "+forward", null, this );
+		player.SetInputCallback( "+back", null, this );
+		player.SetInputCallback( "-forward", null, this );
+		player.SetInputCallback( "-back", null, this );
 	};
 
 	m_nCtrlIntvl = 0;
 	m_nThinkCount = 0;
-	m_bSettingUp = b;
+	m_bAtControls = b;
 }
 
 // press W
@@ -531,14 +471,14 @@ function SetInterval_rel(){ m_nCtrlIntvl =  0 }
 
 function SetInterval_mod(f)
 {
-	::HPlayer.EmitSound("UIPanorama.container_weapon_ticker");
+	player.EmitSound("UIPanorama.container_weapon_ticker");
 
 	local d = m_fIntvlCurr + f;
 
 	// clamp
 	if ( d < 0.1 ) return;
 
-	::VS.ShowHudHint( ::g_hHudhint,::HPlayer,d );
+	ShowHudHint( Fmt( "%.1f", d ) );
 
 	SetInterval_set(d);
 }
@@ -546,270 +486,381 @@ function SetInterval_mod(f)
 function SetInterval_set(d)
 {
 	m_fIntvlCurr = d;
-	::ENT.hTimerSnd.__KeyValueFromFloat("refiretime", d );
+	g_hTimerSnd.__KeyValueFromFloat("refiretime", d );
 }
 
 function ThinkButton()
 {
-	if ( ++m_nThinkCount > 6 ) m_nThinkCount = 0;
-	else return;
+	if ( ++m_nThinkCount <= 6 )
+		return;
 
-	if ( !m_nCtrlIntvl ) return;
+	m_nThinkCount = 0;
 
-	if ( m_nCtrlIntvl == 1 ) SetInterval_mod(0.2);
-	else if ( m_nCtrlIntvl == -1 ) SetInterval_mod(-0.2);;
+	if ( !m_nCtrlIntvl )
+		return;
+
+	if ( m_nCtrlIntvl == 1 )
+		SetInterval_mod(0.2);
+	else if ( m_nCtrlIntvl == -1 )
+		SetInterval_mod(-0.2);;
 }
 
 //--------------------------
 
-// workaround,
-// can't be bothered to fix the problem
 function Start()
 {
-	Ent("d").EmitSound("Doors.Metal.Move1");
-	Chat( m_szChatPrefix + txt.purple + "START" );
+	Chat( CHAT_PREFIX + TextColor.Purple + "START" );
 
-	::EntFireByHandle( ::ENT.hTimerLook,"disable" );
+	// EntFireByHandle( g_hTimerLook,"disable" );
 
-	// the only benefit of the training gamemode is the steam rich presence
+	// the only benefit of the training gamemode is the steam rich presence.
 	// is it even worth when it causes so many problems?
-	// NO
-	// SendToConsole("game_mode 0;game_type 3;r_cleardecals");
+	// SendToConsole("game_mode 0;game_type 2;r_cleardecals");
 
-	VS.EventQueue.AddEvent( _Start, 0.17, this );
-}
-
-function _Start()
-{
 	// ScriptSetRadarHidden(true);
 	SendToConsoleServer("sv_disable_radar 1");
 
-	if ( m_bSettingUp )
+	if ( m_bAtControls )
 		SetInterval(false);
 	m_bStarted = true;
 
-	if ( !SetupBots() ) return Msg("\nERROR\n\n");
+	VS.OnTimer( g_hTimerThink,BotAngleThink );
+	EntFireByHandle( g_hTimerThink,"enable" );
+	if ( m_bAimHelper )
+		EntFireByHandle( g_hTimerHelper,"enable" );
+	m_hPlatformWalls.EmitSound(SND_WALLS_MOVE);
+	EntFireByHandle( m_hPlatformWalls, "open" );
 
-	::VS.OnTimer( ::ENT.hTimerThink,BotAng );
-	::EntFireByHandle( ::ENT.hTimerThink,"enable" );
-	if ( m_bAimHelper ) ::EntFireByHandle( ::ENT.hTimerAim,"enable" );
-	::EntFire("d","open");
+	m_hStopText.__KeyValueFromInt( "rendermode", 0 );
 
-	::VS.EventQueue.AddEvent( Process, RandomFloat(1.5,2.9), this );
+	VS.EventQueue.AddEvent( Process, RandomFloat(1.5,2.5), this );
 }
 
 function Stop()
 {
 	if ( !m_bStarted )
-		if ( m_bSettingUp )
+	{
+		if ( m_bAtControls )
 			return SetInterval(false);
-		else return;;
+		return;
+	};
 
-	Ent("d").EmitSound("Doors.Metal.Move1");
+	m_hStopText.__KeyValueFromInt( "rendermode", 10 );
+	m_hPlatformWalls.EmitSound(SND_WALLS_MOVE);
 
-	Chat( m_szChatPrefix + txt.purple + "STOP" );
+	Chat( CHAT_PREFIX + TextColor.Purple + "STOP" );
 
 	m_bSpawned = false;
 	m_bStarted = false;
+
+	if ( player.GetOrigin().Length() > 220.0 )
+		player.SetOrigin( Vector(0,0,2) );
+
 	Kill( GetBot() );
 	// ScriptSetRadarHidden(false);
 	SendToConsoleServer("sv_disable_radar 0");
 	SendToConsole("r_screenoverlay\"\"");
-	::EntFire("d","close");
-	::EntFireByHandle( ::ENT.hTimerSnd,"disable" );
-	::EntFireByHandle( ::ENT.hTimerThink,"disable" );
-	::EntFireByHandle( ::ENT.hTimerAim,"disable" );
-	::EntFireByHandle( ::ENT.hAIMLOCK,"disable" );
-	m_bAimlockON = false;
+	EntFireByHandle( m_hPlatformWalls, "close" );
+	EntFireByHandle( g_hTimerSnd,"disable" );
+	EntFireByHandle( g_hTimerThink,"disable" );
+	EntFireByHandle( g_hTimerHelper,"disable" );
+	EntFireByHandle( g_hTimerAimLock,"disable" );
+	m_bAimLockEnabled = false;
 
-	::EntFireByHandle( ::ENT.hTimerLook,"enable" );
+	// EntFire( "item_cash", "Kill", "", 1.0 );
+
+	// EntFireByHandle( g_hTimerLook,"enable" );
 
 	SendToConsole("game_mode 0;game_type 3;r_cleardecals");
 }
 
-// fixme this mess
-function SetupBots()
+function Kill( ply ) : (EntFireByHandle)
 {
-	m_list_bots.clear();
+	if ( !ply )
+		return;
+	return EntFireByHandle( ply.self, "SetHealth", 0 );
+}
 
-	local bots = ::VS.GetPlayersAndBots()[1];
+// Add bots to available bots list
+VS.ListenToGameEvent( "player_spawn", function(ev)
+{
+	local bot = ToExtendedPlayer( VS.GetPlayerByUserid( ev.userid ) );
+	if ( !bot || !bot.IsBot() || !bot.GetHealth() )
+		return;
 
-	if ( bots.len() == 0 )
-		return SendToConsole("echo\" === NO BOT FOUND\";bot_add;bot_add;bot_add;bot_add;bot_add;bot_add");
+	bot.SetEffects( 32 );
+	bot.SetMoveType(0);
+	bot.SetHealth( BOT_HEALTH );
 
-	foreach( bot in bots )
-	{
-		// error checks
-		// FIXME
-		if ( !bot.GetScriptScope() )
-			VS.EventQueue.AddEvent( PurgeTheUnfit, 0, this );
-
-		// bot is alive
-		else if ( bot.GetHealth() )
+	local bIn = false;
+	foreach( p in m_Bots )
+		if ( p == bot )
 		{
-			bot.SetHealth(1);
-			m_list_bots.append(bot);
-		}
-		// Bot not spawned yet,
-		// but it's okay because we have more bots in the storage, right?
-		else if ( GetDeveloperLevel() >= 1 )
-			Msg( " !!! YOU KILLED " + bot.GetScriptScope().name.toupper() + "\n" );;;
-	};
+			bIn = true;
+			break;
+		};
 
-	// cheap workaround to spawn all bots
-	if ( m_list_bots.len() == 0 )
-		return SendToConsole("mp_restartgame 1;echo\" === Empty list\"");
+	if ( !bIn )
+		m_Bots.append(bot);
 
-	return true;
-}
+	Msg("\tBOT " + bot.GetPlayerName() + " spawned\n");
 
-function Kill( ply )
+}.bindenv(this), "" );
+
+VS.ListenToGameEvent( "player_disconnect", function(ev)
 {
-	::EntFireByHandle( ply, "sethealth", 0 );
-}
+	Msg("\tBOT "+ev.name+" left the game\n");
 
-// Add the bot back to available bots list
-::OnGameEvent_player_spawn <- function(data)
-{
-	if ( !m_bStarted )
-		return;
-
-	if ( data.teamnum == 2 )
+	for ( local i = m_Bots.len(); i--; )
 	{
-		local e = ::VS.GetPlayerByUserid(data.userid);
-		if (!e)return; // can't be bothered to fix
-		e.SetHealth(1);
-		m_list_bots.append(e);
-	};
-}.bindenv(this);
+		if ( !m_Bots[i].IsValid() )
+		{
+			m_Bots.remove(i);
+		}
+	}
+}.bindenv(this), "" );
 
-function OnKill( ent )
+VS.ListenToGameEvent( "player_jump", function(ev)
 {
+	return Stop();
+}.bindenv(this), "" );
+
+
+m_pPrevHitmarkerEvent <- null;
+
+local InvalidateHitmarker = function()
+{
+	m_pPrevHitmarkerEvent = null;
+	SendToConsole("r_screenoverlay\"\"");
+}
+
+VS.ListenToGameEvent( "player_hurt", function(ev) : (InvalidateHitmarker)
+{
+	// suicide
+	if ( ev.attacker == ev.userid )
+		return;
+
+	player.EmitSound( SND_HIT );
+
+	if ( !m_bBlindMode )
+	{
+		SendToConsole("r_screenoverlay\"ui/hitmarker\"");
+
+		if ( m_pPrevHitmarkerEvent )
+			VS.EventQueue.CancelEventsByInput( InvalidateHitmarker );
+		m_pPrevHitmarkerEvent = VS.EventQueue.AddEvent( InvalidateHitmarker, 0.1, this );
+
+		// crit
+		if ( ev.hitgroup == 1 &&
+			ev.dmg_health > 75 &&
+			!RandomInt(0,7) ) // do it on chance so it doesn't get annoying
+		{
+			local bot = VS.GetPlayerByUserid( ev.userid );
+			m_pCritSpawner.SpawnEntityAtLocation( bot.EyePosition(), Vector() );
+			bot.EmitSound( SND_CRITHIT );
+		};
+	};
+
+}.bindenv(this), "" );
+
+
+__PostSpawn <- function(...)
+{
+	foreach (p in vargv[0])
+	{
+		// p.__KeyValueFromFloat( "scale", 0.1 );
+		// p.__KeyValueFromString( "rendercolor", "0 255 30 255" );
+		// p.__KeyValueFromInt( "rendermode", 5 );
+		p.__KeyValueFromInt( "movetype", 8 );
+		p.SetVelocity( Vector(0,0,20) );
+	}
+
+	// crit_text.nut
+	//@"m_nRenderAlpha <- 255;
+	//m_RenderColor <- Vector( 0, 255, 30 );
+	//m_flSpawnTime <- Time();
+	//kColorRed <- Vector( 255, 0, 0 );
+	//Think <- ::TR_SND.CritThink;"
+}
+
+function CritThink() : ( Time, FrameTime )
+{
+	local curtime = Time();
+	local deltaTime = curtime - m_flSpawnTime;
+
+	// fadeout 0.5
+	if ( deltaTime > 1.0 )
+	{
+		local a = ( ( 255 / (0.5 / FrameTime()) ) + 0.5 ).tointeger();
+		m_nRenderAlpha -= a;
+	};
+
+	if ( m_nRenderAlpha <= 0 )
+	{
+		self.Destroy();
+		return;
+	};
+
+	// color fade
+	if ( deltaTime > 0.5 )
+	{
+		VS.VectorLerp( m_RenderColor, kColorRed, 0.025, m_RenderColor );
+		self.__KeyValueFromVector( "rendercolor", m_RenderColor );
+		self.__KeyValueFromInt( "renderamt", m_nRenderAlpha );
+	};
+
+	return 0.0;
+}
+
+VS.ListenToGameEvent( "player_death", function(ev)
+{
+	local bot = ToExtendedPlayer( VS.GetPlayerByUserid( ev.userid ) );
+
+	if ( !bot || !bot.IsBot() )
+		return;
+
+	foreach( i, v in m_Bots )
+		if ( v == bot )
+			m_Bots.remove(i);
+
+	if ( m_bBlindMode )
+		SendToConsole("r_screenoverlay\"\"");
+
 	if ( !m_bStarted )
 		return;
 
-	// "You killed X"
-	::ENT.hGametext.__KeyValueFromString( "message", "You killed " + ent.GetScriptScope().name );
-	::EntFireByHandle( ::ENT.hGametext, "display", "", 0.0, ::HPlayer );
-
-	if ( m_bBlindMode ) SendToConsole("r_screenoverlay\"\"");
-
-	// remove the bot from the (available bots) list,
-	// the bot will be added back when it spawns
-	foreach( i, h in m_list_bots ) if ( h == ent )
-		m_list_bots.remove(i);
+	g_hGameText.__KeyValueFromString( "message", "You killed " + bot.GetPlayerName() );
+	EntFireByHandle( g_hGameText, "display", "", 0.0, player.self );
 
 	// stop playing sound
-	::EntFireByHandle( ::ENT.hTimerSnd,"disable" );
+	EntFireByHandle( g_hTimerSnd,"disable" );
 
-	::EntFireByHandle( ::ENT.hTimerThink,"disable" );
+	EntFireByHandle( g_hTimerThink,"disable" );
 
 	m_bSpawned = false;
 
-	::Glow.Disable(ent);
+	// Glow.Disable( bot.self );
 
 	// next
-	::VS.EventQueue.AddEvent( Process, ::RandomFloat(0.4,1.2), this );
+	VS.EventQueue.AddEvent( Process, RandomFloat(0.4,1.2), this );
+
+}.bindenv(this), "" );
+
+function PlayTargetSoundThink()
+{
+	g_hTarget.EmitSound( GetSound() );
 }
 
-::OnGameEvent_player_jump <- Stop.bindenv(this);
-
-::OnGameEvent_player_death <- function(e)
+function AimHelperThink()
 {
-	OnKill( ::VS.GetPlayerByUserid( e.userid ) )
-}.bindenv(this);
+	if ( !m_bSpawned )
+		return;
 
-function PlaySound()
-{
-	::ENT.hTarget.EmitSound( GetSound() );
-}
+	local src = player.EyePosition();
+	local pitch = player.EyeAngles().x;
 
-function CheckAng()
-{
-	local x = ::HPlayerEye.GetAngles().x;
+	local bot = GetBot();
 
-	if ( x > 4 )
-		::VS.ShowHudHint( ::g_hHudhint, ::HPlayer, "You are aiming too low!" );
-	else if ( x < (-0.1) )
-		::VS.ShowHudHint( ::g_hHudhint, ::HPlayer, "You are aiming too high!" );
-	else ::VS.HideHudHint( ::g_hHudhint, ::HPlayer );;
+	local head = bot.EyePosition();
+	head.z += 6.0;
+	local legs = bot.GetOrigin();
+	legs.z += 8.0;
+
+	local upper = VS.VecToPitch( head - src );
+	local lower = VS.VecToPitch( legs - src );
+
+	if ( pitch < upper )
+	{
+		g_hGameText2.__KeyValueFromString( "message", "\n↓" );
+		EntFireByHandle( g_hGameText2, "Display", "", 0.0, player.self );
+	}
+	else if ( pitch > lower )
+	{
+		g_hGameText2.__KeyValueFromString( "message", "↑" );
+		EntFireByHandle( g_hGameText2, "Display", "", 0.0, player.self );
+	};;
 }
 
 // bot look at map origin 0,0,0
 // the hitboxes are desynced for a second or two when they spawn
-function BotAng()
+function BotAngleThink()
 {
 	local bot = GetBot();
 
-	if (!bot) return;
+	if ( !bot || !bot.IsValid() )
+		return;
 
-	local yaw = ::VS.GetAngle2D( bot.EyePosition(), vec3_origin );
+	local yaw = VS.VecToYaw( bot.EyePosition()*-1 );
 
 	bot.SetAngles(0,yaw,0);
 }
 
-m_szChatPrefix <- txt.orange + "● ";
-
 function ToggleTeam()
 {
-	local t = ::HPlayer.GetTeam();
-
-	if ( t == TEAM_T ) SetTeam(TEAM_CT);
-	else if ( t == TEAM_CT ) SetTeam(TEAM_T);;
+	switch ( player.GetTeam() )
+	{
+		case TEAM_T:
+			return SetTeam(TEAM_CT);
+		case TEAM_CT:
+			return SetTeam(TEAM_T);
+	}
 }
 
 function Equip( input )
 {
-	if (input == weapon.hkp2000 ||
-		input == weapon.usp_silencer ||
-		input == weapon.fn57 ||
-		input == weapon.famas ||
-		input == weapon.m4a1 ||
-		input == weapon.m4a1_silencer ||
-		input == weapon.aug ||
-		input == weapon.scar20 ||
-		input == weapon.mag7 ||
-		input == weapon.mp9)
+	switch ( input )
 	{
-		SetTeam(TEAM_CT);
+		case weapon.hkp2000:
+		case weapon.usp_silencer:
+		case weapon.fn57:
+		case weapon.famas:
+		case weapon.m4a1:
+		case weapon.m4a1_silencer:
+		case weapon.aug:
+		case weapon.scar20:
+		case weapon.mag7:
+		case weapon.mp9:
+			SetTeam(TEAM_CT);
+			break;
+		// case weapon.axe:
+		default:
+			SetTeam(TEAM_T);
+			break;
 	}
-	else
-	{
-		SetTeam(TEAM_T);
-	};
 
-	::EntFire( "equip", "triggerforactivatedplayer", "weapon_"+input, 0.0, ::HPlayer );
+	EntFire( "equip", "TriggerForActivatedPlayer", input, 0.0, player.self );
 
-	::VS.EventQueue.AddEvent( SetTeam, 0, [this, TEAM_CT] );
+	VS.EventQueue.AddEvent( SetTeam, 0, [this, TEAM_CT] );
 }
 
 function SetTeam(i)
 {
-	::EntFire( "texture_c", "SetTextureIndex", (i-1) );
-	::HPlayer.__KeyValueFromInt( "teamnumber", i );
+	EntFire( "texture_c", "SetTextureIndex", (i-1) );
+	player.__KeyValueFromInt( "teamnumber", i );
 }
 
 // See the standalone aimbot.nut script for a more advanced version
 // github.com/samisalreadytaken/vscripts
 function ThinkAimlock()
 {
-	if ( !m_bSpawned ) return;
+	if ( !m_bSpawned )
+		return;
 
-	local bot  = GetBot();
-	local head = ::VS.TraceDir( bot.GetAttachmentOrigin(15), ::ENT.hBotEye.GetForwardVector(), -4 ).GetPos();
-	local ang  = ::VS.GetAngle( ::HPlayer.EyePosition(), head );
+	local bot = GetBot();
+	if ( !bot )
+		return;
 
-	::HPlayer.SetAngles(ang.x,ang.y,0);
+	local head = bot.GetAttachmentOrigin(15) - bot.EyeForward() * 4.0;
+
+	player.SetForwardVector( head - player.EyePosition() );
 }
 
-// When the aimlock is on, and the player kills every bot too fast,
-// without letting them respawn, the game will restart
 function EnableAimlock()
 {
-	::EntFireByHandle( ::ENT.hAIMLOCK, "enable" );
-	Chat( m_szChatPrefix + txt.green + "Aimlock enabled" );
-	::HPlayer.EmitSound("UIPanorama.container_weapon_ticker");
-	m_bAimlockON = true;
+	EntFireByHandle( g_hTimerAimLock, "enable" );
+	Chat( CHAT_PREFIX + TextColor.Award + "Aimlock enabled" );
+	player.EmitSound("UIPanorama.container_weapon_ticker");
+	m_bAimLockEnabled = true;
 }
 
 //-----------------------------------------------------------------------
@@ -929,8 +980,8 @@ function PickMusicKit(idx)
 
 	m_hCurrMusicKit = Ent("m"+idx);
 
-	Chat( m_szChatPrefix + "Picked " + txt.white + m_szMusicKitCurr );
-	Msg( m_szChatPrefix + "Picked " + m_szMusicKitCurr + "\n" );
+	Chat( CHAT_PREFIX + "Picked " + TextColor.Normal + m_szMusicKitCurr );
+	Msg( CHAT_PREFIX + "Picked " + m_szMusicKitCurr + "\n" );
 
 	SendToConsole("r_cleardecals");
 }
@@ -939,7 +990,7 @@ function PlayMusicKit()
 {
 	StopMusicKitAll();
 
-	Chat( txt.lightgreen + "▶ " + txt.yellow + "Now playing " + txt.white + m_szMusicKitCurr );
+	Chat( TextColor.Achievement + "▶ " + TextColor.Gold + "Now playing " + TextColor.Normal + m_szMusicKitCurr );
 	Msg( "▶ Now playing " + m_szMusicKitCurr + "\n" );
 
 	if ( m_nMusicType == 0 )
@@ -947,26 +998,26 @@ function PlayMusicKit()
 		// these are affected by the client's music settings, but the direct file playing cannot be stopped
 		m_szMusicKitSoundCurr = "Music.BombTenSecCount." + m_szMusicKitCurrID;
 		m_flCountdown = 10.0;
-		::EntFireByHandle( ::ENT.hTimer10, "enable" );
+		EntFireByHandle( g_hTimer10, "enable" );
 	}
 	else if ( m_nMusicType == 1 )
 	{
 		m_szMusicKitSoundCurr = "Musix.HalfTime." + m_szMusicKitCurrID;
 	};;
 
-	::HPlayer.EmitSound(m_szMusicKitSoundCurr);
+	player.EmitSound(m_szMusicKitSoundCurr);
 	SendToConsole("r_cleardecals");
 }
 
 function StopMusicKit()
 {
-	Chat( txt.lightred + "■ " + txt.yellow + "Stopped playing" );
+	Chat( TextColor.Penalty + "■ " + TextColor.Gold + "Stopped playing" );
 	Msg("■ Stopped playing\n");
 
-	::EntFireByHandle( ::ENT.hTimer10, "disable" );
-	::ENT.hMsgTen.__KeyValueFromString( "message", "10.0000" );
+	EntFireByHandle( g_hTimer10, "disable" );
+	g_hMsgTen.__KeyValueFromString( "message", "10.0000" );
 
-	::HPlayer.StopSound(m_szMusicKitSoundCurr);
+	player.StopSound(m_szMusicKitSoundCurr);
 	SendToConsole("r_cleardecals");
 }
 
@@ -975,9 +1026,9 @@ function StopMusicKit()
 // but there's no performance worry in this map, so this is fine.
 function StopMusicKitAll()
 {
-	foreach( k in MusicI ) ::HPlayer.StopSound("Musix.HalfTime." + k);
-	::EntFireByHandle( ::ENT.hTimer10, "disable" );
-	::ENT.hMsgTen.__KeyValueFromString( "message", "10.0000" );
+	foreach( k in MusicI ) player.StopSound("Musix.HalfTime." + k);
+	EntFireByHandle( g_hTimer10, "disable" );
+	g_hMsgTen.__KeyValueFromString( "message", "10.0000" );
 }
 
 function SetMusicType()
@@ -989,20 +1040,20 @@ function SetMusicType()
 	// TODO: add all types
 	if ( m_nMusicType == 0 )
 	{
-		Chat( m_szChatPrefix + "Music type: " + txt.yellow + "Bomb 10 second count" );
-		Msg( m_szChatPrefix + "Music type: Bomb 10 second count\n" );
+		Chat( CHAT_PREFIX + "Music type: " + TextColor.Gold + "Bomb 10 second count" );
+		Msg( CHAT_PREFIX + "Music type: Bomb 10 second count\n" );
 
-		::ENT.hMsgTen.__KeyValueFromInt( "textsize", 10 );
-		::ENT.hMsgTen.__KeyValueFromString( "message", "10.0000" );
+		g_hMsgTen.__KeyValueFromInt( "textsize", 10 );
+		g_hMsgTen.__KeyValueFromString( "message", "10.0000" );
 	}
 	else if ( m_nMusicType == 1 )
 	{
-		Chat( m_szChatPrefix + "Music type: " + txt.yellow + "Main menu" );
-		Msg( m_szChatPrefix + "Music type: Main menu\n" );
+		Chat( CHAT_PREFIX + "Music type: " + TextColor.Gold + "Main menu" );
+		Msg( CHAT_PREFIX + "Music type: Main menu\n" );
 
-		::ENT.hMsgTen.__KeyValueFromInt( "textsize", 0 );
-		::EntFireByHandle( ::ENT.hTimer10, "disable" );
-		::ENT.hMsgTen.__KeyValueFromString( "message", "10.0000" );
+		g_hMsgTen.__KeyValueFromInt( "textsize", 0 );
+		EntFireByHandle( g_hTimer10, "disable" );
+		g_hMsgTen.__KeyValueFromString( "message", "10.0000" );
 	};;
 
 	SendToConsole("r_cleardecals");
@@ -1012,64 +1063,92 @@ function Tick()
 {
 	m_flCountdown -= TICK_INTERVAL;
 
-	::ENT.hMsgTen.__KeyValueFromString( "message", ::format("%.5f",m_flCountdown) );
+	g_hMsgTen.__KeyValueFromString( "message", Fmt("%.5f",m_flCountdown) );
 
 	if ( m_flCountdown <= 0.0 )
 	{
-		::EntFireByHandle( ::ENT.hTimer10, "disable" );
-		::ENT.hMsgTen.__KeyValueFromString( "message", "0.00000" );
+		EntFireByHandle( g_hTimer10, "disable" );
+		g_hMsgTen.__KeyValueFromString( "message", "0.00000" );
 	};
 }
 
-function Looking()
-{
-	// if found entity named "m*"
-	local ent = ::VS.TraceDir(::HPlayer.EyePosition(), ::HPlayerEye.GetForwardVector()).GetEntByName("m*", 24);
+local maxs_musickit = Vector(5,17,17);
 
+// Draw all buttons that the player is looking at
+function Looking() : (maxs_musickit)
+{
+	local tr = VS.TraceDir( player.EyePosition(), player.EyeForward(), 1024.0, player.self, MASK_SOLID );
+	local ent = tr.GetEntByClassname( "func_button", 24.0 );
 	if ( ent )
 	{
-		local idx = ent.GetName().slice(1);
+		DebugDrawBoxAngles( ent.GetOrigin(),
+			ent.GetBoundingMins(),
+			ent.GetBoundingMaxs(),
+			ent.GetAngles(),
+			255, 127, 0, 2, 0.2 );
 
-		if ( idx.len() && idx[0] < 58 )
+		if ( !m_bStarted )
 		{
-			::VS.DrawEntityBBox( 0.15, ent );
-			::VS.ShowHudHint( ::g_hHudhint, ::HPlayer, Music[MusicI[idx.tointeger()]] );
-		};
-	}
-	else if ( !m_bAimHelper ) ::VS.HideHudHint( ::g_hHudhint, ::HPlayer );;
+			local name = ent.GetName();
 
-	if ( m_hCurrMusicKit.IsValid() )
-		::VS.DrawEntityBBox( 0.15, m_hCurrMusicKit, 128, 255, 128 );
+			if ( (0 in name) && name[0] == 'm' )
+			{
+				local idx = name.slice(1);
+
+				if ( (0 in idx) && idx[0] < 58 )
+				{
+					ShowHudHint( Music[MusicI[idx.tointeger()]] );
+				};
+			}
+			else
+			{
+				if ( !m_bAimHelper && !m_bAtControls )
+				{
+					HideHudHint();
+				};
+			};
+
+		};
+	};
+
+	if ( !m_bStarted && m_hCurrMusicKit.IsValid() )
+		DebugDrawBoxAngles( m_hCurrMusicKit.GetOrigin(), maxs_musickit*-1, maxs_musickit, m_hCurrMusicKit.GetAngles(), 128, 255, 128, 4, 0.2 );
 }
 
 // Set the bot and player teams manually instead of relying on server settings
-::OnGameEvent_player_team <- function(D)
+VS.ListenToGameEvent( "player_team", function(ev)
 {
-	if ( !D.disconnect )
+	if ( ev.disconnect )
+		return;
+
+	local p = VS.GetPlayerByUserid( ev.userid );
+	if (!p)
+		return;
+
+	if ( !ev.isbot )
 	{
-		if ( !D.isbot )
+		if ( ev.team != TEAM_CT )
 		{
-			if ( D.team != 3 )
-			{
-				local p = Entc("player");
-
-				if (p)
-				{
-					p.SetTeam(3);
-				};
-			};
-		}
-		else
+			p.SetTeam( TEAM_CT );
+		};
+	}
+	else
+	{
+		if ( ev.team != TEAM_T )
 		{
-			if ( D.team != 2 )
-			{
-				local p = ::VS.GetPlayerByUserid( D.userid );
-
-				if (p)
-				{
-					p.SetTeam(2);
-				};
-			};
+			p.SetTeam( TEAM_T );
 		};
 	};
+}, "" );
+
+
+function ShowHudHint( msg = "" )
+{
+	g_hHudHint.__KeyValueFromString("message", "" + msg);
+	return EntFireByHandle( g_hHudHint, "ShowHudHint", "", 0, player.self );
+}
+
+function HideHudHint()
+{
+	return EntFireByHandle( g_hHudHint, "HideHudHint", "", 0, player.self );
 }
