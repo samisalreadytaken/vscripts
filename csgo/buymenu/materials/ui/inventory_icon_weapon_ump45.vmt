@@ -1,0 +1,5 @@
+"UnlitGeneric"
+{
+	"$basetexture"	"icons/inventory_icon_weapon_ump45"
+	"$translucent"	1
+}

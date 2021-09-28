@@ -1,0 +1,5 @@
+UnlitGeneric
+{
+	"$basetexture"	"ui/buymenu_label_smg"
+	"$translucent"	1
+}

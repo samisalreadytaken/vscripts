@@ -1,0 +1,5 @@
+UnlitGeneric
+{
+	"$basetexture"	"ui/cursor"
+	"$translucent"	1
+}

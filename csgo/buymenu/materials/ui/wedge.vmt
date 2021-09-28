@@ -1,0 +1,15 @@
+UnlitGeneric
+{
+	"$basetexture"	"ui/wedge"
+	"$alpha"		.75
+	"$translucent"	1
+	"Proxies"
+	{
+		"ToggleTexture"
+		{
+			"toggleTextureVar" "$basetexture"
+			"toggleTextureFrameNumVar" "$frame"
+			"toggleTextureShouldWrap" "0"
+		}
+	}
+}

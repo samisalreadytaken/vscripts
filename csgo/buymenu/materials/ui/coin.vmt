@@ -1,0 +1,28 @@
+"vertexlitgeneric"
+{
+	"$basetexture"              "ui/coin"
+	"$bumpmap"                  "ui/coin_normal"
+	"$phongexponenttexture"     "ui/coin_exponent"
+	"$envmap"                   "editor/cube_vertigo"
+	"$envmapcontrast"           "3"
+	"$envmaptint"               "[.04 .04 .04]"
+	"$envmapfresnel"            "1"
+	"$normalmapalphaenvmapmask" "1"
+	"$phong"                    "1"
+	"$phongboost"               "1"
+	"$phongfresnelranges"       "[.7 .8 1]"
+	"$phongalbedotint"          "1"
+	"$phongalbedoboost"         "30"
+	"$phongdisablehalflambert"  "1"
+	"$translucent" "1"
+	"$nodecal" "1"
+	"Proxies"
+	{
+		"ToggleTexture"
+		{
+			"toggleTextureVar" "$basetexture"
+			"toggleTextureFrameNumVar" "$frame"
+			"toggleTextureShouldWrap" "0"
+		}
+	}
+}
