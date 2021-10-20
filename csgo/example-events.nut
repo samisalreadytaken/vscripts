@@ -16,19 +16,24 @@
 //                                ::OnGameEvent_bomb_abortdefuse(event_data)
 //
 // In code:
-//    ::OnGameEvent_bomb_abortdefuse <- function(event_data){}
+//    ::OnGameEvent_bomb_abortdefuse <- function(event){}
 //
-// If you will be calling other code in your script file,
+// If you need to access other variables in your script file,
 // bind callback function to 'this'
 //
-//    ::OnGameEvent_bomb_abortdefuse <- function(event_data){}.bindenv(this)
+//    ::OnGameEvent_bomb_abortdefuse <- function(event){}.bindenv(this)
 // OR
 //    ::OnGameEvent_bomb_abortdefuse <- MyOnAbortDefuse.bindenv(this)
 //
 //------------------------------
 //
 // For userid, SteamID and Steam name acquisition,
-// read the vs_library documentation on using VS.ListenToGameEvent
+// read vs_library documentation on using VS.ListenToGameEvent
+//
+// Using 'VS.ListenToGameEvent()' requires lightweight 'vs_events.nut'.
+// Using 'ToExtendedPlayer()' requires 'vs_library.nut'.
+// Using the math library requires 'vs_math.nut'.
+// 'vs_library.nut' includes both the events and math libraries.
 //
 //------------------------------
 
@@ -74,34 +79,30 @@ function OnPostSpawn()
 ::OnGameEvent_player_say <- function( event )
 {
 	// get the chat message
-	local msg = event.text
+	local msg = event.text;
 
 	// require all chat commands to be prepended with a symbol (!)
 	// if the message is not a command, leave
 	if ( msg[0] != '!' )
-		return
+		return;
 
-	local player = VS.GetPlayerByUserid( event.userid )
-	SayCommand( player, msg )
+	// Get the player. Always valid, NULL only if disconnected
+	local player = VS.GetPlayerByUserid( event.userid );
+	SayCommand( player, msg );
 
 }.bindenv(this)
 
 function SayCommand( player, msg )
 {
 	// tokenise the message (split by spaces)
-	local argv = split( msg, " " )
-	local argc = argv.len()
-
 	// 'argv[0]' is the command
 	// values separated with " " can be accessed with 'argv[1]', 'argv[2]'...
-
-	local value
-	if ( argc > 1 )
-		value = argv[1]
+	local argv = split( msg, " " );
+	local argc = argv.len();
 
 	// Your chat commands are string cases in this switch statement.
 	// Strings are case sensitive.
-	// If you'd like to make them insensitive, you can add 'tolower' to the command string
+	// To make them insensitive, 'tolower' can be added to the command string.
 	// In that case, every case string needs to be lower case.
 	switch ( argv[0].tolower() )
 	{
@@ -109,11 +110,15 @@ function SayCommand( player, msg )
 		case "!hp":
 		case "!health":
 		{
-			CommandSetHealth( player, value )
-			break
+			local value;
+			if ( argc > 1 )
+				value = argv[1];
+
+			CommandSetHealth( player, value );
+			break;
 		}
 	//	default:
-	//		Msg("Invalid chat command '"+msg+"'.\n")
+	//		Msg("Invalid chat command '"+msg+"'.\n");
 	}
 }
 
@@ -122,7 +127,7 @@ function CommandSetHealth( player, health )
 	// if health is null, the message did not have a value
 	// if player is null, the player was not found
 	if ( !health || !player )
-		return
+		return;
 
 	// 'value' is string, convert to int
 	// invalid conversion throws excpetion
@@ -133,38 +138,37 @@ function CommandSetHealth( player, health )
 
 	// clamp the value
 	if ( health < 1 )
-		health = 1
+		health = 1;
 
-	player.SetHealth( health )
+	player.SetHealth( health );
 
-	local sc = player.GetScriptScope()
+	local sc = player.GetScriptScope();
 
-	ScriptPrintMessageChatAll(format( "%s (%s) set their health to %d", sc.name, sc.networkid, health ))
+	ScriptPrintMessageChatAll(format( "%s (%s) set their health to %d", sc.name, sc.networkid, health ));
 }
 
 // toggle flashlight by inspecting
 VS.ListenToGameEvent( "inspect_weapon", function( event )
 {
-	local player = VS.GetPlayerByUserid( event.userid )
-
+	local player = VS.GetPlayerByUserid( event.userid );
 	if ( !player )
-		return
+		return;
 
 	// if you are adding your own flags to the player,
 	// keep track of the flags in the scope of the player
 	// If not, just toggle flashlight
 
-	local scope = player.GetScriptScope()
+	local scope = player.GetScriptScope();
 
 	// ensure the flags key exists
 	if ( !("fEffects" in scope) )
-		scope.fEffects <- 0
+		scope.fEffects <- 0;
 
 	// toggle
-	scope.fEffects = scope.fEffects ^ 4
+	scope.fEffects = scope.fEffects ^ 4;
 
-	player.__KeyValueFromInt( "effects", scope.fEffects )
-}, "" )
+	player.__KeyValueFromInt( "effects", scope.fEffects );
+}, "" );
 
 //------------------------------
 //
@@ -283,7 +287,7 @@ function PickupCustomGun( player )
 }
 
 // OnWeaponSwitch
-::OnGameEvent_item_equip <- function( data )
+VS.ListenToGameEvent( "item_equip", function( data )
 {
 	if ( data.item == "glock" )
 	{
@@ -297,10 +301,10 @@ function PickupCustomGun( player )
 			}
 		}
 	}
-}.bindenv(this)
+}.bindenv(this), "" );
 
 // OnWeaponDropped
-::OnGameEvent_item_remove <- function( data )
+VS.ListenToGameEvent( "item_remove", function( data )
 {
 	if ( data.item == "glock" )
 	{
@@ -315,7 +319,7 @@ function PickupCustomGun( player )
 			}
 		}
 	}
-}.bindenv(this)
+}.bindenv(this), "" );
 
 function OnPlayerDeath()
 {
@@ -337,60 +341,152 @@ VS.AddOutput( Ent("game_playerdie") ? Ent("game_playerdie") :
 //
 //------------------------------
 
-::OnGameEvent_flashbang_detonate <- function(data)
+VS.ListenToGameEvent( "flashbang_detonate", function( data )
 {
 	local name = VS.GetPlayerByUserid( data.userid ).GetScriptScope().name
 
 	print( " ---\n" )
 	print(format( "Flash banged at %g,%g,%g\n", data.x, data.y, data.z ))
 	print(format( "Thrown by %s\n", name ))
-}
+}, "" );
 
-::OnGameEvent_player_blind <- function(data)
+VS.ListenToGameEvent( "player_blind", function( data )
 {
 	local player = VS.GetPlayerByUserid(data.userid)
 	local name = player.GetScriptScope().name
 
 	print( name + " is blind for " + data.blind_duration + " seconds.\n" )
-}
+}, "" );
 
 //------------------------------
 //
 // bullet_impact
 //
-// Spawn a watermelon on impact, kill it after 2 seconds
+// Place a rotating box at bullet impact position.
 //
 //------------------------------
 
-PrecacheModel("models/props_junk/watermelon01.mdl")
-
-::OnGameEvent_bullet_impact <- function(data)
+VS.ListenToGameEvent( "bullet_impact", function( event )
 {
-	local pos = Vector(data.x,data.y,data.z)
-	OnImpact(pos)
+	local hitPos = Vector( event.x, event.y, event.z );
+	DebugDrawBox( hitPos, Vector(-2,-2,-2), Vector(2,2,2), 255,0,255,127, 2.0 );
 
-}.bindenv(this)
+	// Get surface normal to stick the point out
+	local ply = VS.GetPlayerByUserid( event.userid );
+	local eyePos = ply.EyePosition();
+	local normal = VS.TraceLine( eyePos, hitPos, ply, MASK_SOLID ).GetNormal();
 
-function OnImpact(pos)
+	// Angle the box in reflection
+	local eyeToPos = hitPos - eyePos;
+	eyeToPos.Norm();
+	local reflection = eyeToPos - normal * 2.0 * eyeToPos.Dot(normal);
+
+	// Cache the player to change rotation speed while the player is looking at the box
+	m_hOwner = ToExtendedPlayer( ply );
+	m_bLooking = false;
+
+	InitAnimatedBox( hitPos + normal * 6.0, reflection );
+
+}.bindenv(this), "DrawImpact" );
+
+
+m_hTimer <- null;
+
+m_flTimeout <- 0.0;
+m_vecBoxMins <- null;
+m_vecBoxMaxs <- null;
+m_vecBoxOrigin <- null;
+m_vecRotAxis <- null;
+m_vecBoxAngles <- null;
+m_qRotation <- null;
+
+m_bLooking <- false;
+m_hOwner <- null;
+
+const ROTATION_ANGLE_SLOW = 3.0;
+const ROTATION_ANGLE_FAST = 12.0;
+
+function InitAnimatedBox( vOrigin, vAxis )
 {
-	SpawnMelon( pos )
-	VS.EventQueue.AddEvent( KillMelon, 2.0, this )
+	if ( !m_hTimer )
+	{
+		m_hTimer = Entities.CreateByClassname( "logic_timer" ).weakref();
+		m_hTimer.__KeyValueFromFloat( "refiretime", 0.01 );
+		m_hTimer.ValidateScriptScope();
+		m_hTimer.GetScriptScope().BoxAnimThink <- BoxAnimThink.bindenv(this);
+		m_hTimer.ConnectOutput( "OnTimer", "BoxAnimThink" );
+	};
+
+	EntFireByHandle( m_hTimer, "Enable" );
+
+	// Think for 15 seconds
+	m_flTimeout = Time() + 15.0;
+
+	m_vecBoxMins = Vector( 0, -4, -4 );
+	m_vecBoxMaxs = Vector( 32, 4, 4 );
+
+	m_vecBoxOrigin = vOrigin;
+
+	// Rotation axis
+	m_vecRotAxis = vAxis;
+
+	// Box angles
+	m_vecBoxAngles = Vector();
+	VS.VectorAngles( vAxis, m_vecBoxAngles );
+
+	// Rotation quaternion
+	m_qRotation = Quaternion();
+	VS.AxisAngleQuaternion( m_vecRotAxis, ROTATION_ANGLE_SLOW, m_qRotation );
 }
 
-list_melons <- []
-
-function SpawnMelon(pos)
+function BoxAnimThink()
 {
-	local prop = CreateProp( "prop_dynamic_override", pos, "models/props_junk/watermelon01.mdl", 0 )
+	if ( Time() >= m_flTimeout )
+	{
+		EntFireByHandle( m_hTimer, "Disable" );
+		return;
+	}
 
-	list_melons.append(prop)
-}
+	// Rotate box angles
+	local qCur = Quaternion();
 
-// Note that instead of constantly spawning and deleting props,
-// it is better to store as many as you need and reuse them (if running independent scripts);
-// or use templates if it is on your own map.
-// This is only a demonstration of events.
-function KillMelon()
-{
-	list_melons.remove(0).Destroy()
+	VS.AngleQuaternion( m_vecBoxAngles, qCur );
+	VS.QuaternionMult( m_qRotation, qCur, qCur );
+	VS.QuaternionAngles( qCur, m_vecBoxAngles );
+
+	local r,g;
+
+	local eyePos = m_hOwner.EyePosition();
+	local ray = Ray_t();
+	ray.Init( eyePos, eyePos + m_hOwner.EyeForward() * MAX_COORD_FLOAT );
+
+	// Is player looking directly at the box?
+	if ( VS.IsRayIntersectingOBB( ray, m_vecBoxOrigin, m_vecBoxAngles, m_vecBoxMins, m_vecBoxMaxs ) )
+	{
+		r = 63; g = 255;
+
+		if ( !m_bLooking )
+		{
+			m_bLooking = true;
+			VS.AxisAngleQuaternion( m_vecRotAxis, ROTATION_ANGLE_FAST, m_qRotation );
+		}
+	}
+	else
+	{
+		r = 255; g = 0;
+
+		if ( m_bLooking )
+		{
+			m_bLooking = false;
+			VS.AxisAngleQuaternion( m_vecRotAxis, ROTATION_ANGLE_SLOW, m_qRotation );
+		}
+	}
+
+	// Draw rotation axis
+	local p1 = m_vecBoxOrigin - m_vecRotAxis * 16;
+	local p2 = m_vecBoxOrigin + m_vecRotAxis * 32;
+	DebugDrawLine( p1, p2, 255,255,0,false, 0.05 );
+
+	// Draw the box
+	DebugDrawBoxAngles( m_vecBoxOrigin, m_vecBoxMins, m_vecBoxMaxs, m_vecBoxAngles, r,g,0,4, 0.05 );
 }
