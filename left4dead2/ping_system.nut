@@ -225,6 +225,7 @@ enum PingType
 	DOOR,
 	RESCUE,
 	SAFEROOM,
+	FUELBARREL,
 
 	// chatter
 	AFFIRMATIVE,
@@ -298,6 +299,7 @@ m_PingIsItem <-
 	[PingType.WEAPON_FIREWORKCRATE]		= null,
 	[PingType.WEAPON_PROPANETANK]		= null,
 	[PingType.WEAPON_OXYGENTANK]		= null,
+	[PingType.FUELBARREL]				= null,
 }
 
 //m_PingIsChatter <-
@@ -377,13 +379,14 @@ local PingMaterial = array( PingType.MAX_COUNT );
 	PingMaterial[PingType.WEAPON_RIOTSHIELD]		= "ping_system/ping_riotshield.vmt",
 
 	PingMaterial[PingType.WEAPON_GNOME]				= "ping_system/ping_gnome.vmt",
-	PingMaterial[PingType.WEAPON_FIREWORKCRATE]		= PingMaterial[PingType.WEAPON_GASCAN],
-	PingMaterial[PingType.WEAPON_PROPANETANK]		= PingMaterial[PingType.WEAPON_GASCAN],
-	PingMaterial[PingType.WEAPON_OXYGENTANK]		= PingMaterial[PingType.WEAPON_GASCAN],
+	PingMaterial[PingType.WEAPON_FIREWORKCRATE]		= "ping_system/ping_fireworkcrate.vmt",
+	PingMaterial[PingType.WEAPON_PROPANETANK]		= "ping_system/ping_propanetank.vmt",
+	PingMaterial[PingType.WEAPON_OXYGENTANK]		= "ping_system/ping_oxygentank.vmt",
 
 	PingMaterial[PingType.DOOR]			= "ping_system/ping_door.vmt",
 	PingMaterial[PingType.RESCUE]		= "ping_system/ping_rescue.vmt",
 	PingMaterial[PingType.SAFEROOM]		= "ping_system/ping_saferoom.vmt",
+	PingMaterial[PingType.FUELBARREL]	= PingMaterial[PingType.WARNING_MILD],
 
 	PingMaterial[PingType.AFFIRMATIVE]	= "ping_system/ping_affirmative.vmt",
 	PingMaterial[PingType.NEGATIVE]		= "ping_system/ping_negative.vmt",
@@ -406,17 +409,8 @@ enum PingColour
 
 enum PingSound
 {
-	// existing
-	// DEFAULT		= "VGUI_button.rollover", // "UI/buttonrollover.wav"
-	// ALERT		= "Menu.Timer", // "UI/beep07.wav"
-
-	// overwritten
 	DEFAULT		= "Default.Right", // "common/right.wav"
 	ALERT		= "Default.RearRight", // "common/rearright.wav"
-
-	// custom
-	// DEFAULT		= "ping_system/playerping.wav",
-	// ALERT		= "ping_system/ping_alert.wav",
 }
 
 const PING_LIFETIME = 8.0;;
@@ -446,20 +440,18 @@ local m_PingLookup = m_PingLookup;
 	m_PingLookup[ PingType.INFECTED ][ m_colour ]			= PingColour.INFECTED;
 	m_PingLookup[ PingType.INFECTED ][ m_lifetime ]			= 5.0;
 
-	// m_PingLookup[ PingType.UNCOMMON ][ m_colour ]			= PingColour.INCAP;
-	// m_PingLookup[ PingType.UNCOMMON ][ m_lifetime ]			= 5.0;
-
 	m_PingLookup[ PingType.WARNING ][ m_colour ]			= PingColour.WARNING;
 	m_PingLookup[ PingType.WARNING ][ m_lifetime ]			= 5.0;
 
 	m_PingLookup[ PingType.WARNING_MILD ][ m_colour ]		= PingColour.INCAP;
-	// m_PingLookup[ PingType.WARNING_URGENT ][ m_colour ]		= PingColour.WARNING;
 
 	m_PingLookup[ PingType.WARNING_ONFIRE ][ m_colour ]		= PingColour.INCAP;
 	m_PingLookup[ PingType.ONFIRE ][ m_colour ]				= PingColour.INCAP;
 
 	m_PingLookup[ PingType.INCAP ][ m_colour ]				= PingColour.INCAP;
 	m_PingLookup[ PingType.HURRY ][ m_colour ]				= PingColour.INCAP;
+
+	m_PingLookup[ PingType.FUELBARREL ][ m_colour ]			= PingColour.INCAP;
 
 
 if ( !("m_Players" in this) )
@@ -533,7 +525,7 @@ function Init()
 	if ( !b )
 		error( "PingSystem: ERROR invalid RR!\n");
 
-	Msg("PingSystem::Init()   [12]\n");
+	Msg("PingSystem::Init()   [13]\n");
 }
 
 function OnGameEvent_round_start(ev)
@@ -2025,6 +2017,12 @@ function PingEntity( player, pEnt, vecPingPos = null )
 			pingType = PingType.SAFEROOM;
 			break;
 
+		case "prop_fuel_barrel":
+			pingType = PingType.FUELBARREL;
+			vecPingPos = pEnt.GetCenter();
+			vecPingPos.z += 32.0;
+			break;
+
 		case "upgrade_ammo_explosive":
 			pingType = PingType.UPGRADEPACK_EXP;
 			vecPingPos = pEnt.GetCenter();
@@ -2222,6 +2220,31 @@ function SetPingDuration( type, time )
 	{
 		m_PingLookup[type][m_lifetime] = time.tofloat();
 	}
+
+	Msg(format( "PingSystem::SetPingDuration(%i, %f)\n", type, time.tofloat() ));
+}
+
+function SetPingColour( type, r, g, b )
+{
+	r = r.tointeger() & 0xFF;
+	g = g.tointeger() & 0xFF;
+	b = b.tointeger() & 0xFF;
+
+	local col = format( "%i %i %i 255", r, g, b );;
+
+	if ( type == -1 )
+	{
+		foreach ( ping in m_PingLookup )
+		{
+			ping[m_colour] = col;
+		}
+	}
+	else if ( type in m_PingLookup )
+	{
+		m_PingLookup[type][m_colour] = col;
+	}
+
+	Msg(format( "PingSystem::SetPingColour(%i, %i, %i, %i)\n", type, r, g, b ));
 }
 
 function DisableAutoPing( i = 1 )
@@ -2252,9 +2275,10 @@ function DisableAutoPing( i = 1 )
 		break;
 	}
 
+	Msg("PingSystem::DisableAutoPing("+i+")\n");
+
 	if (PING_DEBUG)
 	{
-		print("PingSystem::DisableAutoPing\n");
 		foreach ( v,_ in s_AutoBlock )
 		{
 			foreach ( name, val in CONST.PingResponse )
