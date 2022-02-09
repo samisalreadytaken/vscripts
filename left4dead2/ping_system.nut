@@ -3,7 +3,7 @@
 //                       github.com/samisalreadytaken
 //-----------------------------------------------------------------------
 //
-// Contextual Pinging System
+// Contextual Ping System
 //
 //
 // in dire need of refactoring
@@ -134,7 +134,7 @@ local GetNetPropEntity = NetProps.GetPropEntity.bindenv( NetProps );
 // local GetNetPropString = NetProps.GetPropString.bindenv( NetProps );
 
 
-const COS_5DEG = 0.995396;; // 5.5
+const COS_5DEG = 0.994522;; // 6
 const COS_10DEG = 0.984808;;
 const COS_25DEG = 0.906308;;
 const COS_90DEG = 0.0;;
@@ -517,7 +517,7 @@ function Init()
 		RRule(
 			"PingSystem",
 			[ CriterionFunc( "PingSystem", rr_Ping.bindenv(this) ) ],
-			[ ResponseSingle( ResponseKind.print, "", null, null, { scenename = "" } ) ],
+			[ ResponseSingle( ResponseKind.none, "", null, null, { scenename = "" } ) ],
 			RGroupParams()
 		)
 	);
@@ -525,7 +525,7 @@ function Init()
 	if ( !b )
 		error( "PingSystem: ERROR invalid RR!\n");
 
-	Msg("PingSystem::Init()   [13]\n");
+	Msg("PingSystem::Init() [16]\n");
 }
 
 function OnGameEvent_round_start(ev)
@@ -617,7 +617,7 @@ function AddPlayer( hPlayer, plyTeam )
 	if (PING_DEBUG)
 	{
 		Msg("PingSystem::AddPlayer\n");
-		local hPlayerResource = Entities.FindByClassname( null, "terror_player_manager" );
+		local gPR = Entities.FindByClassname( null, "terror_player_manager" );
 
 		foreach ( teamnum, team in g_Teams )
 		{
@@ -628,7 +628,7 @@ function AddPlayer( hPlayer, plyTeam )
 				foreach( player in team )
 				{
 					Msg("\t\t" + player + "\t(" +
-						NetProps.GetPropIntArray( hPlayerResource, "m_iPing", player.GetEntityIndex() ) +
+						NetProps.GetPropIntArray( gPR, "m_iPing", player.GetEntityIndex() ) +
 					")\n");
 				}
 			}
@@ -641,7 +641,7 @@ function __DebugPrint()
 	Msg("PingSystem::__DebugPrint: ["+GetFrameCount()+"]\n");
 
 	local Msg = Msg, Fmt = format;
-	local hPlayerResource = Entities.FindByClassname( null, "terror_player_manager" );
+	local gPR = Entities.FindByClassname( null, "terror_player_manager" );
 
 	for ( local i = m_Players.len(); i--; )
 	{
@@ -661,9 +661,9 @@ function __DebugPrint()
 			}
 		}
 
-		Msg(Fmt( "\t[%i](%i) %i|%i\t%i %i %i %i %i (%i) [%i]\n",
-			p.GetEntityIndex(),
-			p.GetPlayerUserId(),
+		Msg(Fmt( "\t[%i](%i) %i|%i\t%i %i %i %i %i (%s)\n",
+			p && p.IsValid() ? p.GetEntityIndex() : -1,
+			p && p.IsValid() ? p.GetPlayerUserId() : -1,
 			teamnum,
 			GetNetPropInt( p, "m_iTeamNum" ),
 			( p in g_ButtonState ).tointeger(),
@@ -671,9 +671,31 @@ function __DebugPrint()
 			( p in g_lastWarningPos ).tointeger(),
 			( p in g_lastWarningPing ).tointeger(),
 			( p in g_lastChatterPing ).tointeger(),
-			NetProps.GetPropIntArray( hPlayerResource, "m_iPing", p.GetEntityIndex() ),
-			(!!(GetNetPropInt( p, "m_fFlags" ) & FL_FAKECLIENT)).tointeger()
+			(GetNetPropInt( p, "m_fFlags" ) & FL_FAKECLIENT) ? "bot" :
+				""+NetProps.GetPropIntArray( gPR, "m_iPing", p && p.IsValid() ? p.GetEntityIndex() : -1 )
 		));
+	}
+
+	Msg("\n");
+
+	foreach( pl, pings in g_Pings )
+	{
+		Msg(Fmt( "\t[%i]\n",
+			pl && pl.IsValid() ? pl.GetEntityIndex() : -1 ));
+
+		foreach( spr in pings )
+		{
+			Msg(Fmt( "\t\t[%i]:\n",
+				spr && spr.IsValid() ? spr.GetEntityIndex() : -1 ));
+
+			foreach( target, ping in g_Targets )
+			{
+				if ( ping == spr )
+				{
+					Msg(Fmt( "\t\t\t%s\n", ""+target ));
+				}
+			}
+		}
 	}
 }
 
@@ -914,8 +936,10 @@ m_ZombieTypeForSI <-
 m_UncommonModels <-
 [
 	"models/infected/common_male_riot.mdl",
-	"models/infected/common_male_ceda.mdl",
 	"models/infected/common_male_clown.mdl",
+
+	"models/infected/common_male_ceda.mdl",
+	"models/infected/common_male_ceda_l4d1.mdl",
 
 	"models/infected/common_male_fallen_survivor.mdl",
 	"models/infected/common_male_fallen_survivor_l4d1.mdl",
@@ -937,11 +961,19 @@ m_ModelForUncommon <-
 	riot_control	= "models/infected/common_male_riot.mdl",
 	ceda			= "models/infected/common_male_ceda.mdl",
 	clown			= "models/infected/common_male_clown.mdl",
+	fallen			= "models/infected/common_male_fallen_survivor.mdl",
+	undistractable	= "models/infected/common_male_roadcrew.mdl",
+	crawler			= "models/infected/common_male_mud.mdl",
+	jimmy			= "models/infected/common_male_jimmy.mdl",
+	// "models/infected/common_male_parachutist_l4d1.mdl",
+}
+
+m_ModelForUncommonL4D1 <-
+{
+	ceda			= "models/infected/common_male_ceda_l4d1.mdl",
 	fallen			= "models/infected/common_male_fallen_survivor_l4d1.mdl",
 	undistractable	= "models/infected/common_male_roadcrew_l4d1.mdl",
 	crawler			= "models/infected/common_male_mud_l4d1.mdl",
-	jimmy			= "models/infected/common_male_jimmy.mdl",
-	// "models/infected/common_male_parachutist_l4d1.mdl",
 }
 
 m_survivorCharacter <-
@@ -962,6 +994,7 @@ local m_ValidConcepts = m_ValidConcepts;
 local m_WeaponClassForName = m_WeaponClassForName;
 local m_ZombieTypeForSI = m_ZombieTypeForSI;
 local m_ModelForUncommon = m_ModelForUncommon;
+local m_ModelForUncommonL4D1 = m_ModelForUncommonL4D1;
 local m_ModelForWeaponName = m_ModelForWeaponName;
 
 local s_bPlaySound = true;
@@ -1245,41 +1278,51 @@ function rr_Ping( Q )
 				if ( pTarget )
 					return PingEntity( who, pTarget );
 			}
-			else if ( specialtype in m_ModelForUncommon )
+			else
 			{
-				specialtype = m_ModelForUncommon[ specialtype ];
-
-				local eyePos = who.EyePosition();
-				local eyeDir = who.EyeAngles().Forward();
-				local flThreshold = COS_25DEG;
-				local pEnt, pTarget;
-
-				while ( pEnt = FindEntityByModel( pEnt, specialtype ) )
+				local i = 1;
+				local lookupTable = m_ModelForUncommon;
+				do
 				{
-					local org = pEnt.GetOrigin();
-					local delta = org - eyePos;
-					local dist = delta.Norm();
-					local dot = eyeDir.Dot( delta );
-
-					if ( dist <= 1024.0 && dot > flThreshold )
+					if ( specialtype in lookupTable )
 					{
-						pTarget = pEnt;
-						flThreshold = dot;
+						local szMdl = lookupTable[ specialtype ];
+
+						local eyePos = who.EyePosition();
+						local eyeDir = who.EyeAngles().Forward();
+						local flThreshold = COS_25DEG;
+						local pEnt, pTarget;
+
+						while ( pEnt = FindEntityByModel( pEnt, szMdl ) )
+						{
+							local org = pEnt.GetOrigin();
+							local delta = org - eyePos;
+							local dist = delta.Norm();
+							local dot = eyeDir.Dot( delta );
+
+							if ( dist <= 1024.0 && dot > flThreshold )
+							{
+								pTarget = pEnt;
+								flThreshold = dot;
+							};
+						}
+
+						if ( pTarget )
+						{
+							if (PING_DEBUG) printl( "      uncommon target : " + pTarget );
+
+							// local pos
+							local vecPingPos = GetHeadOrigin( pTarget ) - pTarget.GetOrigin();
+							vecPingPos.x = vecPingPos.y = 0.0;
+							vecPingPos.z += 32.0;
+
+							return SpriteCreate( who, PingType.INCAP, vecPingPos, pTarget, pTarget );
+						};
+
+						lookupTable = m_ModelForUncommonL4D1;
 					};
-				}
-
-				if ( pTarget )
-				{
-					if (PING_DEBUG) printl( "      uncommon target : " + pTarget );
-
-					// local pos
-					local vecPingPos = GetHeadOrigin( pTarget ) - pTarget.GetOrigin();
-					vecPingPos.x = vecPingPos.y = 0.0;
-					vecPingPos.z += 32.0;
-
-					return SpriteCreate( who, PingType.INCAP, vecPingPos, pTarget, pTarget );
-				};
-			};;
+				} while ( i-- )
+			};
 
 			// no target found, trace if not auto
 			if ( bAuto )
@@ -1342,7 +1385,7 @@ local PreFadeOut = function( hSpr, hOwner, hTarget = null )
 		else
 			Msg("PingSystem: missing ping owner ["+hOwner.GetPlayerUserId()+"]"+hOwner+"\n");
 
-		if ( ++s_nErrCount >= 6 )
+		if ( ++s_nErrCount >= 3 )
 		{
 			__DebugPrint();
 			s_nErrCount = 0;
@@ -1443,10 +1486,12 @@ local sprite_kv =
 	model = PingMaterial[ PingType.BASE ]
 }
 
+local g_nMaxPingCount = 3;
+
 function SpriteCreate( owner, type, origin, target = null, hParent = null )
 {
 	local ping = m_PingLookup[ type ];
-	local colour = ping[m_colour];
+	local clr = ping[m_colour];
 	local lifetime = ping[m_lifetime];
 
 	local bIsWarning = type in m_PingIsWarning;
@@ -1477,8 +1522,39 @@ function SpriteCreate( owner, type, origin, target = null, hParent = null )
 	local pEnt;
 	local playerPings = g_Pings[ owner ];
 
-	// no more than 4 pings per player
-	if ( 3 in playerPings )
+	// Shortcut for re-pinging a target by the same player.
+	if ( target && target in g_Targets )
+	{
+		pEnt = g_Targets[target];
+		if ( pEnt.IsValid() )
+		{
+			local prevPingSc = pEnt.GetScriptScope();
+			local prevOwner = prevPingSc.m_hOwner;
+
+			// if I already own the ping on this target and it is not fading
+			if ( prevOwner == owner && prevPingSc.m_nRenderAlpha == 0xff )
+			{
+				// just extend its lifetime
+				prevPingSc.m_flDieTime = Time() + lifetime;
+
+				if ( s_bPlaySound )
+				{
+					local playerTeam = GetNetPropInt( owner, "m_iTeamNum" );
+					foreach ( p in g_Teams[playerTeam] )
+						EmitSoundOnClient( PingSound.DEFAULT, p );
+				}
+				else
+				{
+					s_bPlaySound = true;
+				};
+
+				if (PING_DEBUG_VERBOSE) printl("re-pinged "+target+", extending "+pEnt);
+				return;
+			};
+		};
+	};
+
+	if ( g_nMaxPingCount in playerPings )
 	{
 		// kill the oldest
 		// local p = playerPings.remove(0);
@@ -1528,8 +1604,8 @@ function SpriteCreate( owner, type, origin, target = null, hParent = null )
 	SetNetPropInt( pEnt, "m_iTeamNum", playerTeam );
 	pEnt.__KeyValueFromInt( "effects", 0 );
 	pEnt.__KeyValueFromInt( "rendermode", 2 );
-	if (!colour) Assert( colour );
-	pEnt.__KeyValueFromString( "rendercolor", colour );
+	if (!clr) Assert( clr );
+	pEnt.__KeyValueFromString( "rendercolor", clr );
 
 	//if ( frame )
 	//	SetNetPropFloat( pEnt, "m_flFrame", frame );
@@ -1850,11 +1926,11 @@ function PingChatter( player, concept )
 
 		local ping = m_PingLookup[ pingType ];
 		local lifetime = ping[m_lifetime];
-		local colour = ping[m_colour];
+		local clr = ping[m_colour];
 
 		lastPing.SetModel( ping[0] );
-		if (!colour) Assert( colour );
-		lastPing.__KeyValueFromString( "rendercolor", colour );
+		if (!clr) Assert( clr );
+		lastPing.__KeyValueFromString( "rendercolor", clr );
 		SetNetPropEntity( lastPing, "m_hMoveParent", player );
 		lastPing.SetLocalOrigin( vecPingPos );
 
@@ -1870,6 +1946,18 @@ function PingChatter( player, concept )
 	g_lastChatterPing[ player ] <- spr;
 }
 
+local s_tr =
+{
+	start = null,
+	end = null,
+	mask = MASK_SHOT_HULL & (~CONTENTS_WINDOW),
+	ignore = null,
+	pos = null,
+	hit = null,
+	enthit = null,
+	startsolid = null
+}
+
 //
 // Input: CBasePlayer caller, CBaseEntity target, Vector fallbackPos
 //
@@ -1880,6 +1968,9 @@ function PingEntity( player, pEnt, vecPingPos = null )
 
 	switch ( szClassname )
 	{
+		case "worldspawn":
+			break;
+
 		case "player":
 
 			// player is survivor
@@ -1994,6 +2085,25 @@ function PingEntity( player, pEnt, vecPingPos = null )
 			break;
 
 		case "prop_health_cabinet":
+
+			if ( GetNetPropInt( pEnt, "m_isUsed" ) == 1 )
+			{
+				s_tr.start = vecPingPos;
+				s_tr.end = vecPingPos + player.EyeAngles().Forward().Scale( MAX_COORD_FLOAT );
+				s_tr.ignore = pEnt;
+				TraceLine( s_tr );
+
+				local enthit = s_tr.enthit;
+				if ( enthit.GetEntityIndex() != 0 )
+				{
+					if (PING_DEBUG) printl( "found item in cabinet " + enthit );
+					if (PING_DEBUG) DebugDrawLine( s_tr.start, s_tr.pos, 255, 0, 0, true, 5.0 );
+					return PingEntity( player, enthit, vecPingPos );
+				};
+
+				if (PING_DEBUG) print( "could not found item in cabinet\n" );
+			};
+
 			pingType = PingType.MEDCAB;
 			local f = pEnt.GetForwardVector();
 			local r = f.Cross( Vector(0.0, 0.0, 1.0) );
@@ -2110,19 +2220,6 @@ function PingEntity( player, pEnt, vecPingPos = null )
 	return SpriteCreate( player, pingType, vecPingPos, pEnt );
 }
 
-
-local s_tr =
-{
-	start = null,
-	end = null,
-	mask = MASK_SHOT_HULL & (~CONTENTS_WINDOW),
-	ignore = null,
-	pos = null,
-	hit = null,
-	enthit = null,
-	startsolid = null
-}
-
 function PingTrace( player, tr = s_tr )
 {
 	local eyePos = player.EyePosition();
@@ -2204,8 +2301,20 @@ if ( PING_DEBUG )
 };
 
 
-// VERY basic interface to change some settings
+// Settings interface
 //----------------------------------------------------------------------
+
+function SetMaxPingCount( n )
+{
+	n = n.tointeger();
+	if ( n < 1 )
+		n = 1;
+	else if ( n > 64 )
+		n = 64;;
+
+	g_nMaxPingCount = n - 1;
+	Msg(format( "PingSystem::SetMaxPingCount(%i)\n", n ));
+}
 
 function SetPingDuration( type, time )
 {
@@ -2230,7 +2339,7 @@ function SetPingColour( type, r, g, b )
 	g = g.tointeger() & 0xFF;
 	b = b.tointeger() & 0xFF;
 
-	local col = format( "%i %i %i 255", r, g, b );;
+	local col = format( "%i %i %i 255", r, g, b );
 
 	if ( type == -1 )
 	{
