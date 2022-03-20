@@ -242,11 +242,12 @@ m_PingIsWarning <-
 {
 	[PingType.WARNING]			= null,
 	[PingType.WARNING_ONFIRE]	= null,
-	[PingType.INCAP]			= null,
 }
 
 m_PingIsItem <-
 {
+	[PingType.INCAP]			= null, // HACKHACK: make it an item for early death
+
 	[PingType.MEDKIT]					= null,
 	[PingType.PILLS]					= null,
 	[PingType.ADRENALINE]				= null,
@@ -386,7 +387,7 @@ local PingMaterial = array( PingType.MAX_COUNT );
 	PingMaterial[PingType.DOOR]			= "ping_system/ping_door.vmt",
 	PingMaterial[PingType.RESCUE]		= "ping_system/ping_rescue.vmt",
 	PingMaterial[PingType.SAFEROOM]		= "ping_system/ping_saferoom.vmt",
-	PingMaterial[PingType.FUELBARREL]	= PingMaterial[PingType.WARNING_MILD],
+	PingMaterial[PingType.FUELBARREL]	= "ping_system/ping_fuelbarrel.vmt",
 
 	PingMaterial[PingType.AFFIRMATIVE]	= "ping_system/ping_affirmative.vmt",
 	PingMaterial[PingType.NEGATIVE]		= "ping_system/ping_negative.vmt",
@@ -525,7 +526,7 @@ function Init()
 	if ( !b )
 		error( "PingSystem: ERROR invalid RR!\n");
 
-	Msg("PingSystem::Init() [16]\n");
+	Msg("PingSystem::Init() [18]\n");
 }
 
 function OnGameEvent_round_start(ev)
@@ -1278,9 +1279,10 @@ function rr_Ping( Q )
 				if ( pTarget )
 					return PingEntity( who, pTarget );
 			}
+/*			// Uncommon infected
 			else
 			{
-				local i = 1;
+				local i = 2;
 				local lookupTable = m_ModelForUncommon;
 				do
 				{
@@ -1321,8 +1323,9 @@ function rr_Ping( Q )
 
 						lookupTable = m_ModelForUncommonL4D1;
 					};
-				} while ( i-- )
+				} while ( --i )
 			};
+*/
 
 			// no target found, trace if not auto
 			if ( bAuto )
@@ -1341,7 +1344,9 @@ function rr_Ping( Q )
 			if (PING_DEBUG) print("   auto ping\n");
 
 			local hMyDominator = who.GetSpecialInfectedDominatingMe();
-			if ( hMyDominator )
+			if ( hMyDominator &&
+				// Smoker can dominate from far away, don't ping them.
+				hMyDominator.GetZombieType() != m_ZombieTypeForSI.SMOKER )
 			{
 				local vecPingPos = hMyDominator.EyePosition();
 				vecPingPos.z = GetHeadOrigin( hMyDominator ).z + 32.0;
@@ -1806,7 +1811,8 @@ m_PingTypeForConcept <-
 //	[54]	= PingType.WEAPON_AMMO,
 //}
 
-m_PingTypeForWeaponClass <-
+m_PingTypeForWeaponClass <- {}
+local tmp_PingTypeForWeaponClass =
 {
 	weapon_first_aid_kit		= PingType.MEDKIT,
 	weapon_pain_pills			= PingType.PILLS,
@@ -1907,6 +1913,11 @@ local m_PingTypeForWeaponClass = m_PingTypeForWeaponClass;
 local m_PingTypeForWeaponModel = m_PingTypeForWeaponModel;
 local m_PingTypeForPhysModel = m_PingTypeForPhysModel;
 
+// Cache weapon_spawn entities
+foreach ( k, v in tmp_PingTypeForWeaponClass )
+	m_PingTypeForWeaponClass[ k ] <- m_PingTypeForWeaponClass[ k + "_spawn" ] <- v;
+
+
 function PingChatter( player, concept )
 {
 	local pingType = m_PingTypeForConcept[ concept ];
@@ -1987,8 +1998,17 @@ function PingEntity( player, pEnt, vecPingPos = null )
 					local hDominator = pEnt.GetSpecialInfectedDominatingMe();
 					if ( hDominator )
 					{
-						pingType = PingType.WARNING;
-						pEnt = hDominator;
+						if ( hDominator.GetZombieType() == m_ZombieTypeForSI.SMOKER )
+						{
+							// Smoker can dominate from far away, ping the survivor as incap
+							pingType = PingType.INCAP;
+						}
+						else
+						{
+							// The SI should be on top of the survivor, ping the SI as warning
+							pingType = PingType.WARNING;
+							pEnt = hDominator;
+						}
 					}
 					else if ( pEnt.IsOnFire() )
 					{
@@ -2167,14 +2187,6 @@ function PingEntity( player, pEnt, vecPingPos = null )
 					// printl( "         "+szClassname+"->m_iszWeaponToSpawn " + GetNetPropString( pEnt, "m_iszWeaponToSpawn" ) );
 				};
 
-				// sanitise the name
-				local i = szClassname.find("_spawn");
-				if ( i )
-				{
-					szClassname = szClassname.slice( 0, i );
-					if (PING_DEBUG_VERBOSE) printl( "         sanitised weapon classname " + szClassname );
-				};
-
 				if ( szClassname in m_PingTypeForWeaponClass )
 				{
 					pingType = m_PingTypeForWeaponClass[ szClassname ];
@@ -2257,7 +2269,9 @@ function OnCommandPing( player )
 {
 	// If player is being dominated, skip trace and ping self
 	local hMyDominator = player.GetSpecialInfectedDominatingMe();
-	if ( hMyDominator )
+	if ( hMyDominator &&
+		// Smoker can dominate from far away, don't ping them.
+		hMyDominator.GetZombieType() != m_ZombieTypeForSI.SMOKER )
 	{
 		local vecPingPos = hMyDominator.EyePosition();
 		vecPingPos.z = GetHeadOrigin( hMyDominator ).z + 32.0;
@@ -2399,6 +2413,20 @@ function DisableAutoPing( i = 1 )
 			}
 		}
 	};
+}
+
+function SetScaleMultiplier( f )
+{
+	f = f.tofloat();
+
+	if ( f < 0.25 )
+		f = 0.25;
+	else if ( f > 2.0 )
+		f = 2.0;;
+
+	sprite_kv.scale = 5.25 * f;
+
+	Msg("PingSystem::SetScaleMultiplier("+f+")\n");
 }
 
 //----------------------------------------------------------------------
