@@ -5,11 +5,10 @@
 //
 // Directional Sound Training Map ( + music kits )
 //
-// This map is kind of a collection of various small tests; it is a mess.
-//
 //------------------------------
 
 IncludeScript("vs_library");
+IncludeScript("aimbot");
 
 enum weapon
 {
@@ -95,43 +94,34 @@ m_pCritSpawner		<- null;
 player				<- null;
 m_hPlatformWalls	<- null;
 m_hStopText			<- null;
+m_hCntdnMsg			<- null;
 
 vec3_origin <- Vector();
 Fmt <- format;
 
 function Precache()
 {
-	if ( !("g_hHudHint" in getroottable()) )
-	{
 		// sound target
 		// alternatively the bot's origin could be used,
 		// but using an external entity allows playing the sound
 		// even when the bot is not placed.
-		::g_hTarget <- ::VS.CreateEntity( "info_target" ).weakref();
+		g_hTarget <- VS.CreateEntity( "info_target" ).weakref();
+
+		//g_hVisBlocker <- VS.CreateEntity( "info_target" ).weakref();
+		//g_hVisBlocker.SetOrigin( Ent("d").GetOrigin() - Vector(0,0,16) );
+		//g_hVisBlocker.SetModel( Ent("d").GetModelName() );
+		//g_hVisBlocker.__KeyValueFromInt( "effects", 32 );
 
 		// play sound
-		::g_hTimerSnd <- ::VS.Timer( 1, m_fIntvlCurr, PlayTargetSoundThink, null, false, true ).weakref();
+		g_hTimerSnd <- VS.Timer( 1, m_fIntvlCurr, PlayTargetSoundThink, this, 0, 1 ).weakref();
 
-		// vertical aim helper
-		::g_hTimerHelper <- ::VS.Timer( 1, 0.1, AimHelperThink, null, false, true ).weakref();
-
-		::g_hTimerAimLock <- ::VS.Timer( 1, 0.0, ThinkAimlock, null, false, true ).weakref();
-
-		// 1. set bot angles to the center of the map
-		// 2. sound-interval setting timer
-		::g_hTimerThink <- ::VS.Timer( 1, 0.01, BotAngleThink, null, false, true ).weakref();
+		g_hTimerThink <- VS.Timer( 1, 0.0, Think, this, 0, 1 ).weakref();
 
 		// Music kit 10 second countdown timer
-		::g_hTimer10 <- ::VS.Timer( 1, 0.0, Tick, null, false, true ).weakref();
-
-		// Countdown message
-		::g_hMsgTen <- null;
-
-		// Display info on the music kits when looked at
-		::g_hTimerLook <- ::VS.Timer( 1, 0.1, Looking, null, false, true ).weakref();
+		g_hTimer10 <- VS.Timer( 1, 0.0, Tick, this, 0, 1 ).weakref();
 
 		// "You killed X"
-		::g_hGameText <- ::VS.CreateEntity( "game_text",
+		g_hGameText <- VS.CreateEntity( "game_text",
 		{
 			channel = 1,
 			color = "255 255 255",
@@ -142,26 +132,24 @@ function Precache()
 			y = 0.7
 		},true ).weakref();
 
-		// helper arrows
-		::g_hGameText2 <- ::VS.CreateEntity( "game_text",
+		// helper indicator
+		g_hGameText2 <- VS.CreateEntity( "game_text",
 		{
 			channel = 2,
 			color = "255 255 255",
 			color2 = "250 250 250",
-			fadeout = 0.2,
-			holdtime = 0.2,
-			x = 0.55,
-			y = 0.47
+			fadeout = 0.0,
+			holdtime = FrameTime() * 2,
+			message = "⬤"
 		},true ).weakref();
 
 		// hud hint
-		::g_hHudHint <- ::VS.CreateEntity( "env_hudhint",null,true ).weakref();
+		g_hHudHint <- VS.CreateEntity( "env_hudhint",null,true ).weakref();
 
 		// Team coin
-		::VS.CreateEntity( "env_texturetoggle",{targetname = "texture_c", target="c"},true ).weakref();
+		VS.CreateEntity( "env_texturetoggle",{targetname = "texture_c", target="c"},true ).weakref();
 
-		::VS.CreateEntity( "game_player_equip",{targetname = "equip", spawnflags = 5, weapon_knife = 1},true ).weakref();
-	};
+		VS.CreateEntity( "game_player_equip",{targetname = "equip", spawnflags = 5, weapon_knife = 1},true ).weakref();
 
 	PrecacheScriptSound( SND_WALLS_MOVE );
 	PrecacheScriptSound( SND_HIT );
@@ -189,8 +177,6 @@ function Init()
 	SetRange(0,0);
 	SetSoundType(0,0);
 
-	EntFireByHandle( g_hTimerLook, "enable" );
-
 	Equip( weapon.m4a1 );
 	Equip( weapon.usp_silencer );
 
@@ -199,8 +185,8 @@ function Init()
 	Chat( TextColor.Achievement + "● "+TextColor.Uncommon+"Welcome, " + player.GetPlayerName() + "!" );
 	Msg( "\n\nWelcome, " + player.GetPlayerName() + "! ["+ player.GetNetworkIDString() +"]\n" );
 	Chat( "" );
-	Msg( "\n" );
 
+	EntFireByHandle( g_hTimerThink, "Enable" );
 
 	// -------------------------------------------------------------------
 
@@ -222,9 +208,9 @@ function Init()
 		m_hCurrMusicKit = Ent("m0");
 
 	foreach( i, v in MusicI )
-		EntFire( "m"+i, "AddOutput", "OnPressed !self,RunScriptCode,TR_SND.PickMusicKit("+(i++)+")" );
+		Ent( "m"+i ).__KeyValueFromString( "OnPressed", "!self,RunScriptCode,TR_SND.PickMusicKit("+(i++)+")" );
 
-	g_hMsgTen = Ent("msg10");
+	m_hCntdnMsg = Ent("msg10");
 
 	// -------------------------------------------------------------------
 
@@ -256,8 +242,6 @@ function SetRange( b, m = true )
 		if (m) Chat( CHAT_PREFIX + TextColor.Gold + "Enemies will only spawn nearby" );
 	};
 
-	if (m) Chat("");
-
 	m_bRange = b;
 }
 
@@ -280,26 +264,30 @@ function Process()
 	if ( !m_bStarted )
 		return;
 
-	if ( m_bBlindMode )
-		SendToConsole("r_screenoverlay\"tools/toolsblack\"");
-
 	local pos = GetRandomPosition();
 	local bot = GetBot();
 	if ( !bot || !bot.IsValid() )
 		return Stop();
 
-	// Glow.Set( bot.self, Vector(255,78,78), 1, 4096.0 );
+	if ( m_bBlindMode )
+	{
+		bot.SetEffects( 32 );
+	}
+	else
+	{
+		bot.SetEffects( 0 );
+	}
 
-	bot.SetEffects( 0 );
-	bot.SetAbsOrigin(pos);
+	bot.SetOrigin(pos);
+
+	if ( m_bAimLockEnabled )
+		aimbot_add_p2( bot );
 
 	local sndPos = pos*1;
 	sndPos.z = 64.0;
 	g_hTarget.SetOrigin( sndPos );
 	g_hTarget.EmitSound( GetSound() );
-	EntFireByHandle( g_hTimerSnd,"enable" );
-
-	EntFireByHandle( g_hTimerThink,"enable" );
+	EntFireByHandle( g_hTimerSnd, "Enable" );
 
 	m_bSpawned = true;
 }
@@ -315,9 +303,9 @@ function GetSound()
 
 function GetBot()
 {
-	if ( !(0 in m_Bots) )
-		return Msg("No bot found\n");
-	return m_Bots[0];
+	if ( 0 in m_Bots )
+		return m_Bots[0];
+	return Msg("No bot found\n");
 }
 
 function SetSoundType( i, m = true )
@@ -378,7 +366,7 @@ function SetSoundType( i, m = true )
 	::Ent("s"+i).__KeyValueFromString("color", CLR_GREEN );
 }
 
-function ToggleBlindMode( b )
+function SetBlindMode( b )
 {
 	if ( !b )
 	{
@@ -389,27 +377,26 @@ function ToggleBlindMode( b )
 	{
 		Ent("t1").__KeyValueFromString("color",CLR_GREEN );
 		Chat( CHAT_PREFIX + TextColor.Gold + "Blind mode " + TextColor.Achievement + "enabled" );
-		if (!m_bAimHelper)Chat( CHAT_PREFIX + TextColor.Uncommon + "Suggested: " + TextColor.Gold + "enabling aim helper" );
+
+		if ( !m_bAimHelper )
+			Chat( CHAT_PREFIX + TextColor.Uncommon + "Suggested: " + TextColor.Gold + "enabling aim helper" );
 	};
 
-	Chat("");
 	m_bBlindMode = b;
 }
 
-function ToggleAimHelper( b )
+function SetAimHelper( b )
 {
 	if ( b )
 	{
 		Ent("t0").__KeyValueFromString("color",CLR_GREEN );
 		Chat( CHAT_PREFIX + TextColor.Gold + "Aim helper " + TextColor.Achievement + "enabled" );
-		EntFireByHandle( g_hTimerHelper,"enable" );
 	}
 	else
 	{
 		Ent("t0").__KeyValueFromString("color",CLR_WHITE );
 		Chat( CHAT_PREFIX + TextColor.Gold + "Aim helper " + TextColor.Penalty + "disabled" );
 		HideHudHint();
-		EntFireByHandle( g_hTimerHelper,"disable" );
 	};
 
 	m_bAimHelper = b;
@@ -429,15 +416,11 @@ function SetInterval( b )
 		ShowHudHint( m_fIntvlCurr );
 		Ent("t3").__KeyValueFromString("color",CLR_GREEN );
 
-		VS.OnTimer( g_hTimerThink,ThinkButton );
-		EntFireByHandle( g_hTimerThink,"enable" );
-		// EntFireByHandle( g_hTimerLook,"disable" );
-
-		player.SetInputCallback( "+forward", function(...){ return SetInterval_add() }, this );
-		player.SetInputCallback( "+back", function(...){ return SetInterval_sub() }, this );
+		VS.SetInputCallback( player, "+forward", function(...){ return SetInterval_add() }, this );
+		VS.SetInputCallback( player, "+back", function(...){ return SetInterval_sub() }, this );
 		local unpressed = function(...){ return SetInterval_rel() };
-		player.SetInputCallback( "-forward", unpressed, this );
-		player.SetInputCallback( "-back", unpressed, this );
+		VS.SetInputCallback( player, "-forward", unpressed, this );
+		VS.SetInputCallback( player, "-back", unpressed, this );
 	}
 	else
 	{
@@ -446,13 +429,10 @@ function SetInterval( b )
 		HideHudHint();
 		Ent("t3").__KeyValueFromString("color",CLR_WHITE );
 
-		EntFireByHandle( g_hTimerThink,"disable" );
-		// EntFireByHandle( g_hTimerLook,"enable" );
-
-		player.SetInputCallback( "+forward", null, this );
-		player.SetInputCallback( "+back", null, this );
-		player.SetInputCallback( "-forward", null, this );
-		player.SetInputCallback( "-back", null, this );
+		VS.SetInputCallback( player, "+forward", null, this );
+		VS.SetInputCallback( player, "+back", null, this );
+		VS.SetInputCallback( player, "-forward", null, this );
+		VS.SetInputCallback( player, "-back", null, this );
 	};
 
 	m_nCtrlIntvl = 0;
@@ -476,7 +456,8 @@ function SetInterval_mod(f)
 	local d = m_fIntvlCurr + f;
 
 	// clamp
-	if ( d < 0.1 ) return;
+	if ( d < 0.1 )
+		return;
 
 	ShowHudHint( Fmt( "%.1f", d ) );
 
@@ -500,9 +481,13 @@ function ThinkButton()
 		return;
 
 	if ( m_nCtrlIntvl == 1 )
+	{
 		SetInterval_mod(0.2);
+	}
 	else if ( m_nCtrlIntvl == -1 )
-		SetInterval_mod(-0.2);;
+	{
+		SetInterval_mod(-0.2);
+	}
 }
 
 //--------------------------
@@ -510,8 +495,6 @@ function ThinkButton()
 function Start()
 {
 	Chat( CHAT_PREFIX + TextColor.Purple + "START" );
-
-	// EntFireByHandle( g_hTimerLook,"disable" );
 
 	// the only benefit of the training gamemode is the steam rich presence.
 	// is it even worth when it causes so many problems?
@@ -524,12 +507,8 @@ function Start()
 		SetInterval(false);
 	m_bStarted = true;
 
-	VS.OnTimer( g_hTimerThink,BotAngleThink );
-	EntFireByHandle( g_hTimerThink,"enable" );
-	if ( m_bAimHelper )
-		EntFireByHandle( g_hTimerHelper,"enable" );
 	m_hPlatformWalls.EmitSound(SND_WALLS_MOVE);
-	EntFireByHandle( m_hPlatformWalls, "open" );
+	EntFireByHandle( m_hPlatformWalls, "Open" );
 
 	m_hStopText.__KeyValueFromInt( "rendermode", 0 );
 
@@ -542,6 +521,7 @@ function Stop()
 	{
 		if ( m_bAtControls )
 			return SetInterval(false);
+
 		return;
 	};
 
@@ -553,32 +533,31 @@ function Stop()
 	m_bSpawned = false;
 	m_bStarted = false;
 
-	if ( player.GetOrigin().Length() > 220.0 )
+	if ( player.GetOrigin().Length() > 132.0 )
 		player.SetOrigin( Vector(0,0,2) );
 
 	Kill( GetBot() );
 	// ScriptSetRadarHidden(false);
 	SendToConsoleServer("sv_disable_radar 0");
 	SendToConsole("r_screenoverlay\"\"");
-	EntFireByHandle( m_hPlatformWalls, "close" );
-	EntFireByHandle( g_hTimerSnd,"disable" );
-	EntFireByHandle( g_hTimerThink,"disable" );
-	EntFireByHandle( g_hTimerHelper,"disable" );
-	EntFireByHandle( g_hTimerAimLock,"disable" );
-	m_bAimLockEnabled = false;
+	EntFireByHandle( m_hPlatformWalls, "Close" );
+	EntFireByHandle( g_hTimerSnd, "Disable" );
+
+	if ( m_bAimLockEnabled )
+	{
+		m_bAimLockEnabled = false;
+		aimbot_clear();
+	}
 
 	// EntFire( "item_cash", "Kill", "", 1.0 );
-
-	// EntFireByHandle( g_hTimerLook,"enable" );
 
 	SendToConsole("game_mode 0;game_type 3;r_cleardecals");
 }
 
-function Kill( ply ) : (EntFireByHandle)
+function Kill( ply )
 {
-	if ( !ply )
-		return;
-	return EntFireByHandle( ply.self, "SetHealth", 0 );
+	if ( ply )
+		return EntFireByHandle( ply.self, "SetHealth", 0 );
 }
 
 // Add bots to available bots list
@@ -620,10 +599,7 @@ VS.ListenToGameEvent( "player_disconnect", function(ev)
 	}
 }.bindenv(this), "" );
 
-VS.ListenToGameEvent( "player_jump", function(ev)
-{
-	return Stop();
-}.bindenv(this), "" );
+VS.ListenToGameEvent( "player_jump", Stop.bindenv(this), "" );
 
 
 m_pPrevHitmarkerEvent <- null;
@@ -724,22 +700,23 @@ VS.ListenToGameEvent( "player_death", function(ev)
 			m_Bots.remove(i);
 
 	if ( m_bBlindMode )
-		SendToConsole("r_screenoverlay\"\"");
+	{
+		// SendToConsole("r_screenoverlay\"\"");
+		// g_hVisBlocker.__KeyValueFromInt( "effects", 32 );
+		// EntFireByHandle( player.self, "SetFogController", "fog_default" );
+		bot.SetEffects( 0 );
+	}
 
 	if ( !m_bStarted )
 		return;
 
 	g_hGameText.__KeyValueFromString( "message", "You killed " + bot.GetPlayerName() );
-	EntFireByHandle( g_hGameText, "display", "", 0.0, player.self );
+	EntFireByHandle( g_hGameText, "Display", "", 0.0, player.self );
 
 	// stop playing sound
-	EntFireByHandle( g_hTimerSnd,"disable" );
-
-	EntFireByHandle( g_hTimerThink,"disable" );
+	EntFireByHandle( g_hTimerSnd, "Disable" );
 
 	m_bSpawned = false;
-
-	// Glow.Disable( bot.self );
 
 	// next
 	VS.EventQueue.AddEvent( Process, RandomFloat(0.4,1.2), this );
@@ -751,48 +728,63 @@ function PlayTargetSoundThink()
 	g_hTarget.EmitSound( GetSound() );
 }
 
+m_vecPlayerMins <- Vector( -12, -12, 4 );
+m_vecPlayerMaxs <- Vector( 12, 12, 70 );
+
 function AimHelperThink()
 {
 	if ( !m_bSpawned )
 		return;
 
-	local src = player.EyePosition();
-	local pitch = player.EyeAngles().x;
-
 	local bot = GetBot();
 
-	local head = bot.EyePosition();
-	head.z += 6.0;
-	local legs = bot.GetOrigin();
-	legs.z += 8.0;
+	local viewOrigin = player.EyePosition();
+	local viewForward = player.EyeForward();
 
-	local upper = VS.VecToPitch( head - src );
-	local lower = VS.VecToPitch( legs - src );
+	local ray = Ray_t();
+	ray.Init( viewOrigin, viewOrigin + viewForward * MAX_COORD_FLOAT );
 
-	if ( pitch < upper )
+	if ( VS.IsRayIntersectingOBB( ray, bot.GetOrigin(), bot.GetAngles(), m_vecPlayerMins, m_vecPlayerMaxs ) )
 	{
-		g_hGameText2.__KeyValueFromString( "message", "\n↓" );
+
+	}
+	else
+	{
+		local attachment = bot.LookupAttachment("facemask");
+		local vecTarget = bot.GetAttachmentOrigin( attachment ) - bot.EyeForward() * 4.0;
+
+		local vecDelta = vecTarget - viewOrigin;
+
+		local ang = atan2( -vecDelta.Dot( player.EyeRight() ), -vecDelta.Dot( player.EyeUp() ) ) + PI;
+
+		vecDelta.Norm();
+
+		local radius = VS.RemapValClamped( 1.0 - viewForward.Dot( vecDelta ), 1.0, 0.0, 0.3, 0.015 );
+
+		local x = 0.5 + sin( ang ) * radius * 0.75 - 0.005;
+		local y = 0.5 - cos( ang ) * radius - 0.0225;
+
+		g_hGameText2.__KeyValueFromFloat( "x", x );
+		g_hGameText2.__KeyValueFromFloat( "y", y );
+
 		EntFireByHandle( g_hGameText2, "Display", "", 0.0, player.self );
 	}
-	else if ( pitch > lower )
-	{
-		g_hGameText2.__KeyValueFromString( "message", "↑" );
-		EntFireByHandle( g_hGameText2, "Display", "", 0.0, player.self );
-	};;
 }
 
-// bot look at map origin 0,0,0
-// the hitboxes are desynced for a second or two when they spawn
-function BotAngleThink()
+function Think()
 {
-	local bot = GetBot();
+	if ( m_bStarted )
+	{
+		if ( m_bAimHelper )
+			AimHelperThink();
+	}
+	else
+	{
+		ButtonLookThink();
 
-	if ( !bot || !bot.IsValid() )
-		return;
-
-	local yaw = VS.VecToYaw( bot.EyePosition()*-1 );
-
-	bot.SetAngles(0,yaw,0);
+		if ( m_bAtControls )
+			ThinkButton();
+	}
 }
 
 function ToggleTeam()
@@ -839,28 +831,23 @@ function SetTeam(i)
 	player.__KeyValueFromInt( "teamnumber", i );
 }
 
-// See the standalone aimbot.nut script for a more advanced version
-// github.com/samisalreadytaken/vscripts
-function ThinkAimlock()
-{
-	if ( !m_bSpawned )
-		return;
-
-	local bot = GetBot();
-	if ( !bot )
-		return;
-
-	local head = bot.GetAttachmentOrigin(15) - bot.EyeForward() * 4.0;
-
-	player.SetForwardVector( head - player.EyePosition() );
-}
-
 function EnableAimlock()
 {
-	EntFireByHandle( g_hTimerAimLock, "enable" );
+	aimbot_clear();
+	aimbot_add_p1( player );
+	aimbot_lock( 1 );
+	aimbot_fov( 0.0 );
+	aimbot_trigger( 0 );
+	aimbot_wh( 0 );
+
 	Chat( CHAT_PREFIX + TextColor.Award + "Aimlock enabled" );
 	player.EmitSound("UIPanorama.container_weapon_ticker");
 	m_bAimLockEnabled = true;
+
+	if ( m_bStarted && m_bSpawned )
+	{
+		aimbot_add_p2( GetBot() );
+	}
 }
 
 //-----------------------------------------------------------------------
@@ -998,7 +985,7 @@ function PlayMusicKit()
 		// these are affected by the client's music settings, but the direct file playing cannot be stopped
 		m_szMusicKitSoundCurr = "Music.BombTenSecCount." + m_szMusicKitCurrID;
 		m_flCountdown = 10.0;
-		EntFireByHandle( g_hTimer10, "enable" );
+		EntFireByHandle( g_hTimer10, "Enable" );
 	}
 	else if ( m_nMusicType == 1 )
 	{
@@ -1014,21 +1001,20 @@ function StopMusicKit()
 	Chat( TextColor.Penalty + "■ " + TextColor.Gold + "Stopped playing" );
 	Msg("■ Stopped playing\n");
 
-	EntFireByHandle( g_hTimer10, "disable" );
-	g_hMsgTen.__KeyValueFromString( "message", "10.0000" );
+	EntFireByHandle( g_hTimer10, "Disable" );
+	m_hCntdnMsg.__KeyValueFromString( "message", "10.0000" );
 
 	player.StopSound(m_szMusicKitSoundCurr);
 	SendToConsole("r_cleardecals");
 }
 
 // main menu musics can stack, stop all if any are playing.
-// Alternatively I could keep track of playing tracks, (TODO)
-// but there's no performance worry in this map, so this is fine.
+// Alternatively I could keep track of playing tracks, but this is fine.
 function StopMusicKitAll()
 {
 	foreach( k in MusicI ) player.StopSound("Musix.HalfTime." + k);
-	EntFireByHandle( g_hTimer10, "disable" );
-	g_hMsgTen.__KeyValueFromString( "message", "10.0000" );
+	EntFireByHandle( g_hTimer10, "Disable" );
+	m_hCntdnMsg.__KeyValueFromString( "message", "10.0000" );
 }
 
 function SetMusicType()
@@ -1043,17 +1029,17 @@ function SetMusicType()
 		Chat( CHAT_PREFIX + "Music type: " + TextColor.Gold + "Bomb 10 second count" );
 		Msg( CHAT_PREFIX + "Music type: Bomb 10 second count\n" );
 
-		g_hMsgTen.__KeyValueFromInt( "textsize", 10 );
-		g_hMsgTen.__KeyValueFromString( "message", "10.0000" );
+		m_hCntdnMsg.__KeyValueFromInt( "textsize", 10 );
+		m_hCntdnMsg.__KeyValueFromString( "message", "10.0000" );
 	}
 	else if ( m_nMusicType == 1 )
 	{
 		Chat( CHAT_PREFIX + "Music type: " + TextColor.Gold + "Main menu" );
 		Msg( CHAT_PREFIX + "Music type: Main menu\n" );
 
-		g_hMsgTen.__KeyValueFromInt( "textsize", 0 );
-		EntFireByHandle( g_hTimer10, "disable" );
-		g_hMsgTen.__KeyValueFromString( "message", "10.0000" );
+		m_hCntdnMsg.__KeyValueFromInt( "textsize", 0 );
+		EntFireByHandle( g_hTimer10, "Disable" );
+		m_hCntdnMsg.__KeyValueFromString( "message", "10.0000" );
 	};;
 
 	SendToConsole("r_cleardecals");
@@ -1063,19 +1049,19 @@ function Tick()
 {
 	m_flCountdown -= TICK_INTERVAL;
 
-	g_hMsgTen.__KeyValueFromString( "message", Fmt("%.5f",m_flCountdown) );
+	m_hCntdnMsg.__KeyValueFromString( "message", Fmt("%.5f",m_flCountdown) );
 
 	if ( m_flCountdown <= 0.0 )
 	{
-		EntFireByHandle( g_hTimer10, "disable" );
-		g_hMsgTen.__KeyValueFromString( "message", "0.00000" );
+		EntFireByHandle( g_hTimer10, "Disable" );
+		m_hCntdnMsg.__KeyValueFromString( "message", "0.00000" );
 	};
 }
 
-local maxs_musickit = Vector(5,17,17);
+m_vecMusicKitMaxs <- Vector(5,17,17);
 
 // Draw all buttons that the player is looking at
-function Looking() : (maxs_musickit)
+function ButtonLookThink()
 {
 	local tr = VS.TraceDir( player.EyePosition(), player.EyeForward(), 1024.0, player.self, MASK_SOLID );
 	local ent = tr.GetEntByClassname( "func_button", 24.0 );
@@ -1112,7 +1098,7 @@ function Looking() : (maxs_musickit)
 	};
 
 	if ( !m_bStarted && m_hCurrMusicKit.IsValid() )
-		DebugDrawBoxAngles( m_hCurrMusicKit.GetOrigin(), maxs_musickit*-1, maxs_musickit, m_hCurrMusicKit.GetAngles(), 128, 255, 128, 4, 0.2 );
+		DebugDrawBoxAngles( m_hCurrMusicKit.GetOrigin(), m_vecMusicKitMaxs*-1, m_vecMusicKitMaxs, m_hCurrMusicKit.GetAngles(), 128, 255, 128, 4, 0.2 );
 }
 
 // Set the bot and player teams manually instead of relying on server settings
