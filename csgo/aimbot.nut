@@ -105,10 +105,14 @@ if ( !("__AIMBOT" in getroottable()) || !::__AIMBOT )
 		::__AIMBOT = null;
 	}
 
+	//
+	// Add player 1
+	//
+
 	function __AIMBOT::AddPlayer1ByName( i )
 	{
 		if ( typeof i != "string" )
-			return Msg("[][AddPlayer1ByName] Invalid value\n");
+			return Msg("[][AddPlayer1ByName] Invalid input\n");
 
 		foreach( p in VS.GetAllPlayers() )
 		{
@@ -124,7 +128,7 @@ if ( !("__AIMBOT" in getroottable()) || !::__AIMBOT )
 	function __AIMBOT::AddPlayer1ByIndex( i )
 	{
 		if ( typeof i != "integer" )
-			return Msg("[][AddPlayer1ByIndex] Invalid value\n");
+			return Msg("[][AddPlayer1ByIndex] Invalid input\n");
 
 		local p = VS.GetPlayerByIndex(i);
 		if ( !p )
@@ -142,15 +146,28 @@ if ( !("__AIMBOT" in getroottable()) || !::__AIMBOT )
 		{
 			local v = m_Player1List[i];
 
-			if ( !v.IsValid() || v == p )
+			if ( !v.IsValid() )
 				m_Player1List.remove(i);
 
-			v.SetInputCallback( "+use", null, AIMBOT_CONTEXT );
+			if ( v == p )
+			{
+				VS.SetInputCallback( v, "+use", null, AIMBOT_CONTEXT );
+
+				if ( UseCallback )
+				{
+					VS.SetInputCallback( p, "+use", UseCallback, AIMBOT_CONTEXT );
+					UseCallback = null;
+				}
+
+				return;
+			}
 		}
 
 		if ( UseCallback )
-			p.SetInputCallback( "+use", UseCallback, AIMBOT_CONTEXT );
-		UseCallback = null;
+		{
+			VS.SetInputCallback( p, "+use", UseCallback, AIMBOT_CONTEXT );
+			UseCallback = null;
+		}
 
 		// each player can have different settings
 		p.m_ScriptScope.m_nAimlock <- 0;
@@ -198,14 +215,69 @@ if ( !("__AIMBOT" in getroottable()) || !::__AIMBOT )
 		p.m_ScriptScope.m_hGameText <- hGameText.weakref();
 
 		m_Player1List.append( p );
-
-		return p;
 	}
+
+	//
+	// Remove player 1
+	//
+
+	function __AIMBOT::RemovePlayer1ByName( i )
+	{
+		if ( typeof i != "string" )
+			return Msg("[][RemovePlayer1ByName] Invalid input\n");
+
+		foreach( p in VS.GetAllPlayers() )
+		{
+			local t = p.GetScriptScope();
+			if ( t && ("name" in t) && (t.name == i) )
+			{
+				return RemovePlayer1ByHandle( p );
+			}
+		}
+		return Msg("[][RemovePlayer1ByName] could not find player by name\n");
+	}
+
+	function __AIMBOT::RemovePlayer1ByIndex( i )
+	{
+		if ( typeof i != "integer" )
+			return Msg("[][RemovePlayer1ByIndex] Invalid input\n");
+
+		local p = VS.GetPlayerByIndex(i);
+		if ( !p )
+			return Msg("[][RemovePlayer1ByIndex] Invalid player id\n");
+
+		return RemovePlayer1ByHandle( p );
+	}
+
+	function __AIMBOT::RemovePlayer1ByHandle( p )
+	{
+		if ( !(p = ToExtendedPlayer(p)) )
+			return Msg("[][RemovePlayer1ByHandle] Invalid player handle\n");
+
+		for ( local i = m_Player1List.len(); i--; )
+		{
+			local v = m_Player1List[i];
+
+			if ( !v.IsValid() )
+				m_Player1List.remove(i);
+
+			if ( v == p )
+			{
+				m_Player1List.remove(i);
+				VS.SetInputCallback( v, "+use", null, AIMBOT_CONTEXT );
+				return;
+			}
+		}
+	}
+
+	//
+	// Add player 2
+	//
 
 	function __AIMBOT::AddPlayer2ByName( i )
 	{
 		if ( typeof i != "string" )
-			return Msg("[][AddPlayer2ByName] Invalid value\n");
+			return Msg("[][AddPlayer2ByName] Invalid input\n");
 
 		foreach( p in VS.GetAllPlayers() )
 		{
@@ -221,7 +293,7 @@ if ( !("__AIMBOT" in getroottable()) || !::__AIMBOT )
 	function __AIMBOT::AddPlayer2ByIndex( i )
 	{
 		if ( typeof i != "integer" )
-			return Msg("[][AddPlayer2ByIndex] Invalid value\n");
+			return Msg("[][AddPlayer2ByIndex] Invalid input\n");
 
 		local p = VS.GetPlayerByIndex(i);
 		if ( !p )
@@ -233,7 +305,7 @@ if ( !("__AIMBOT" in getroottable()) || !::__AIMBOT )
 	function __AIMBOT::AddPlayer2ByHandle( p )
 	{
 		if ( !(p = ToExtendedPlayer(p)) )
-			return Msg("[][AddPlayer1ByHandle] Invalid player handle\n");
+			return Msg("[][AddPlayer2ByHandle] Invalid player handle\n");
 
 		for ( local i = m_Player2List.len(); i--; )
 		{
@@ -243,82 +315,144 @@ if ( !("__AIMBOT" in getroottable()) || !::__AIMBOT )
 				m_Player2List.remove(i);
 
 			if ( v.self == p )
-				return p;
+				return;
 		}
 
 		local hTarget = Target_t();
 		hTarget.self = p;
 
 		m_Player2List.append( hTarget );
+	}
 
-		return p;
+	//
+	// Remove player 2
+	//
+
+	function __AIMBOT::RemovePlayer2ByName( i )
+	{
+		if ( typeof i != "string" )
+			return Msg("[][RemovePlayer2ByName] Invalid input\n");
+
+		foreach( p in VS.GetAllPlayers() )
+		{
+			local t = p.GetScriptScope();
+			if ( t && ("name" in t) && (t.name == i) )
+			{
+				return RemovePlayer2ByHandle( p );
+			}
+		}
+		return Msg("[][RemovePlayer2ByName] could not find player by name\n");
+	}
+
+	function __AIMBOT::RemovePlayer2ByIndex( i )
+	{
+		if ( typeof i != "integer" )
+			return Msg("[][RemovePlayer2ByIndex] Invalid input\n");
+
+		local p = VS.GetPlayerByIndex(i);
+		if ( !p )
+			return Msg("[][RemovePlayer2ByIndex] Invalid player id\n");
+
+		return RemovePlayer2ByHandle( p );
+	}
+
+	function __AIMBOT::RemovePlayer2ByHandle( p )
+	{
+		if ( !(p = ToExtendedPlayer(p)) )
+			return Msg("[][RemovePlayer2ByHandle] Invalid player handle\n");
+
+		for ( local i = m_Player2List.len(); i--; )
+		{
+			local v = m_Player2List[i];
+
+			if ( !v.self.IsValid() )
+				m_Player2List.remove(i);
+
+			if ( v.self == p )
+			{
+				m_Player2List.remove(i);
+				return;
+			}
+		}
 	}
 
 	function __AIMBOT::ClearPlayers()
 	{
+		ClearPlayers1();
+		ClearPlayers2();
+	}
+
+	function __AIMBOT::ClearPlayers1()
+	{
 		foreach( p in m_Player1List )
-			p.SetInputCallback( "+use", null, AIMBOT_CONTEXT );
+			VS.SetInputCallback( p, "+use", null, AIMBOT_CONTEXT );
 
 		m_Player1List.clear();
+	}
+
+	function __AIMBOT::ClearPlayers2()
+	{
 		m_Player2List.clear();
 	}
 
-	function __AIMBOT::SetFov( deg )
+	function __AIMBOT::SetPlayerFov( player, deg )
 	{
-		foreach ( p in m_Player1List )
+		if ( !( player = ToExtendedPlayer( player ) ) )
+			return;
+
+		deg = deg.tofloat();
+
+		local sc = player.m_ScriptScope;
+
+		if ( deg == 0.0 )
 		{
-			local sc = p.m_ScriptScope;
-
-			if ( deg == 0.0 )
-			{
-				sc.m_flFov = 0.0;
-			}
-			else
-			{
-				sc.m_flFov = cos( deg.tofloat() * DEG2RAD );
-			}
-
-			Msg("[]["+p.m_EntityIndex+"] fov " + deg.tofloat() + " degrees\n");
+			sc.m_flFov = 0.0;
 		}
+		else
+		{
+			sc.m_flFov = cos( deg * DEG2RAD );
+		}
+
+		Msg("[]["+player.m_EntityIndex+"] fov " + deg + " degrees\n");
 	}
 
-	function __AIMBOT::SetAimTarget( b = null )
+	function __AIMBOT::SetPlayerAimTarget( player, i = null )
 	{
-		foreach ( p in m_Player1List )
-		{
-			local sc = p.m_ScriptScope;
+		if ( !( player = ToExtendedPlayer( player ) ) )
+			return;
 
-			if ( b == null )
-				b = !sc.m_nAimTarget;
+		local sc = player.m_ScriptScope;
 
-			sc.m_nAimTarget = !!b;
+		if ( i == null )
+			i = !sc.m_nAimTarget;
 
-			Msg("[]["+p.m_EntityIndex+"] aim target " + (sc.m_nAimTarget ? "body\n" : "head\n"));
-		}
+		sc.m_nAimTarget = (!!i).tointeger();
+
+		Msg("[]["+player.m_EntityIndex+"] aim target " + (sc.m_nAimTarget ? "body\n" : "head\n"));
 	}
 
-	function __AIMBOT::SetAimLock( i )
+	function __AIMBOT::SetPlayerAimLock( player, i )
 	{
-		foreach ( p in m_Player1List )
-		{
-			local sc = p.m_ScriptScope;
+		if ( !( player = ToExtendedPlayer( player ) ) )
+			return;
 
-			sc.m_nAimlock = i.tointeger();
+		local sc = player.m_ScriptScope;
 
-			Msg("[]["+p.m_EntityIndex+"] aimlock " + sc.m_nAimlock + "\n");
-		}
+		sc.m_nAimlock = i.tointeger();
+
+		Msg("[]["+player.m_EntityIndex+"] aimlock " + sc.m_nAimlock + "\n");
 	}
 
-	function __AIMBOT::SetLockSpeed( i )
+	function __AIMBOT::SetPlayerLockSpeed( player, i )
 	{
-		foreach ( p in m_Player1List )
-		{
-			local sc = p.m_ScriptScope;
+		if ( !( player = ToExtendedPlayer( player ) ) )
+			return;
 
-			sc.m_nLockSpeedLevel = clamp( i.tointeger(), 0, 4 );
+		local sc = player.m_ScriptScope;
 
-			Msg("[]["+p.m_EntityIndex+"] lock speed " + sc.m_nLockSpeedLevel + "\n");
-		}
+		sc.m_nLockSpeedLevel = clamp( i.tointeger(), 0, 4 );
+
+		Msg("[]["+player.m_EntityIndex+"] lock speed " + sc.m_nLockSpeedLevel + "\n");
 	}
 
 	function __AIMBOT::SetWallhack( i )
@@ -364,11 +498,14 @@ if ( !("__AIMBOT" in getroottable()) || !::__AIMBOT )
 		SetWallhack(i);
 	}
 
-	function __AIMBOT::SetPlayerAspectRatio( hPlayer, width, height )
+	function __AIMBOT::SetPlayerAspectRatio( player, width, height )
 	{
-		hPlayer.m_ScriptScope.m_flAspectRatio = width.tofloat() / height.tofloat();
+		if ( !( player = ToExtendedPlayer( player ) ) )
+			return;
 
-		Msg("[]["+hPlayer.m_EntityIndex+"] Set aspect ratio to " + width + " / " + height + "\n");
+		player.m_ScriptScope.m_flAspectRatio = width.tofloat() / height.tofloat();
+
+		Msg("[]["+player.m_EntityIndex+"] Set aspect ratio to " + width + " / " + height + "\n");
 	}
 
 	function __AIMBOT::SetAutoShoot( i = 0 )
@@ -460,7 +597,7 @@ if ( !("__AIMBOT" in getroottable()) || !::__AIMBOT )
 		if ( !a.self.IsValid() || a.self.GetHealth() <= 0 )
 			return 1;
 
-		if ( b.priority - a.priority > 0 )
+		if ( b.priority > a.priority )
 			return 1;
 
 		return -1;
@@ -866,6 +1003,34 @@ if ( !("__AIMBOT" in getroottable()) || !::__AIMBOT )
 		}
 	}.bindenv(__AIMBOT)
 
+	// remove player 1 (perpetrator)
+	::aimbot_remove_p1 <- function(i)
+	{
+		switch (typeof i)
+		{
+		case "integer":
+			return RemovePlayer1ByIndex(i);
+		case "string":
+			return RemovePlayer1ByName(i);
+		case "instance":
+			return RemovePlayer1ByHandle(i);
+		}
+	}.bindenv(__AIMBOT)
+
+	// remove player 2 (victim)
+	::aimbot_remove_p2 <- function(i)
+	{
+		switch (typeof i)
+		{
+		case "integer":
+			return RemovePlayer2ByIndex(i);
+		case "string":
+			return RemovePlayer2ByName(i);
+		case "instance":
+			return RemovePlayer2ByHandle(i);
+		}
+	}.bindenv(__AIMBOT)
+
 	// set wh
 	::aimbot_wh <- function(i="null")
 	{
@@ -878,16 +1043,32 @@ if ( !("__AIMBOT" in getroottable()) || !::__AIMBOT )
 	::aimbot_trigger_speed <- __AIMBOT.AutoShootSpeed.bindenv(__AIMBOT);
 
 	// set lock FOV in degrees
-	::aimbot_fov <- __AIMBOT.SetFov.bindenv(__AIMBOT);
+	::aimbot_fov <- function( deg )
+	{
+		foreach ( p in m_Player1List )
+			SetPlayerFov( p, deg );
+	}.bindenv(__AIMBOT);
 
 	// set aim target - 0:head, 1:body
-	::aimbot_target <- __AIMBOT.SetAimTarget.bindenv(__AIMBOT);
+	::aimbot_target <- function( i )
+	{
+		foreach ( p in m_Player1List )
+			SetPlayerAimTarget( p, i );
+	}.bindenv(__AIMBOT);
 
 	// set aimlock
-	::aimbot_lock <- __AIMBOT.SetAimLock.bindenv(__AIMBOT);
+	::aimbot_lock <- function( i )
+	{
+		foreach ( p in m_Player1List )
+			SetPlayerAimLock( p, i );
+	}.bindenv(__AIMBOT);
 
 	// set aimlock speed level [0,4]
-	::aimbot_lock_speed <- __AIMBOT.SetLockSpeed.bindenv(__AIMBOT);
+	::aimbot_lock_speed <- function( i )
+	{
+		foreach ( p in m_Player1List )
+			SetPlayerLockSpeed( p, i );
+	}.bindenv(__AIMBOT);
 
 	// input player resolution for target indicator calculations
 	// Set the local player (index 1) aspect ratio to 4/3: aimbot_aspect_ratio( 1, 4, 3 )
