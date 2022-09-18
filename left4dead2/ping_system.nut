@@ -119,11 +119,13 @@ local rr_GetResponseTargets = rr_GetResponseTargets;
 local AddThinkToEnt = AddThinkToEnt;
 local Time = Time;
 local EmitSoundOnClient = EmitSoundOnClient;
+local IsPlayerABot = IsPlayerABot;
 
 local FireScriptEvent = FireScriptEvent;
 local ScriptEventCallbacks = ScriptEventCallbacks; // static when using mapspawn_ping
 
 
+local FindEntityInSphere = Entities.FindInSphere.bindenv( Entities );
 local FindEntityByClassWithin = Entities.FindByClassnameWithin.bindenv( Entities );
 local FindEntityByModel = Entities.FindByModel.bindenv( Entities );
 // local GetNetPropIntArray = NetProps.GetPropIntArray.bindenv( NetProps );
@@ -134,7 +136,7 @@ local GetNetPropEntity = NetProps.GetPropEntity.bindenv( NetProps );
 // local GetNetPropString = NetProps.GetPropString.bindenv( NetProps );
 
 
-const COS_5DEG = 0.994522;; // 6
+const COS_6DEG = 0.994522;;
 const COS_10DEG = 0.984808;;
 const COS_25DEG = 0.906308;;
 const COS_90DEG = 0.0;;
@@ -145,7 +147,7 @@ const PING_DEBUG_DRAW = 0;
 const PING_DEBUG_VERBOSE = 1;
 
 
-
+const PING_ITEM_SEARCH_RADIUS = 12.0;
 
 
 
@@ -431,7 +433,7 @@ if ( !("m_PingLookup" in this) )
 
 	foreach ( i, v in PingMaterial )
 		m_PingLookup[ i ] = InitPingType( v );
-};;
+}
 
 local m_PingLookup = m_PingLookup;
 
@@ -470,7 +472,9 @@ if ( !("m_Players" in this) )
 	g_Targets <- {}			// CBaseEntity : pingSprite
 
 	// m_Users <- {}		// CBasePlayer : CPingUser
-};;
+
+	m_hManager <- null;
+}
 
 local m_Players = m_Players;
 local g_ButtonState = g_ButtonState;
@@ -490,20 +494,19 @@ function Precache()
 }
 
 
-m_hManager <- null;
-
 local InitMan = function()
 {
-	if ( m_hManager )
+	if ( m_hManager && m_hManager.IsValid() )
 		return;
 
 	local fn = InputThink.bindenv(this);
-	local p = SpawnEntityFromTable( "info_target", [] );
+	local p = SpawnEntityFromTable( "info_target", {} );
 	p.ValidateScriptScope();
 	p.GetScriptScope().Think <- function() { return fn(); }
 	AddThinkToEnt( p, "Think" );
-	m_hManager = p.weakref();
+	m_hManager = p;
 }
+
 
 function Init()
 {
@@ -526,7 +529,7 @@ function Init()
 	if ( !b )
 		error( "PingSystem: ERROR invalid RR!\n");
 
-	Msg("PingSystem::Init() [18]\n");
+	Msg("PingSystem::Init() [20]\n");
 }
 
 function OnGameEvent_round_start(ev)
@@ -613,7 +616,6 @@ function AddPlayer( hPlayer, plyTeam )
 
 	if ( m_Players.find( hPlayer ) == null )
 		m_Players.append( hPlayer );
-
 
 	if (PING_DEBUG)
 	{
@@ -713,31 +715,34 @@ function OnGameEvent_player_team( ev )
 }
 
 
+
+
 function InputThink()
 {
 	if ( 0 in m_Players )
 	{
-		foreach ( ply in m_Players )
+		foreach ( pl in m_Players )
 		{
-			if ( !GetNetPropInt( ply, "m_lifeState" ) ) // pl.deadflag
+			if ( !GetNetPropInt( pl, "m_lifeState" ) ) // pl.deadflag
 			{
-				local curPressed = ( ply.GetButtonMask() & IN_ALT2 );
+				local curPressed = ( pl.GetButtonMask() & IN_ALT2 );
 
-				if ( curPressed != g_ButtonState[ ply ] )
+				if ( curPressed != g_ButtonState[ pl ] )
 				{
-					g_ButtonState[ ply ] = curPressed;
+					g_ButtonState[ pl ] = curPressed;
 					if ( curPressed )
 					{
-						OnCommandPing( ply );
-					};
-				};
-			};
+						OnCommandPing( pl );
+					}
+				}
+			}
 		}
 		return 0.01;
-	};
+	}
 	// hibernate
 	return 5.0;
 }
+
 
 local GetHeadOrigin = function( pEnt )
 {
@@ -781,6 +786,7 @@ m_ValidConcepts <-
 	SurvivorJockeyed		= PingResponse.dominated,
 	chargerpound			= PingResponse.dominated,
 	PlayerTonguePullStart	= PingResponse.dominated,	//PlayerGrabbedByTongue
+	// PlayerHelp
 
 	PlayerIncoming			= PingResponse.pass,
 	PlayerLockTheDoor		= PingResponse.pass,
@@ -1019,8 +1025,8 @@ function rr_Ping( Q )
 			printf( "[???] %s   <------------------------\n", Q.concept );
 			error("no response target!\n");
 			__DumpScope( 2, Q );
-		};
-	};
+		}
+	}
 
 
 	local who;
@@ -1033,13 +1039,13 @@ function rr_Ping( Q )
 	{
 		// why
 		who = Q.Who;
-	};;
+	}
 
 
 	if (PING_DEBUG)
 	{
 		printf("[%s] %s   <------------------------", who, Q.concept );
-	};
+	}
 
 
 	local targets = rr_GetResponseTargets();
@@ -1059,13 +1065,13 @@ function rr_Ping( Q )
 				{
 					who = p;
 					break;
-				};
+				}
 			}
-		};
+		}
 
 		if ( !("IsValid" in who) )
 			return Msg( "\nPingSystem: Response target '" + who + "' not found\n" );
-	};
+	}
 
 	local bAuto = !("smartlooktype" in Q) || Q.smartlooktype != "manual";
 
@@ -1076,7 +1082,7 @@ function rr_Ping( Q )
 		if ( GetNetPropInt( who, "m_fFlags" ) & FL_FAKECLIENT )
 			print(" [bot]");
 		print("\n");
-	};
+	}
 
 	local resp = m_ValidConcepts[ concept ];
 
@@ -1085,7 +1091,7 @@ function rr_Ping( Q )
 		if (PING_DEBUG)
 			print("   auto-ping is disabled\n");
 		return;
-	};
+	}
 
 	// Don't play sound when auto-pinged or using chatter
 	s_bPlaySound = !bAuto;
@@ -1099,7 +1105,7 @@ function rr_Ping( Q )
 				// Should always be blocked in s_AutoBlock
 				Assert( !bAuto );
 				Assert( resp in s_AutoBlock );
-			};
+			}
 
 			return OnCommandPing( who );
 
@@ -1116,7 +1122,7 @@ function rr_Ping( Q )
 					return;
 
 				return PingTrace( who );
-			};
+			}
 
 			if (PING_DEBUG) printl( "   PingResponse.weapon : " + Q.weaponname );
 
@@ -1125,18 +1131,18 @@ function rr_Ping( Q )
 			{
 				if (PING_DEBUG) error("weapon class not found for '" + weaponname + "'\n");
 				return;
-			};
+			}
 
 			local weaponclass = m_WeaponClassForName[ weaponname ];
 
-			local flThresholdBase = COS_5DEG;
+			local flThresholdBase = COS_6DEG;
 			if ( bAuto )
 			{
-				if ( GetNetPropInt( who, "m_fFlags" ) & FL_FAKECLIENT )
+				if ( IsPlayerABot(who) )
 					flThresholdBase = COS_90DEG;
 				else
 					flThresholdBase = COS_25DEG;
-			};
+			}
 			local flThreshold = flThresholdBase;
 
 			local eyePos = who.EyePosition();
@@ -1145,6 +1151,9 @@ function rr_Ping( Q )
 
 			while ( pEnt = FindEntityByClassWithin( pEnt, weaponclass, eyePos, 256.0 ) )
 			{
+				if ( GetNetPropEntity( pEnt, "m_hOwnerEntity" ) )
+					continue;
+
 				local delta = pEnt.GetCenter() - eyePos;
 				delta.Norm();
 				local dot = eyeDir.Dot( delta );
@@ -1152,7 +1161,7 @@ function rr_Ping( Q )
 				{
 					pTarget = pEnt;
 					flThreshold = dot;
-				};
+				}
 			}
 
 			if (PING_DEBUG) printl( "      target : " + pTarget );
@@ -1166,13 +1175,13 @@ function rr_Ping( Q )
 				//	local ping;
 				//	if ( (pTarget in g_Targets) && (ping = g_Targets[pTarget]).IsValid() )
 				//	{
-				//	};
-				//};
+				//	}
+				//}
 
 				return PingEntity( who, pTarget );
-			};
+			}
 
-			// TODO: This is not very good...
+
 
 			// It could be a 'weapon_spawn', re-search -
 
@@ -1185,7 +1194,7 @@ function rr_Ping( Q )
 			{
 				if ( !weaponmodel && weaponname != "ammo" )
 					error("model not found for weaponname " + weaponname);
-			};
+			}
 
 
 			pEnt = null;
@@ -1198,6 +1207,9 @@ function rr_Ping( Q )
 				if ( weaponmodel && (pEnt.GetModelName() != weaponmodel) )
 					continue;
 
+				if ( GetNetPropEntity( pEnt, "m_hOwnerEntity" ) )
+					continue;
+
 				local delta = pEnt.GetCenter() - eyePos;
 				delta.Norm();
 				local dot = eyeDir.Dot( delta );
@@ -1205,7 +1217,7 @@ function rr_Ping( Q )
 				{
 					pTarget = pEnt;
 					flThreshold = dot;
-				};
+				}
 			}
 
 
@@ -1236,7 +1248,7 @@ function rr_Ping( Q )
 
 				if ( !( specialtype in m_ZombieTypeForSI ) && !( specialtype in m_ModelForUncommon ) )
 					error("unrecognised specialtype '" + specialtype + "'\n");
-			};
+			}
 
 
 			if ( specialtype in m_ZombieTypeForSI )
@@ -1253,7 +1265,7 @@ function rr_Ping( Q )
 				if ( bAuto )
 				{
 					flThreshold = COS_25DEG;
-				};
+				}
 
 				local eyePos = who.EyePosition();
 				local eyeDir = who.EyeAngles().Forward();
@@ -1271,7 +1283,7 @@ function rr_Ping( Q )
 					{
 						pTarget = pEnt;
 						flThreshold = dot;
-					};
+					}
 				}
 
 				if (PING_DEBUG) printl( "      SI target : " + pTarget );
@@ -1306,7 +1318,7 @@ function rr_Ping( Q )
 							{
 								pTarget = pEnt;
 								flThreshold = dot;
-							};
+							}
 						}
 
 						if ( pTarget )
@@ -1319,12 +1331,12 @@ function rr_Ping( Q )
 							vecPingPos.z += 32.0;
 
 							return SpriteCreate( who, PingType.INCAP, vecPingPos, pTarget, pTarget );
-						};
+						}
 
 						lookupTable = m_ModelForUncommonL4D1;
-					};
+					}
 				} while ( --i )
-			};
+			}
 */
 
 			// no target found, trace if not auto
@@ -1352,7 +1364,7 @@ function rr_Ping( Q )
 				vecPingPos.z = GetHeadOrigin( hMyDominator ).z + 32.0;
 
 				return SpriteCreate( who, PingType.WARNING, vecPingPos, hMyDominator );
-			};
+			}
 			return;
 
 		//case PingResponse.remark:
@@ -1395,23 +1407,24 @@ local PreFadeOut = function( hSpr, hOwner, hTarget = null )
 			__DebugPrint();
 			s_nErrCount = 0;
 			RemoveInvalidPlayers();
-		};
-	};
+		}
+	}
 
 	if ( hTarget in g_Targets )
 	{
 		delete g_Targets[ hTarget ];
 		if (PING_DEBUG_VERBOSE) printl("freed ping target " + hTarget);
-	};
+	}
 }
 
+// TODO: Make server framerate independent
 local FadeOut = function()
 {
 	if ( m_nRenderAlpha > 64 )
 	{
 		self.__KeyValueFromInt( "renderamt", m_nRenderAlpha -= 64 );
 		return 0.0;
-	};
+	}
 
 	self.Kill();
 	return -1;
@@ -1429,9 +1442,9 @@ local SpriteThinkEnemy = function()
 				printf( "ping target is dead %s : %d\n", ""+m_hTarget, GetNetPropInt( m_hTarget, "m_lifeState" ));
 
 			return m_flDieTime = 0.0;
-		};
+		}
 		return 1.0;
-	};
+	}
 
 	PreFadeOut( self, m_hOwner, m_hTarget );
 
@@ -1454,12 +1467,48 @@ local SpriteThinkItem = function()
 		)
 		{
 			if (PING_DEBUG_VERBOSE)
-				printf( "ping item is taken %s m_hOwnerEntity%s nodraw[%d]\n", ""+m_hTarget, ""+GetNetPropEntity( m_hTarget, "m_hOwnerEntity" ), ( GetNetPropInt( m_hTarget, "m_fEffects" ) & EF_NODRAW ) );
+				printf( "ping item is taken %s m_hOwnerEntity%s nodraw[%d]\n",
+				""+m_hTarget,
+				""+GetNetPropEntity( m_hTarget, "m_hOwnerEntity" ),
+				( GetNetPropInt( m_hTarget, "m_fEffects" ) & EF_NODRAW ) );
 
 			return m_flDieTime = 0.0;
-		};
+		}
 		return 1.0;
-	};
+	}
+
+	PreFadeOut( self, m_hOwner, m_hTarget );
+
+	return (SpriteThink = FadeOut)();
+}
+
+// Attached to dropped prop_physics who retain their owners
+local SpriteThinkDroppedPhysics = function()
+{
+	if ( Time() < m_flDieTime )
+	{
+		// prop_physics no longer exists when picked up
+		if ( !m_hTarget.IsValid() )
+		{
+			if (PING_DEBUG_VERBOSE)
+			{
+				if ( m_hTarget.IsValid() )
+				{
+					printf( "ping item is taken %s moveparent%s nodraw[%d]\n",
+						""+m_hTarget,
+						""+m_hTarget.GetMoveParent(),
+						( GetNetPropInt( m_hTarget, "m_fEffects" ) & EF_NODRAW ) );
+				}
+				else
+				{
+					printf( "ping item is taken %s\n", ""+m_hTarget );
+				}
+			}
+
+			return m_flDieTime = 0.0;
+		}
+		return 1.0;
+	}
 
 	PreFadeOut( self, m_hOwner, m_hTarget );
 
@@ -1473,7 +1522,7 @@ local SpriteThink = function()
 	{
 		m_bInitRem = false;
 		return m_flLifeTime;
-	};
+	}
 
 	PreFadeOut( self, m_hOwner );
 
@@ -1514,15 +1563,15 @@ function SpriteCreate( owner, type, origin, target = null, hParent = null )
 					printf("\n\t%s pinged too close to %s's %s (%.2f)\n", ""+owner, ""+pl, ""+lastPing, ( lastPing.GetLocalOrigin() - origin ).Length() );
 					if (PING_DEBUG_DRAW)
 						DebugDrawLine( origin, lastPing.GetOrigin(), 255,255,255,true,PING_LIFETIME );
-				};
+				}
 
 				lastPing.GetScriptScope().m_flDieTime = Time() + lifetime;
 				AddThinkToEnt( lastPing, "SpriteThink" );
 
 				return lastPing.SetLocalOrigin( origin );
-			};
+			}
 		}
-	};
+	}
 
 	local pEnt;
 	local playerPings = g_Pings[ owner ];
@@ -1542,6 +1591,9 @@ function SpriteCreate( owner, type, origin, target = null, hParent = null )
 				// just extend its lifetime
 				prevPingSc.m_flDieTime = Time() + lifetime;
 
+				// update position
+				pEnt.SetLocalOrigin( origin );
+
 				if ( s_bPlaySound )
 				{
 					local playerTeam = GetNetPropInt( owner, "m_iTeamNum" );
@@ -1551,13 +1603,13 @@ function SpriteCreate( owner, type, origin, target = null, hParent = null )
 				else
 				{
 					s_bPlaySound = true;
-				};
+				}
 
 				if (PING_DEBUG_VERBOSE) printl("re-pinged "+target+", extending "+pEnt);
 				return;
-			};
-		};
-	};
+			}
+		}
+	}
 
 	if ( g_nMaxPingCount in playerPings )
 	{
@@ -1581,7 +1633,7 @@ function SpriteCreate( owner, type, origin, target = null, hParent = null )
 			{
 				if (PING_DEBUG_VERBOSE) print(" found targeting " + sc.m_hTarget);
 				delete g_Targets[ sc.m_hTarget ];
-			};
+			}
 
 			if (PING_DEBUG_VERBOSE) print("\n");
 		}
@@ -1591,7 +1643,7 @@ function SpriteCreate( owner, type, origin, target = null, hParent = null )
 
 			sprite_kv.model = ping[0];
 			pEnt = SpawnEntityFromTable( "env_sprite", sprite_kv );
-		};
+		}
 	}
 	else
 	{
@@ -1599,7 +1651,7 @@ function SpriteCreate( owner, type, origin, target = null, hParent = null )
 		pEnt = SpawnEntityFromTable( "env_sprite", sprite_kv );
 
 		if (PING_DEBUG_VERBOSE) printl("new ping " + pEnt);
-	};
+	}
 
 	playerPings.append( pEnt );
 
@@ -1654,25 +1706,38 @@ function SpriteCreate( owner, type, origin, target = null, hParent = null )
 						pings.remove(i);
 						prevPingSc.SpriteThink = FadeOut;
 						AddThinkToEnt( prevPing, "SpriteThink" );
-					};
+					}
 					// else: when player pings elsewhere before their ping with a target is removed
 
 					if ( prevPing == g_lastWarningPing[ prevOwner ] )
 						g_lastWarningPing[ prevOwner ] = null;
 
 					if (PING_DEBUG_VERBOSE) if ( i != null ) printl( "   removing ping" + prevPing + " from owner" + prevOwner );
-				};
-			};
+				}
+			}
 
 			g_Targets[ target ] <- g_lastWarningPing[ owner ] <- pEnt;
-		};
+		}
 	}
 	// items
 	else if ( type in m_PingIsItem )
 	{
 		sc.m_flDieTime		<- Time() + lifetime;
 		sc.m_hTarget		<- target;
-		sc.SpriteThink		<- SpriteThinkItem;
+
+		// HACKHACK: If this is a prop_physics with an owner, assume it is a dropped item
+		if ( ( target.GetClassname() == "prop_physics" ) && GetNetPropEntity( target, "m_hOwnerEntity" ) )
+		{
+			// NOTE: prop_physics might be rolling around, but parenting doesn't look good,
+			// and I don't want to correct pos/rot every frame
+			sc.SpriteThink		<- SpriteThinkDroppedPhysics;
+
+
+		}
+		else
+		{
+			sc.SpriteThink		<- SpriteThinkItem;
+		}
 
 		if (PING_DEBUG) Assert( target );
 
@@ -1701,18 +1766,18 @@ function SpriteCreate( owner, type, origin, target = null, hParent = null )
 						pings.remove(i);
 						prevPingSc.SpriteThink = FadeOut;
 						AddThinkToEnt( prevPing, "SpriteThink" );
-					};
+					}
 					// else: when player pings elsewhere before their ping with a target is removed
 
 					if ( prevPing == g_lastWarningPing[ prevOwner ] )
 						g_lastWarningPing[ prevOwner ] = null;
 
 					if (PING_DEBUG_VERBOSE) if ( i != null ) printl( "   removing ping" + prevPing + " from owner" + prevOwner );
-				};
-			};
+				}
+			}
 
 			g_Targets[ target ] <- pEnt;
-		};
+		}
 	}
 	// base, static
 	else
@@ -1720,7 +1785,7 @@ function SpriteCreate( owner, type, origin, target = null, hParent = null )
 		sc.m_bInitRem		<- true;
 		sc.m_flLifeTime		<- lifetime;
 		sc.SpriteThink		<- SpriteThink;
-	};;
+	}
 
 	// DispatchParticleEffect(  );
 
@@ -1732,7 +1797,7 @@ function SpriteCreate( owner, type, origin, target = null, hParent = null )
 	else
 	{
 		s_bPlaySound = true;
-	};
+	}
 
 	if ( PING_DEBUG )
 	{
@@ -1744,14 +1809,14 @@ function SpriteCreate( owner, type, origin, target = null, hParent = null )
 			if (hParent) origin += hParent.GetOrigin();
 			DebugDrawLine( owner.EyePosition(), origin, 0,255,0,true,1.0 );
 			// DebugDrawBox( origin, Vector(4,4,4)*-1, Vector(4,4,4), 255,0,255,16, lifetime );
-		};
-	};
+		}
+	}
 
 	if ( "player_ping" in ScriptEventCallbacks )
 	{
 		FireScriptEvent( "player_ping", { player = owner, origin = origin * 1, target = target } );
 		// FireGameEvent( "player_ping", { userid = owner.GetPlayerUserId(), target = target.GetEntityIndex(), x = origin.x, y = origin.y, z = origin.z } );
-	};
+	}
 
 	// return sprite to register last chatter ping in PingChatter
 	return pEnt;
@@ -1908,14 +1973,43 @@ m_PingTypeForPhysModel <-
 	["models/props_equipment/oxygentank01.mdl"]		= PingType.WEAPON_OXYGENTANK,
 }
 
+m_IsSpawnEntity <-
+{
+	weapon_spawn = null,
+	weapon_melee_spawn = null
+}
+
+m_IsPingableEntity <-
+{
+	weapon = null,
+	weapon_spawn = null,
+	weapon_melee = null,
+	weapon_melee_spawn = null,
+	upgrade_ammo_explosive = null,
+	upgrade_ammo_incendiary = null,
+	upgrade_laser_sight = null,
+	prop_physics = null
+}
+
 local m_PingTypeForConcept = m_PingTypeForConcept;
+local m_IsSpawnEntity = m_IsSpawnEntity;
 local m_PingTypeForWeaponClass = m_PingTypeForWeaponClass;
 local m_PingTypeForWeaponModel = m_PingTypeForWeaponModel;
 local m_PingTypeForPhysModel = m_PingTypeForPhysModel;
+local m_IsPingableEntity = m_IsPingableEntity;
 
-// Cache weapon_spawn entities
+// Get _only_ weapon_spawn entities
+foreach ( k, v in tmp_PingTypeForWeaponClass )
+	m_IsSpawnEntity[ k + "_spawn" ] <- null;
+
+// Cache weapon_spawn entities alongside regular entities
 foreach ( k, v in tmp_PingTypeForWeaponClass )
 	m_PingTypeForWeaponClass[ k ] <- m_PingTypeForWeaponClass[ k + "_spawn" ] <- v;
+
+// Get all pingable entities
+foreach ( k, v in m_PingTypeForWeaponClass )
+	m_IsPingableEntity[ k ] <- null;
+
 
 
 function PingChatter( player, concept )
@@ -1951,7 +2045,7 @@ function PingChatter( player, concept )
 		sc.SpriteThink		= SpriteThink;
 
 		return AddThinkToEnt( lastPing, "SpriteThink" );
-	};
+	}
 
 	local spr = SpriteCreate( player, pingType, vecPingPos, null, player );
 	g_lastChatterPing[ player ] <- spr;
@@ -1979,9 +2073,6 @@ function PingEntity( player, pEnt, vecPingPos = null )
 
 	switch ( szClassname )
 	{
-		case "worldspawn":
-			break;
-
 		case "player":
 
 			// player is survivor
@@ -2058,7 +2149,7 @@ function PingEntity( player, pEnt, vecPingPos = null )
 					EmitSoundOnClient( PingSound.ALERT, pEnt );
 					pingType = PingType.TEAMMATE;
 				}
-			};
+			}
 
 			vecPingPos = pEnt.EyePosition();
 			vecPingPos.z = GetHeadOrigin( pEnt ).z + 32.0;
@@ -2088,7 +2179,7 @@ function PingEntity( player, pEnt, vecPingPos = null )
 
 				// just create it here
 				return SpriteCreate( player, PingType.INCAP, vecPingPos, pEnt, pEnt );
-			};
+			}
 
 			pingType = PingType.INFECTED;
 			break;
@@ -2101,7 +2192,26 @@ function PingEntity( player, pEnt, vecPingPos = null )
 				pingType = m_PingTypeForPhysModel[mdl];
 				vecPingPos = pEnt.GetCenter();
 				vecPingPos.z += 12.0;
-			};
+			}
+			else
+			{
+				// Is there an item on me the player wanted to ping?
+				for ( local item; item = FindEntityInSphere( item, vecPingPos, PING_ITEM_SEARCH_RADIUS ); )
+				{
+					local szClassname = item.GetClassname();
+					// Prevent infinite loop by ignoring prop_physics
+					if ( ( szClassname in m_IsPingableEntity ) &&
+						( szClassname != "prop_physics" ) &&
+						!GetNetPropEntity( item, "m_hOwnerEntity" ) )
+					{
+						if ( PING_DEBUG )
+							printl( "      ping item in physics prop vicinity: " + item );
+
+						return PingEntity( player, item, vecPingPos );
+					}
+				}
+
+			}
 			break;
 
 		case "prop_health_cabinet":
@@ -2119,18 +2229,18 @@ function PingEntity( player, pEnt, vecPingPos = null )
 					if (PING_DEBUG) printl( "found item in cabinet " + enthit );
 					if (PING_DEBUG) DebugDrawLine( s_tr.start, s_tr.pos, 255, 0, 0, true, 5.0 );
 					return PingEntity( player, enthit, vecPingPos );
-				};
+				}
 
 				if (PING_DEBUG) print( "could not found item in cabinet\n" );
-			};
+			}
 
 			pingType = PingType.MEDCAB;
-			local f = pEnt.GetForwardVector();
-			local r = f.Cross( Vector(0.0, 0.0, 1.0) );
-			r.Norm();
-			local u = r.Cross(f);
-			u.Norm();
-			vecPingPos = pEnt.GetCenter() + f * 8.0 + u * 40.0;
+			local fw = pEnt.GetForwardVector();
+			local rt = fw.Cross( Vector(0.0, 0.0, 1.0) );
+			rt.Norm();
+			local up = rt.Cross(fw);
+			up.Norm();
+			vecPingPos = pEnt.GetCenter() + fw * 8.0 + up * 40.0;
 			break;
 
 		case "prop_car_alarm":
@@ -2185,43 +2295,95 @@ function PingEntity( player, pEnt, vecPingPos = null )
 					printl( "         "+szClassname+"->m_weaponID " + GetNetPropInt( pEnt, "m_weaponID" ) );
 					// printl( "         "+szClassname+"->m_iszMeleeWeapon " + GetNetPropString( pEnt, "m_iszMeleeWeapon" ) );
 					// printl( "         "+szClassname+"->m_iszWeaponToSpawn " + GetNetPropString( pEnt, "m_iszWeaponToSpawn" ) );
-				};
-
-				if ( szClassname in m_PingTypeForWeaponClass )
-				{
-					pingType = m_PingTypeForWeaponClass[ szClassname ];
-					// if (PING_DEBUG_VERBOSE) print( "            match classname\n" );
 				}
-				else
-				{
-					local szModelName = pEnt.GetModelName();
 
-					// full model name match
-					if ( szModelName in m_PingTypeForWeaponModel )
+				// check if this spawn entity is visible
+				if ( !(( szClassname in m_IsSpawnEntity ) && ( GetNetPropInt( pEnt, "m_fEffects" ) & EF_NODRAW )) )
+				{
+					if ( szClassname in m_PingTypeForWeaponClass )
 					{
-						pingType = m_PingTypeForWeaponModel[ szModelName ];
-						// if (PING_DEBUG_VERBOSE) print( "            match modelname\n" );
+						pingType = m_PingTypeForWeaponClass[ szClassname ];
+						// if (PING_DEBUG_VERBOSE) print( "            match classname\n" );
 					}
-					// fallback
 					else
 					{
-						if ( szClassname == "weapon_melee" )
-							pingType = PingType.WEAPON_FIREAXE;
-						else // szClassname == "weapon"
-							pingType = PingType.WEAPON_PISTOL;
+						local szModelName = pEnt.GetModelName();
 
-						if (PING_DEBUG) error("unrecognised weapon model and class '"+szClassname+"', '"+szModelName+"'\n");
-					};
-				};
+						// full model name match
+						if ( szModelName in m_PingTypeForWeaponModel )
+						{
+							pingType = m_PingTypeForWeaponModel[ szModelName ];
+							// if (PING_DEBUG_VERBOSE) print( "            match modelname\n" );
+						}
+						// fallback
+						else
+						{
+							if ( szClassname == "weapon_melee" )
+								pingType = PingType.WEAPON_FIREAXE;
+							else // szClassname == "weapon"
+								pingType = PingType.WEAPON_PISTOL;
 
-				vecPingPos = pEnt.GetCenter();
-				vecPingPos.z += 12.0;
+							if (PING_DEBUG) error("unrecognised weapon model and class '"+szClassname+"', '"+szModelName+"'\n");
+						}
+					}
+
+					vecPingPos = pEnt.GetCenter();
+					vecPingPos.z += 12.0;
+				}
 				break;
 
-			}; // weapon class
+			} // weapon class
 
 			// undefined entity type, use fallback pos
+			// this is most likely worldspawn
 			if (PING_DEBUG) Assert( vecPingPos );
+
+			// ping the first valid entity in the vicinity
+			// NOTE: The distance is calculated from the collision box.
+			if ( PING_DEBUG_DRAW )
+				VS.DrawSphere( vecPingPos, PING_ITEM_SEARCH_RADIUS, 5, 5, 64, 64, 64, false, PING_LIFETIME )
+
+			for ( local item; item = FindEntityInSphere( item, vecPingPos, PING_ITEM_SEARCH_RADIUS ); )
+			{
+				// Volume entities will be found before any of the items, check classname of all entities in this radius
+				// and check if it's already being carried by a player (because carried items are invisible at player origin)
+				//
+				// NOTE: Dropped prop_physics retain their owner entity. Checking for move parent instead of owner here
+				// to be able to ping dropped prop_physics.
+
+
+
+				local szClassname = item.GetClassname();
+				if ( szClassname in m_IsPingableEntity )
+				{
+					if ( szClassname != "prop_physics" )
+					{
+						if ( GetNetPropEntity( item, "m_hOwnerEntity" ) )
+							continue;
+					}
+					else
+					{
+						if ( item.GetMoveParent() )
+							continue;
+					}
+
+					if ( PING_DEBUG )
+					{
+						local c = 0;
+						for ( local i; i = FindEntityInSphere( i, vecPingPos, PING_ITEM_SEARCH_RADIUS ); )
+						{
+							++c;
+							printl(" "  + i)
+						}
+						print("  iterated " + c + " entities\n")
+					}
+
+					if ( PING_DEBUG )
+						printl( "      ping item in vicinity: " + item );
+
+					return PingEntity( player, item, vecPingPos );
+				}
+			}
 
 		} // classname switch default
 	} // classname switch
@@ -2250,17 +2412,17 @@ function PingTrace( player, tr = s_tr )
 		{
 			printf( "\tstartsolid  : %s\n", ""+tr.startsolid );
 			tr.startsolid = null;
-		};
+		}
 
 		if ( tr.enthit && tr.enthit != Entities.First() )
 		{
 			printf( "\tclass       : %s\n", tr.enthit.GetClassname() );
 			printf( "\tmodel       : %s\n", tr.enthit.GetModelName() );
-		};
+		}
 
 		if ( !tr.enthit )
 			print("\nNULL ent in trace\n\n");
-	};
+	}
 
 	return PingEntity( player, tr.enthit, tr.pos );
 }
@@ -2277,7 +2439,7 @@ function OnCommandPing( player )
 		vecPingPos.z = GetHeadOrigin( hMyDominator ).z + 32.0;
 
 		return SpriteCreate( player, PingType.WARNING, vecPingPos, hMyDominator );
-	};
+	}
 
 	return PingTrace( player );
 }
@@ -2312,7 +2474,7 @@ if ( PING_DEBUG )
 		DebugDrawLine( v, v + right * 16.0, 0,255,0,true, tm );
 		DebugDrawLine( v, v + up * 16.0, 0,0,255,true, tm );
 	}
-};
+}
 
 
 // Settings interface
@@ -2409,10 +2571,10 @@ function DisableAutoPing( i = 1 )
 				if ( val == v )
 				{
 					printf( "\tPingResponse.%s\n", name );
-				};
+				}
 			}
 		}
-	};
+	}
 }
 
 function SetScaleMultiplier( f )
