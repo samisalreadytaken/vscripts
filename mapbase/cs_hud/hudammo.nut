@@ -34,6 +34,7 @@ class CSGOHudWeaponAmmo
 	m_hFontSmall = null
 	m_hFontSmallBlur = null
 	m_hFontIcon = null
+	m_hFontIconBlur = null
 
 	m_TextureDataAmmo = null
 	m_TextureDataAmmo2 = null
@@ -64,6 +65,7 @@ function CSGOHudWeaponAmmo::Init()
 	m_hFontSmallBlur = surface.GetFont( "hud-HA-text-sm-blur", true );
 
 	m_hFontIcon = surface.GetFont( "hud-HA-icon", true );
+	m_hFontIconBlur = surface.GetFont( "hud-HA-icon-blur", true );
 
 	m_TextureDataAmmo =
 	{
@@ -118,16 +120,15 @@ function CSGOHudWeaponAmmo::OnTick()
 		return;
 	}
 
-	local nPrimaryAmmoType = weapon.GetPrimaryAmmoType();
 	local nAmmo1 = weapon.Clip1();
 	local nAmmo2 = 0;
 	if ( nAmmo1 == -1 )
 	{
-		nAmmo1 = player.GetAmmoCount( nPrimaryAmmoType );
+		nAmmo1 = player.GetAmmoCount( weapon.GetPrimaryAmmoType() );
 	}
 	else
 	{
-		nAmmo2 = player.GetAmmoCount( nPrimaryAmmoType );
+		nAmmo2 = player.GetAmmoCount( weapon.GetPrimaryAmmoType() );
 	}
 
 	local nAmmoSecondary = -1;
@@ -258,6 +259,12 @@ function CSGOHudWeaponAmmo::Paint()
 	{
 		local x = x0 + YRES(59.5);
 
+		// icon blur
+		surface.SetTextFont( m_hFontIconBlur );
+		surface.SetTextColor( 0x00, 0x00, 0x00, 0xff );
+		surface.SetTextPos( x + m_nOffsetClipIcon, y0 + YRES(4) );
+		surface.DrawUnicodeChar( m_chCurTextureDataAmmo, 0 );
+
 		// icon
 		surface.SetTextFont( m_hFontIcon );
 		surface.SetTextColor( 0xcc, 0xcc, 0xcc, 0xcc );
@@ -286,6 +293,12 @@ function CSGOHudWeaponAmmo::Paint()
 	if ( m_szAmmoSecondary != "" )
 	{
 		local x = x0 + YRES(18);
+
+		// icon blur
+		surface.SetTextFont( m_hFontIconBlur );
+		surface.SetTextColor( 0x00, 0x00, 0x00, 0xff );
+		surface.SetTextPos( x + m_nOffsetSecondaryIcon, y0 + YRES(4) );
+		surface.DrawUnicodeChar( m_chCurTextureDataAmmo2, 0 );
 
 		// icon
 		surface.SetTextFont( m_hFontIcon );

@@ -18,7 +18,7 @@ function CTFHudFlashlight::Init()
 {
 	self = vgui.CreatePanel( "ImagePanel", TFHud.GetRootPanel(), "ItemEffectMeterBG" )
 	self.SetZPos( 0 );
-	self.SetVisible( true );
+	self.SetVisible( false );
 	self.SetShouldScaleImage( true );
 	// self.SetImage( "hud/misc_ammo_area_horiz1_red", true );
 

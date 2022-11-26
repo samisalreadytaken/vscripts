@@ -29,24 +29,29 @@ if ( SERVER_DLL )
 {
 	TFHud <- {}
 
-	function TFHud::Init()
+	function TFHud::Init( player )
 	{
-		player.SetContextThink( "TFHud.StatusUpdate", function( pl )
-		{
-			local suit = pl.IsSuitEquipped();
+		if ( !player )
+			return;
 
-			NetMsg.Start( "TFHud.StatusUpdate" );
-				NetMsg.WriteShort( pl.GetArmor() );
-				NetMsg.WriteBool( suit );
-				if ( suit )
-				{
-					NetMsg.WriteFloat( pl.GetFlashlightBattery() * 0.01 );
-					NetMsg.WriteFloat( pl.GetAuxPower() * 0.01 );
-				}
-			NetMsg.Send( pl, false );
+		player.SetContextThink( "TFHud.StatusUpdate", StatusUpdate, 0.0 );
+	}
 
-			return 0.1;
-		}, 0.0 );
+	function TFHud::StatusUpdate( player )
+	{
+		local suit = player.IsSuitEquipped();
+
+		NetMsg.Start( "TFHud.StatusUpdate" );
+			NetMsg.WriteShort( player.GetArmor() );
+			NetMsg.WriteBool( suit );
+			if ( suit )
+			{
+				NetMsg.WriteFloat( player.GetFlashlightBattery() * 0.01 );
+				NetMsg.WriteFloat( player.GetAuxPower() * 0.01 );
+			}
+		NetMsg.Send( player, false );
+
+		return 0.1;
 	}
 }
 
@@ -178,6 +183,11 @@ if ( CLIENT_DLL )
 
 	function TFHud::Init()
 	{
+		if ( m_pPlayerHealth && (typeof m_pPlayerHealth.self == "instance") ) // for saverestore bug
+
+		if ( m_pPlayerHealth && m_pPlayerHealth.self && m_pPlayerHealth.self.IsValid() )
+			return;
+
 		self = vgui.CreatePanel( "Panel", vgui.GetClientDLLRootPanel(), "TF Hud Root" );
 		self.SetPos( 0, 0 );
 		self.SetSize( ScreenWidth(), ScreenHeight() );

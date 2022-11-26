@@ -188,16 +188,15 @@ function CTFHudWeaponAmmo::OnTick()
 		return;
 	}
 
-	local nPrimaryAmmoType = weapon.GetPrimaryAmmoType();
 	local nAmmo1 = weapon.Clip1();
 	local nAmmo2 = 0;
 	if ( nAmmo1 == -1 )
 	{
-		nAmmo1 = player.GetAmmoCount( nPrimaryAmmoType );
+		nAmmo1 = player.GetAmmoCount( weapon.GetPrimaryAmmoType() );
 	}
 	else
 	{
-		nAmmo2 = player.GetAmmoCount( nPrimaryAmmoType );
+		nAmmo2 = player.GetAmmoCount( weapon.GetPrimaryAmmoType() );
 	}
 
 	local nAmmoSecondary = -1;

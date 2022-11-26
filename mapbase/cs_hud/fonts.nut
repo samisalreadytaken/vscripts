@@ -51,6 +51,15 @@ surface.CreateFont( "hud-HA-icon",
 	"proportional" 	: true
 } );
 
+surface.CreateFont( "hud-HA-icon-blur",
+{
+	"name"			: "HalfLife2"
+	"blur"			: 2
+	"tall"			: 18
+	"weight"		: 0
+	"dropshadow" 	: true
+	"proportional" 	: true
+} );
 
 surface.CreateFont( "weapon-selection-item-name-text",
 {
@@ -71,6 +80,7 @@ surface.CreateFont( "weapon-selection-item-icon",
 	"antialias" 	: true
 	"additive"		: false
 	"custom"		: true
+	"dropshadow" 	: true
 	"proportional"	: true
 } );
 
@@ -83,5 +93,6 @@ surface.CreateFont( "weapon-selection-item-icon-blur",
 	"antialias" 	: true
 	"additive"		: false
 	"custom"		: true
+	"dropshadow"	: true
 	"proportional"	: true
 } );

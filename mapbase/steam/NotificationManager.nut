@@ -8,7 +8,6 @@
 //
 // client:
 //		SetSteamNotificationPosition( enum SteamNotificationPosition )
-//		SteamNotificationManager::SetHotkey( enum ButtonCode keyAccelerator, enum ButtonCode key )
 //
 //
 
@@ -46,8 +45,6 @@ SteamNotificationManager <-
 	m_Queue = null
 	m_Stack = null
 
-	m_HotkeyAccel = null
-	m_Hotkey = null
 	m_szHotkey = null
 
 	CBaseNotification = class
@@ -78,9 +75,6 @@ SteamNotificationManager <-
 			m_wide = w;
 			m_tall = t;
 
-			self.MakePopup();
-			self.SetMouseInputEnabled( false );
-			self.SetKeyBoardInputEnabled( false );
 			self.SetSize( w, t );
 
 			switch ( g_SteamNotificationPosition )
@@ -118,6 +112,9 @@ SteamNotificationManager <-
 
 			m_flDisplayStart = clock();
 			self.SetVisible( true );
+			self.MakePopup();
+			self.SetMouseInputEnabled( false );
+			self.SetKeyBoardInputEnabled( false );
 		}
 
 		function PaintBackground()
@@ -167,6 +164,7 @@ SteamNotificationManager <-
 			else if ( dt >= DisplayTime + FadeOutTime )
 			{
 				self.SetPos( self.GetXPos(), m_EndYPos + GetAnimYPos( 0, dt ) );
+				self.SetAlpha( RemapVal( dt-(DisplayTime+FadeOutTime), 0.0, FadeOutTime, 255.0, 127.0 ) );
 			}
 			// Fixup end pos
 			else if ( self.GetYPos() != m_EndYPos )
@@ -215,20 +213,33 @@ function SteamNotificationManager::Init()
 {
 	print("SteamNotificationManager::Init()\n")
 
-	if ( m_pManager && m_pManager.IsValid() )
-		return;
+	if ( !m_pManager || !m_pManager.IsValid() )
+	{
+/*
+		local l = { time = -1 }
+		RestoreTable( "SteamGameOverlay.Time", l );
+		if ( l.time == -1 )
+		{
+			l.time = time();
+			SaveTable( "SteamGameOverlay.Time", l );
+		}
+		m_nInitTime = l.time;
+*/
+		m_Stack = [];
+		m_Queue = [];
 
-	m_Stack = [];
-	m_Queue = [];
+		SetHotkey( ButtonCode.KEY_LSHIFT, ButtonCode.KEY_TAB );
 
-	SetHotkey( ButtonCode.KEY_LSHIFT, ButtonCode.KEY_TAB );
-
-	m_pManager = vgui.CreatePanel( "Panel", vgui.GetRootPanel(), "SteamNotifications" );
-	m_pManager.SetVisible( false );
-	m_pManager.SetPaintEnabled( false );
-	m_pManager.SetPaintBackgroundEnabled( false );
-	m_pManager.SetCallback( "OnTick", OnTick.bindenv(this) );
-	m_pManager.AddTickSignal( 0 );
+		m_pManager = vgui.CreatePanel( "Panel", vgui.GetRootPanel(), "SteamNotifications" );
+		//m_pManager.SetPos( 0, 0 );
+		//m_pManager.SetSize( ScreenWidth(), ScreenHeight() );
+		m_pManager.SetAlpha( 0 );
+		m_pManager.SetVisible( false );
+		m_pManager.SetPaintEnabled( false );
+		m_pManager.SetPaintBackgroundEnabled( false );
+		m_pManager.SetCallback( "OnTick", OnTick.bindenv(this) );
+		m_pManager.AddTickSignal( 0 );
+	}
 
 	NetMsg.Receive( "SteamNotificationPosition", function()
 	{
@@ -240,9 +251,6 @@ function SteamNotificationManager::Init()
 
 function SteamNotificationManager::SetHotkey( keyAccel, key )
 {
-	m_HotkeyAccel = keyAccel;
-	m_Hotkey = key;
-
 	keyAccel = input.ButtonCodeToString( keyAccel ).tolower();
 	keyAccel = keyAccel[0].tochar().toupper() + keyAccel.slice(1);
 
@@ -251,12 +259,326 @@ function SteamNotificationManager::SetHotkey( keyAccel, key )
 
 	m_szHotkey = Fmt( "%s+%s", keyAccel, key );
 }
+/*
+//
+// "resource/layout/overlaydashboard.layout"
+// "resource/layout/overlaytaskbar.layout"
+// "resource/layout/overlaydesktop.layout"
+//
+function SteamGameOverlay::CreateOverlayPanels()
+{
+	if ( m_pGameName && m_pGameName.IsValid() )
+		return;
 
+	m_pGameName = vgui.CreatePanel( "Label", m_pManager, "GameName" );
+	m_pGameName.SetContentAlignment( Alignment.east );
+	m_pGameName.SetText( "Source SDK Base 2013 Singleplayer" ); // "%gamename%"
+	m_pGameName.SetFont( surface.GetFont( "SteamScheme.topbar", false ) );
+
+	//m_pPowerMeterDim = vgui.CreatePanel( "ImagePanel", m_pManager, "PowerMeterDim" );
+	//m_pPowerMeterDim.SetImage( "steam/resource/battery_dim", true );
+	//m_pPowerMeterBright = vgui.CreatePanel( "ImagePanel", m_pManager, "PowerMeterBright" );
+	//m_pPowerMeterBright.SetImage( "steam/resource/battery_bright", true );
+
+	m_pCloseButton = vgui.CreatePanel( "Button", m_pManager, "CloseButton" );
+	m_pCloseButton.SetTextInset( 0, 0 );
+	m_pCloseButton.SetContentAlignment( Alignment.north );
+	m_pCloseButton.SetPaintBackgroundEnabled( false );
+	m_pCloseButton.SetPaintBorderEnabled( false );
+	m_pCloseButton.SetCallback( "DoClick", function()
+	{
+		SteamGameOverlay.TurnOffGameOverlay();
+	} );
+	m_pCloseButton.SetCursor( CursorCode.dc_hand );
+	m_pCloseButton.SetText( "Click here to return to the game" ); // "#Overlay_Taskbar_Close"
+	m_pCloseButton.SetFont( surface.GetFont( "SteamScheme.OverlayURLLabel", false ) );
+
+	m_pHotkeyLabel = vgui.CreatePanel( "Label", m_pManager, "HotkeyLabel" );
+	m_pHotkeyLabel.SetContentAlignment( Alignment.north );
+	m_pHotkeyLabel.SetText( m_szHotkey.toupper() + "  also closes the overlay" );
+	m_pHotkeyLabel.SetFont( surface.GetFont( "SteamScheme.FriendsSmall", false ) );
+
+	//m_pHotkeyExplain = vgui.CreatePanel( "Label", m_pManager, "HotkeyExplain" );
+	//m_pHotkeyExplain.SetContentAlignment( Alignment.north );
+	//m_pHotkeyExplain.SetText( "#Overlay_Hotkey_Explain" );
+	//m_pHotkeyExplain.SetFont( surface.GetFont( "SteamScheme.FriendsSmall", false ) );
+
+	//
+	// Taskbar
+	//
+	m_pSteamLogo = vgui.CreatePanel( "ImagePanel", m_pManager, "SteamLogo" );
+	m_pSteamLogo.SetZPos( 1 );
+	m_pSteamLogo.SetImage( "steam/resource/steam_logo_big", true );
+	m_pSteamLogo.SetShouldScaleImage( true );
+
+	m_pWebBrowserButton = vgui.CreatePanel( "Button", m_pManager, "WebBrowserButton" );
+	m_pWebBrowserButton.SetPaintBackgroundEnabled( false );
+	m_pWebBrowserButton.SetPaintBorderEnabled( false );
+	m_pWebBrowserButton.SetTextInset( 0, 0 );
+	m_pWebBrowserButton.SetCursor( CursorCode.dc_hand );
+	m_pWebBrowserButton.SetText( "WEB BROWSER" ); // "#Overlay_Taskbar_WebBrowser"
+	m_pWebBrowserButton.SetFont( surface.GetFont( "SteamScheme.taskbar", false ) );
+
+	m_pMusicPlayerButton = vgui.CreatePanel( "Button", m_pManager, "MusicPlayerButton" );
+	m_pMusicPlayerButton.SetPaintBackgroundEnabled( false );
+	m_pMusicPlayerButton.SetPaintBorderEnabled( false );
+	m_pMusicPlayerButton.SetTextInset( 0, 0 );
+	m_pMusicPlayerButton.SetCursor( CursorCode.dc_hand );
+	m_pMusicPlayerButton.SetText( "MUSIC" ); // "#Overlay_Taskbar_Music"
+	m_pMusicPlayerButton.SetFont( surface.GetFont( "SteamScheme.taskbar", false ) );
+
+	m_pSettingsButton = vgui.CreatePanel( "Button", m_pManager, "SettingsButton" );
+	m_pSettingsButton.SetPaintBackgroundEnabled( false );
+	m_pSettingsButton.SetPaintBorderEnabled( false );
+	m_pSettingsButton.SetTextInset( 0, 0 );
+	m_pSettingsButton.SetCursor( CursorCode.dc_hand );
+	m_pSettingsButton.SetText( "SETTINGS" ); // "#Overlay_Taskbar_Settings"
+	m_pSettingsButton.SetFont( surface.GetFont( "SteamScheme.taskbar", false ) );
+
+	m_pViewFriends = vgui.CreatePanel( "Button", m_pManager, "view_friends" );
+	m_pViewFriends.SetPaintBackgroundEnabled( false );
+	m_pViewFriends.SetPaintBorderEnabled( false );
+	m_pViewFriends.SetTextInset( 0, 0 );
+	m_pViewFriends.SetCursor( CursorCode.dc_hand );
+	m_pViewFriends.SetContentAlignment( Alignment.west );
+	m_pViewFriends.SetText( "View Friends" ); // "#Steam_ViewFriends"
+	m_pViewFriends.SetFont( surface.GetFont( "SteamScheme.taskbar", false ) );
+
+	//
+	// Clock
+	//
+	m_pClock = vgui.CreatePanel( "Label", m_pManager, "Clock" );
+	m_pClock.SetContentAlignment( Alignment.west );
+	m_pClock.SetFont( surface.GetFont( "SteamScheme.topbar", false ) );
+
+	m_pSessionText = vgui.CreatePanel( "Label", m_pManager, "Clock" ); // "#Overlay_Playtime_Session"
+	m_pSessionText.SetFont( surface.GetFont( "SteamScheme.TimeStrings", false ) );
+
+	//m_pTwoWeeksText = vgui.CreatePanel( "Label", m_pManager, "TwoWeeksText" );
+	//m_pTwoWeeksText.SetText( Fmt("%d minutes - past two weeks", (time()-m_nInitTime)/60)) );
+	//m_pTwoWeeksText.SetFont( surface.GetFont( "SteamScheme.TimeStrings", false ) );
+
+	//m_pForeverText = vgui.CreatePanel( "Label", m_pManager, "ForeverText" );
+	//m_pForeverText.SetText( Fmt("0 hours - total") );
+	//m_pForeverText.SetFont( surface.GetFont( "SteamScheme.TimeStrings", false ) );
+
+	SetClock(null);
+
+	m_pForceQuitButton = vgui.CreatePanel( "Button", m_pManager, "ForceQuitButton" );
+	m_pForceQuitButton.SetTextInset( 0, 0 );
+	m_pForceQuitButton.SetContentAlignment( Alignment.east );
+	m_pForceQuitButton.SetPaintBackgroundEnabled( false );
+	m_pForceQuitButton.SetPaintBorderEnabled( false );
+	m_pForceQuitButton.SetCallback( "DoClick", function()
+	{
+		SteamGameOverlay.TurnOffGameOverlay();
+	} );
+	m_pForceQuitButton.SetCursor( CursorCode.dc_hand );
+	m_pForceQuitButton.SetText( "Force quit" ); // "#Overlay_Taskbar_ForceQuit"
+	m_pForceQuitButton.SetFont( surface.GetFont( "SteamScheme.OverlayURLLabel", false ) );
+}
+
+function SteamGameOverlay::PerformLayout()
+{
+	// overlaydashboard.layout
+	local screen_width = ScreenWidth();
+	local overlay_width = 1010;
+	local overlay_height = ScreenHeight();
+	local wide = 400;
+
+	if ( screen_width < 1024 )
+	{
+		overlay_width = screen_width - 10;
+		wide = (overlay_width / 2.5).tointeger();
+	}
+
+	local margin_x = (screen_width - overlay_width) / 2;
+	local margin_top = 10;
+
+	local col = SteamScheme["Text"];
+
+	m_pCloseButton.SetDefaultColor( col[0], col[1], col[2], col[3], 0, 0, 0, 0 );
+	m_pCloseButton.SetSelectedColor( 255, 255, 255, 255, 0, 0, 0, 0 );
+	m_pCloseButton.SetSize( wide, overlay_height );
+	m_pCloseButton.SetPos( (screen_width - wide) / 2, margin_top+2 );
+
+	m_pGameName.SetFgColor( col[0], col[1], col[2], col[3] );
+	m_pGameName.SetSize( wide, 40 );
+	m_pGameName.SetPos( screen_width - margin_x - wide, margin_top );
+
+	//m_pPowerMeterDim.SetSize( 200, 110 );
+	//m_pPowerMeterDim.SetPos( screen_width - margin_x - 200, margin_top );
+	//m_pPowerMeterBright.SetSize( 200, 110 );
+	//m_pPowerMeterBright.SetPos( screen_width - margin_x - 200, margin_top );
+
+	m_pHotkeyLabel.SetFgColor( col[0], col[1], col[2], col[3] );
+	m_pHotkeyLabel.SetSize( wide, overlay_height );
+	m_pHotkeyLabel.SetPos( (screen_width - wide) / 2, margin_top + 14 );
+
+	//
+	// Taskbar
+	//
+	col = SteamScheme["Label"];
+	local col2 = SteamScheme["Label2"];
+
+	local y = overlay_height - 64;
+
+	m_pSteamLogo.SetPos( margin_x, y - 18 );
+	m_pSteamLogo.SetSize( 200, 52 );
+
+	m_pWebBrowserButton.SetDefaultColor( col[0], col[1], col[2], col[3], 0, 0, 0, 0 );
+	m_pWebBrowserButton.SetSelectedColor( col2[0], col2[1], col2[2], col2[3], 0, 0, 0, 0 );
+	m_pWebBrowserButton.SetPos( margin_x + 225, y - margin_top );
+	m_pWebBrowserButton.SetSize( surface.GetTextWidth( surface.GetFont( "SteamScheme.taskbar", false ), "WEB BROWSER" ), 32 );
+
+	m_pMusicPlayerButton.SetDefaultColor( col[0], col[1], col[2], col[3], 0, 0, 0, 0 );
+	m_pMusicPlayerButton.SetSelectedColor( col2[0], col2[1], col2[2], col2[3], 0, 0, 0, 0 );
+	m_pMusicPlayerButton.SetPos( m_pWebBrowserButton.GetXPos() + m_pWebBrowserButton.GetWide() + 30, y - margin_top );
+	m_pMusicPlayerButton.SetSize( surface.GetTextWidth( surface.GetFont( "SteamScheme.taskbar", false ), "MUSIC" ), 32 );
+
+	m_pSettingsButton.SetDefaultColor( col[0], col[1], col[2], col[3], 0, 0, 0, 0 );
+	m_pSettingsButton.SetSelectedColor( col2[0], col2[1], col2[2], col2[3], 0, 0, 0, 0 );
+	m_pSettingsButton.SetPos( m_pMusicPlayerButton.GetXPos() + m_pMusicPlayerButton.GetWide() + 30, y - margin_top );
+	m_pSettingsButton.SetSize( surface.GetTextWidth( surface.GetFont( "SteamScheme.taskbar", false ), "SETTINGS" ), 32 );
+
+	m_pViewFriends.SetDefaultColor( col[0], col[1], col[2], col[3], 0, 0, 0, 0 );
+	m_pViewFriends.SetSelectedColor( col2[0], col2[1], col2[2], col2[3], 0, 0, 0, 0 );
+	m_pViewFriends.SetPos( screen_width - margin_x - 16 - 96, y - margin_top );
+	m_pViewFriends.SetSize( 96, 84 );
+
+	//
+	// Clock
+	//
+	col = SteamScheme["Text"];
+
+	m_pClock.SetFgColor( col[0], col[1], col[2], col[3] );
+	m_pClock.SetPos( margin_x, margin_top );
+	m_pClock.SetSize( wide, surface.GetFontTall( surface.GetFont( "SteamScheme.topbar", false ) ) );
+
+	local tall = surface.GetFontTall( surface.GetFont( "SteamScheme.TimeStrings", false ) );
+	m_pSessionText.SetFgColor( col[0], col[1], col[2], col[3] );
+	m_pSessionText.SetPos( margin_x, m_pClock.GetYPos() + m_pClock.GetTall() );
+	m_pSessionText.SetSize( wide, tall );
+
+	//m_pTwoWeeksText.SetFgColor( col[0], col[1], col[2], col[3] );
+	//m_pTwoWeeksText.SetPos( margin_x, m_pSessionText.GetYPos() + m_pSessionText.GetTall() );
+	//m_pTwoWeeksText.SetSize( wide, tall );
+
+	//m_pForeverText.SetFgColor( col[0], col[1], col[2], col[3] );
+	//m_pForeverText.SetPos( margin_x, m_pTwoWeeksText.GetYPos() + m_pTwoWeeksText.GetTall() );
+	//m_pForeverText.SetSize( wide, tall );
+
+	m_pForceQuitButton.SetFgColor( col[0], col[1], col[2], col[3] );
+	m_pForceQuitButton.SizeToContents();
+	m_pForceQuitButton.SetPos( screen_width - margin_x - m_pForceQuitButton.GetWide(), 50 );
+}
+
+function SteamGameOverlay::PaintBackground()
+{
+	local wmax = ScreenWidth();
+	local hmax = ScreenHeight();
+
+	// overlaymain
+	surface.SetColor( 43, 43, 43, 96 );
+	surface.DrawFilledRect( 0, 0, wmax, hmax );
+
+	// TopFadePanel - topfade
+	surface.SetColor( 38, 37, 35, 140 );
+	surface.DrawFilledRectFade( 0, 0, wmax, 600, 255, 0, false );
+
+	// BottomFadePanel - bottomfade
+	surface.SetColor( 0, 0, 0, 255 );
+	surface.DrawFilledRectFade( 0, hmax - 130, wmax, 130, 0, 255, false );
+}
+
+function SteamGameOverlay::TurnOffGameOverlay()
+{
+	m_pManager.SetMouseInputEnabled( false );
+
+	m_flFadeStart = clock();
+	Entities.First().SetContextThink( "SteamGameOverlay.Fade", FadeOut.bindenv(this), 0.0 );
+	Entities.First().SetContextThink( "SteamGameOverlay.Clock", null, 0.0 );
+}
+
+function SteamGameOverlay::ActivateGameOverlay( szContext = "" )
+{
+	CreateOverlayPanels();
+
+	m_pManager.MakePopup();
+	m_pManager.SetVisible( true );
+	m_pManager.SetMouseInputEnabled( true );
+	m_pManager.SetPaintBackgroundEnabled( true );
+	m_pManager.SetCallback( "PaintBackground", PaintBackground.bindenv(this) );
+	m_pManager.SetCallback( "PerformLayout", PerformLayout.bindenv(this) );
+
+	m_flFadeStart = clock();
+	Entities.First().SetContextThink( "SteamGameOverlay.Fade", FadeIn.bindenv(this), 0.0 );
+	Entities.First().SetContextThink( "SteamGameOverlay.Clock", SetClock.bindenv(this), 0.0 );
+}
+
+function SteamGameOverlay::FadeIn(_)
+{
+	local t = (clock() - m_flFadeStart) / 0.25;
+	if ( t < 1.0 )
+	{
+		m_pManager.SetAlpha( t * 255.0 );
+		return 0.0;
+	}
+
+	m_pManager.SetAlpha( 255 );
+
+	return -1;
+}
+
+function SteamGameOverlay::FadeOut(_)
+{
+	local t = (clock() - m_flFadeStart) / 0.25;
+	if ( t < 1.0 )
+	{
+		m_pManager.SetAlpha( (1.0 - t) * 255.0 );
+		return 0.0;
+	}
+
+	m_pManager.SetAlpha( 0 );
+	m_pManager.SetVisible( false );
+	m_pManager.SetPaintBackgroundEnabled( false );
+	m_pManager.SetCallback( "PaintBackground", null );
+	m_pManager.SetCallback( "PerformLayout", null );
+
+	return -1;
+}
+
+function SteamGameOverlay::SetClock(_)
+{
+	local l = date();
+	m_pClock.SetText( Fmt( "%d:%02d:%02d", l.hour, l.min, l.sec ) );
+
+	m_pSessionText.SetText( Fmt("%d minutes - current session", (time()-m_nInitTime)/60) );
+
+	return 1.0;
+}
+*/
 //
 // TODO: Fix stack offsets, panel lag
 //
 function SteamNotificationManager::OnTick()
 {
+/*
+	if ( !m_bHotkeyDown && input.IsButtonDown( m_HotkeyAccel ) && input.IsButtonDown( m_Hotkey ) )
+	{
+		m_bHotkeyDown = true;
+		Entities.First().SetContextThink( "SteamGameOverlay", function(_) { m_bHotkeyDown = false; }.bindenv(this), 1.0 );
+
+		if ( m_pManager.IsVisible() )
+		{
+			TurnOffGameOverlay();
+		}
+		else
+		{
+			ActivateGameOverlay();
+		}
+	}
+*/
 	if ( !(0 in m_Stack) )
 		return;
 
@@ -320,10 +642,6 @@ function SteamNotificationManager::OnTick()
 		foreach ( p in m_Stack )
 			p.OnTick( t );
 	}
-
-	// TODO:
-	//if ( m_fnHotkeyCallback && input.IsButtonDown( m_HotkeyAccel ) && input.IsButtonDown( m_Hotkey ) )
-	//	m_fnHotkeyCallback();
 }
 
 function SteamNotificationManager::AddNotification( pNotification )

@@ -36,6 +36,7 @@ class CSGOHudHealthArmor
 	m_hFont = null
 	m_hFontBlur = null
 	m_hFontIcon = null
+	m_hFontIconBlur = null
 
 	m_nOffsetArmorLabel = 0
 	m_nOffsetHealthLabel = 0
@@ -56,6 +57,7 @@ function CSGOHudHealthArmor::Init()
 	m_hFont = surface.GetFont( "hud-HA-text", true );
 	m_hFontBlur = surface.GetFont( "hud-HA-text-blur", true );
 	m_hFontIcon = surface.GetFont( "hud-HA-icon", true );
+	m_hFontIconBlur = surface.GetFont( "hud-HA-icon-blur", true );
 
 	m_clrHealthBar = kClrNormal;
 }
@@ -181,6 +183,7 @@ function CSGOHudHealthArmor::Paint()
 		local bar_w = YRES(32.5);
 		local bar_h = YRES(3.75);
 		{
+			local icon_x = YRES(12);
 			local bar_x = YRES(51);
 			local bar_progress = (bar_w * m_flHealth).tointeger();
 
@@ -192,10 +195,16 @@ function CSGOHudHealthArmor::Paint()
 				surface.SetColor.acall( kClrLow );
 				surface.DrawFilledRect( bar_x, y0 + YRES(10), bar_progress, bar_h );
 
+				// health icon blur
+				surface.SetTextFont( m_hFontIconBlur );
+				surface.SetTextColor( 0xff, 0x00, 0x00, 0xff );
+				surface.SetTextPos( icon_x, y0 );
+				surface.DrawUnicodeChar( '+', 0 );
+
 				// health icon
 				surface.SetTextFont( m_hFontIcon );
 				surface.SetTextColor( 0xff, 0x00, 0x00, 0xdd );
-				surface.SetTextPos( YRES(12), y0 );
+				surface.SetTextPos( icon_x, y0 );
 				surface.DrawUnicodeChar( '+', 0 );
 
 				// blur
@@ -209,10 +218,16 @@ function CSGOHudHealthArmor::Paint()
 				surface.SetColor.acall( m_clrHealthBar );
 				surface.DrawFilledRect( bar_x, y0 + YRES(10), bar_progress, bar_h );
 
+				// health icon blur
+				surface.SetTextFont( m_hFontIconBlur );
+				surface.SetTextColor( 0x00, 0x00, 0x00, 0xff );
+				surface.SetTextPos( icon_x, y0 );
+				surface.DrawUnicodeChar( '+', 0 );
+
 				// health icon
 				surface.SetTextFont( m_hFontIcon );
 				surface.SetTextColor( 0xcc, 0xcc, 0xcc, 0xcc );
-				surface.SetTextPos( YRES(12), y0 );
+				surface.SetTextPos( icon_x, y0 );
 				surface.DrawUnicodeChar( '+', 0 );
 
 				// blur
@@ -236,6 +251,7 @@ function CSGOHudHealthArmor::Paint()
 
 		if ( CSHud.m_bSuitEquipped )
 		{
+			local icon_x = YRES(96);
 			local bar_x = YRES(136);
 			local bar_progress = (bar_w * m_flArmor).tointeger();
 
@@ -253,10 +269,16 @@ function CSGOHudHealthArmor::Paint()
 			surface.SetColor( 0x33, 0x33, 0x33, 0x66 );
 			surface.DrawOutlinedRect( bar_x - 1, y0 + YRES(10) - 1, bar_w + 2, bar_h + 2, 1 );
 
+			// armour icon blur
+			surface.SetTextFont( m_hFontIconBlur );
+			surface.SetTextColor( 0x00, 0x00, 0x00, 0xff );
+			surface.SetTextPos( icon_x, y0 );
+			surface.DrawUnicodeChar( '*', 0 );
+
 			// armour icon
 			surface.SetTextFont( m_hFontIcon );
 			surface.SetTextColor( 0xcc, 0xcc, 0xcc, 0xcc );
-			surface.SetTextPos( YRES(96), y0 );
+			surface.SetTextPos( icon_x, y0 );
 			surface.DrawUnicodeChar( '*', 0 );
 
 			// blur

@@ -58,7 +58,6 @@
 //
 // client:
 //		SetSteamNotificationPosition( enum SteamNotificationPosition )
-//		SteamNotificationManager::SetHotkey( enum ButtonCode keyAccelerator, enum ButtonCode key )
 //
 //-------------------------------------------------------------
 // Resource files: [steam]
@@ -132,5 +131,16 @@ local InitRestore = function(...)
 	}
 }
 
-ListenToGameEvent( "player_spawn", Init, "SteamUtils" );
+ListenToGameEvent( "player_spawn", function( event )
+{
+	// server: entities have spawned, collect and setup logic_achievements
+	// client: local player spawned, tell the server
+	// TODO: uncomment for multiplayer
+	// if ( SERVER_DLL || GetPlayerByUserID( event.userid ) == Entities.GetLocalPlayer() )
+	{
+		Init();
+		Entities.First().SetContextThink( "SteamUtils", function(_) { StopListeningToAllGameEvents( "SteamUtils" ); }, 0.0 );
+	}
+}, "SteamUtils" );
+
 Hooks.Add( this, "OnRestore", InitRestore, "SteamUtils" );

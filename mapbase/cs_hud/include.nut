@@ -31,14 +31,21 @@ local Init = function(...)
 	if ( !("CSHud" in this) ) // Level transition (OnRestore)
 		IncludeScript( "cs_hud/hud_cs.nut" );
 
-	CSHud.Init();
+	if ( SERVER_DLL )
+	{
+		CSHud.Init( vargv[0] );
+	}
+	else
+	{
+		CSHud.Init();
+	}
 }
 
 local InitRestore = function(...)
 {
 	if ( SERVER_DLL )
 	{
-		Init();
+		Init( Entities.GetLocalPlayer() );
 	}
 
 	if ( CLIENT_DLL )
@@ -48,5 +55,29 @@ local InitRestore = function(...)
 	}
 }
 
-ListenToGameEvent( "player_spawn", Init, "CSHud" );
+ListenToGameEvent( "player_spawn", function( event )
+{
+	if ( SERVER_DLL )
+	{
+		Init( GetPlayerByUserID( event.userid ) );
+	}
+	else
+	{
+		Init();
+		Entities.First().SetContextThink( "CSHud", function(_) { StopListeningToAllGameEvents( "CSHud" ); }, 0.01 );
+	}
+}, "CSHud" );
+
 Hooks.Add( this, "OnRestore", InitRestore, "CSHud" );
+
+
+
+if ( !("GetPlayerByUserID" in this) )
+{
+	function GetPlayerByUserID(i)
+	{
+		for ( local p; p = Entities.FindByClassname( p, "player" ); )
+			if ( p.GetUserID() == i )
+				return p;
+	}
+}

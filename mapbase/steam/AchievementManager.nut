@@ -31,22 +31,24 @@ if ( SERVER_DLL )
 
 	class SteamAchievements.Achievement_t
 	{
-		m_rgchAchievementID = null
 		m_nMaxProgress = null
+		m_rgchAchievementID = null
 	}
 }
 else if ( CLIENT_DLL )
 {
 	class SteamAchievements.Achievement_t
 	{
-		m_rgchAchievementID = null
 		m_rgchName = null
-		m_rgchDescription = null
-		m_nMaxProgress = null
 		m_szIconImageAchieved = null
+		m_rgchAchievementID = null
+		m_nMaxProgress = null
+		m_rgchDescription = null
 		m_szIconImageUnachieved = null
 	}
 }
+
+local Fmt = format;
 
 local InputFireEvent = function()
 {
@@ -59,41 +61,57 @@ function SteamAchievements::Init()
 {
 	print("SteamAchievements::Init()\n");
 
-	m_Achievements = {}
+	if ( !m_Achievements )
+	{
+		m_Achievements = {}
+
+		if ( SERVER_DLL )
+		{
+			m_AchievementState = {}
+			m_mapID = {}
+
+			LoadFromFile( "achievements_" + GetMapName().tolower() + ".txt" );
+
+			local tmp = {}
+			for ( local p; p = Entities.FindByClassname( p, "logic_achievement" ); )
+			{
+				local sc = p.GetOrCreatePrivateScriptScope();
+				SaveEntityKVToTable( p, tmp );
+				sc.m_szAchievementID <- tmp["AchievementEvent"];
+				sc.InputFireEvent <- InputFireEvent;
+			}
+		}
+		else // CLIENT_DLL
+		{
+			local mapname = split( GetMapName(), "/" ).top().tolower();
+			local i = mapname.find( ".bsp" );
+			if ( i != null )
+				mapname = mapname.slice( 0, i );
+			LoadFromFile( "achievements_" + mapname + ".txt" );
+		}
+	}
 
 	if ( SERVER_DLL )
 	{
 		NetMsg.Receive( "SteamAchievements.Init", NET_Init.bindenv(this) );
-
-		m_AchievementState = {}
-		m_mapID = {}
-
-		LoadFromFile( "achievements_" + GetMapName().tolower() + ".txt" );
-
-		local tmp = {}
-		for ( local p; p = Entities.FindByClassname( p, "logic_achievement" ); )
-		{
-			local sc = p.GetOrCreatePrivateScriptScope();
-			SaveEntityKVToTable( p, tmp );
-			sc.m_szAchievementID <- tmp["AchievementEvent"];
-			sc.InputFireEvent <- InputFireEvent;
-		}
 	}
-	else
+	else // CLIENT_DLL
 	{
 		NetMsg.Receive( "SteamAchievements.SetAchievement", NET_SetAchievement.bindenv(this) );
 		NetMsg.Receive( "SteamAchievements.SetStat", NET_SetStat.bindenv(this) );
 
-		local mapname = split( GetMapName(), "/" ).top().tolower();
-		local i = mapname.find( ".bsp" );
-		if ( i != null )
-			mapname = mapname.slice( 0, i );
-		LoadFromFile( "achievements_" + mapname + ".txt" );
-
 		NetMsg.Start( "SteamAchievements.Init" );
 			local id = steam.GetSteam2ID();
-			if ( !id ) id = "STEAM_0:0:0";
-			NetMsg.WriteString( id );
+			if ( id )
+			{
+				// steam2id to accountid
+				local p = split( id, ":" );
+				NetMsg.WriteLong( p[2].tointeger() * 2 + p[1].tointeger() );
+			}
+			else
+			{
+				NetMsg.WriteLong( 0 );
+			}
 		NetMsg.Send();
 	}
 }
@@ -133,14 +151,14 @@ if ( CLIENT_DLL ){
 	}
 
 	achCount = m_Achievements.len() - achCount;
-	printf( "Loaded %d achievements from '%s'\n", achCount, fileName );
+	Msg(Fmt( "Loaded %d achievements from '%s'\n", achCount, fileName ));
 	return achCount;
 }
 
 if ( SERVER_DLL )
 {
 	// Achievement ID hashing adds a little bit of encryption to prevent manipulation of achievement stats.
-	local Fmt = format, _hashstr = _hashstr;
+	local _hashstr = _hashstr;
 	local _hashID = function( tag )
 	{
 		return Fmt( "%u", _hashstr(tag) );
@@ -148,8 +166,7 @@ if ( SERVER_DLL )
 
 	local GetLogFileName = function( playerID )
 	{
-		local p = split( playerID, ":" );
-		return Fmt( "ach_%s%s.db", p[1], p[2] );
+		return Fmt( "ach_%u.db", playerID );
 	}
 
 	function SteamAchievements::SetAchievement( player, tag )
@@ -288,6 +305,8 @@ if ( SERVER_DLL )
 	// write cached achievement results
 	function SteamAchievements::StoreStats( player )
 	{
+		Msg(Fmt( "SteamAchievements::StoreStats(%d)\n", player.entindex() ));
+
 		if ( !(player in m_mapID) )
 			return Warning( "Player "+player.entindex()+" is not found in ID map\n" );
 
@@ -322,7 +341,7 @@ if ( SERVER_DLL )
 	{
 		printf("SteamAchievements::NET_Init(%d)\n", player.entindex());
 
-		local id = NetMsg.ReadString();
+		local id = NetMsg.ReadLong();
 		m_mapID[ player ] <- id;
 		local fileName = GetLogFileName( id );
 

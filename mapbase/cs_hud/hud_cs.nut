@@ -8,24 +8,29 @@ if ( SERVER_DLL )
 {
 	CSHud <- {}
 
-	function CSHud::Init()
+	function CSHud::Init( player )
 	{
-		player.SetContextThink( "CSHud.StatusUpdate", function( pl )
-		{
-			local suit = pl.IsSuitEquipped();
+		if ( !player )
+			return;
 
-			NetMsg.Start( "CSHud.StatusUpdate" );
-				NetMsg.WriteShort( pl.GetArmor() );
-				NetMsg.WriteBool( suit );
-				if ( suit )
-				{
-					NetMsg.WriteFloat( pl.GetFlashlightBattery() * 0.01 );
-					NetMsg.WriteFloat( pl.GetAuxPower() * 0.01 );
-				}
-			NetMsg.Send( pl, false );
+		player.SetContextThink( "CSHud.StatusUpdate", StatusUpdate, 0.0 );
+	}
 
-			return 0.1;
-		}, 0.0 );
+	function CSHud::StatusUpdate( player )
+	{
+		local suit = player.IsSuitEquipped();
+
+		NetMsg.Start( "CSHud.StatusUpdate" );
+			NetMsg.WriteShort( player.GetArmor() );
+			NetMsg.WriteBool( suit );
+			if ( suit )
+			{
+				NetMsg.WriteFloat( player.GetFlashlightBattery() * 0.01 );
+				NetMsg.WriteFloat( player.GetAuxPower() * 0.01 );
+			}
+		NetMsg.Send( player, false );
+
+		return 0.1;
 	}
 }
 
@@ -149,6 +154,11 @@ if ( CLIENT_DLL )
 
 	function CSHud::Init()
 	{
+		if ( m_pPlayerHealth && (typeof m_pPlayerHealth.self == "instance") ) // for saverestore bug
+
+		if ( m_pPlayerHealth && m_pPlayerHealth.self && m_pPlayerHealth.self.IsValid() )
+			return;
+
 		self = vgui.CreatePanel( "Panel", vgui.GetClientDLLRootPanel(), "CS Hud Root" );
 		self.SetPos( 0, 0 );
 		self.SetSize( ScreenWidth(), ScreenHeight() );

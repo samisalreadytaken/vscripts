@@ -50,14 +50,21 @@ local Init = function(...)
 	if ( !("TFHud" in this) ) // Level transition (OnRestore)
 		IncludeScript( "tf_hud/hud_tf.nut" );
 
-	TFHud.Init();
+	if ( SERVER_DLL )
+	{
+		TFHud.Init( vargv[0] );
+	}
+	else
+	{
+		TFHud.Init();
+	}
 }
 
 local InitRestore = function(...)
 {
 	if ( SERVER_DLL )
 	{
-		Init();
+		Init( Entities.GetLocalPlayer() );
 	}
 
 	if ( CLIENT_DLL )
@@ -67,5 +74,29 @@ local InitRestore = function(...)
 	}
 }
 
-ListenToGameEvent( "player_spawn", Init, "TFHud" );
+ListenToGameEvent( "player_spawn", function( event )
+{
+	if ( SERVER_DLL )
+	{
+		Init( GetPlayerByUserID( event.userid ) );
+	}
+	else
+	{
+		Init();
+		Entities.First().SetContextThink( "TFHud", function(_) { StopListeningToAllGameEvents( "TFHud" ); }, 0.01 );
+	}
+}, "TFHud" );
+
 Hooks.Add( this, "OnRestore", InitRestore, "TFHud" );
+
+
+
+if ( !("GetPlayerByUserID" in this) )
+{
+	function GetPlayerByUserID(i)
+	{
+		for ( local p; p = Entities.FindByClassname( p, "player" ); )
+			if ( p.GetUserID() == i )
+				return p;
+	}
+}

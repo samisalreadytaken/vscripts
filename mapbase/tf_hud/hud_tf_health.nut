@@ -107,6 +107,9 @@ function CTFHudPlayerHealth::PerformLayout()
 	m_hArmourValue.SetPos( YRES(76), m_hHealthImage.GetYPos() - YRES(18) - YRES(2) );
 	m_hArmourValue.SetSize( YRES(50), YRES(18) );
 	m_hArmourValue.SetFgColor( 117, 107, 94, 255 );
+
+	// Update visibility
+	OnTick();
 }
 
 function CTFHudPlayerHealth::OnTick()
