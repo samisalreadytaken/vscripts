@@ -14,6 +14,7 @@ function CTFHudPlayerStatus::Init()
 {
 	self = vgui.CreatePanel( "Panel", TFHud.GetRootPanel(), "TFHudPlayerStatus" );
 	self.SetVisible( true );
+	self.SetPaintBackgroundEnabled( false );
 	self.SetZPos( -100 );
 	self.SetCallback( "PerformLayout", PerformLayout.bindenv(this) );
 }

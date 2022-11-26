@@ -53,6 +53,7 @@ function CSGOHudWeaponAmmo::Init()
 	self.SetSize( XRES(640), YRES(480) );
 	self.SetZPos( 0 );
 	self.SetVisible( false );
+	self.SetPaintBackgroundEnabled( false );
 	self.SetCallback( "PerformLayout", PerformLayout.bindenv(this) );
 	self.SetCallback( "Paint", Paint.bindenv(this) );
 	self.SetCallback( "OnTick", OnTick.bindenv(this) );

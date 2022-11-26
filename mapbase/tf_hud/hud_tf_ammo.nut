@@ -36,6 +36,7 @@ function CTFHudWeaponAmmo::Init()
 	self = vgui.CreatePanel( "Panel", TFHud.GetRootPanel(), "TFHudWeaponAmmo" );
 	self.SetZPos( 0 );
 	self.SetVisible( true );
+	self.SetPaintBackgroundEnabled( false );
 	self.SetCallback( "PerformLayout", PerformLayout.bindenv(this) );
 	self.SetCallback( "OnTick", OnTick.bindenv(this) );
 	self.AddTickSignal( 50 );
@@ -54,36 +55,42 @@ function CTFHudWeaponAmmo::Init()
 
 	m_hInClip = vgui.CreatePanel( "Label", self, "AmmoInClip" );
 	m_hInClip.SetVisible( false );
+	m_hInClip.SetPaintBackgroundEnabled( false );
 	m_hInClip.SetZPos( 5 );
 	m_hInClip.SetFont( surface.GetFont( "HudFontGiantBold", true ) );
 	m_hInClip.SetContentAlignment( Alignment.southeast );
 
 	m_hInClipShadow = vgui.CreatePanel( "Label", self, "AmmoInClipShadow" );
 	m_hInClipShadow.SetVisible( false );
+	m_hInClipShadow.SetPaintBackgroundEnabled( false );
 	m_hInClipShadow.SetZPos( 5 );
 	m_hInClipShadow.SetFont( surface.GetFont( "HudFontGiantBold", true ) );
 	m_hInClipShadow.SetContentAlignment( Alignment.southeast );
 
 	m_hInReserve = vgui.CreatePanel( "Label", self, "AmmoInReserve" );
 	m_hInReserve.SetVisible( false );
+	m_hInReserve.SetPaintBackgroundEnabled( false );
 	m_hInReserve.SetZPos( 7 );
 	m_hInReserve.SetFont( surface.GetFont( "HudFontMediumSmall", true ) );
 	m_hInReserve.SetContentAlignment( Alignment.southwest );
 
 	m_hInReserveShadow = vgui.CreatePanel( "Label", self, "AmmoInReserveShadow" );
 	m_hInReserveShadow.SetVisible( false );
+	m_hInReserveShadow.SetPaintBackgroundEnabled( false );
 	m_hInReserveShadow.SetZPos( 7 );
 	m_hInReserveShadow.SetFont( surface.GetFont( "HudFontMediumSmall", true ) );
 	m_hInReserveShadow.SetContentAlignment( Alignment.southwest );
 
 	m_hNoClip = vgui.CreatePanel( "Label", self, "AmmoNoClip" );
 	m_hNoClip.SetVisible( false );
+	m_hNoClip.SetPaintBackgroundEnabled( false );
 	m_hNoClip.SetZPos( 5 );
 	m_hNoClip.SetFont( surface.GetFont( "HudFontGiantBold", true ) );
 	m_hNoClip.SetContentAlignment( Alignment.southeast );
 
 	m_hNoClipShadow = vgui.CreatePanel( "Label", self, "AmmoNoClipShadow" );
 	m_hNoClipShadow.SetVisible( false );
+	m_hNoClipShadow.SetPaintBackgroundEnabled( false );
 	m_hNoClipShadow.SetZPos( 5 );
 	m_hNoClipShadow.SetFont( surface.GetFont( "HudFontGiantBold", true ) );
 	m_hNoClipShadow.SetContentAlignment( Alignment.southeast );
@@ -95,12 +102,14 @@ function CTFHudWeaponAmmo::Init()
 
 	m_hSecondary = vgui.CreatePanel( "Label", m_hSecondaryBG, "AmmoSecondary" );
 	m_hSecondary.SetVisible( true );
+	m_hSecondary.SetPaintBackgroundEnabled( false );
 	m_hSecondary.SetZPos( 5 );
 	m_hSecondary.SetFont( surface.GetFont( "HudFontMediumSmall", true ) );
 	m_hSecondary.SetContentAlignment( Alignment.center );
 
 	m_hSecondaryShadow = vgui.CreatePanel( "Label", m_hSecondaryBG, "AmmoSecondaryShadow" );
 	m_hSecondaryShadow.SetVisible( true );
+	m_hSecondaryShadow.SetPaintBackgroundEnabled( false );
 	m_hSecondaryShadow.SetZPos( 5 );
 	m_hSecondaryShadow.SetFont( surface.GetFont( "HudFontMediumSmall", true ) );
 	m_hSecondaryShadow.SetContentAlignment( Alignment.center );

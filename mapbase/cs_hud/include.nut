@@ -7,10 +7,6 @@
 //		CSHud.SetCrosshairVisible( bool state )
 //		CSHud.SetCrosshairImage( string imageFile, string weaponClassname = null )
 //
-//		fx <- COverlayEffect( "effects/combine_binocoverlay" );
-//		CSHud.AddEffect( fx )
-//		CSHud.RemoveEffect( fx )
-//
 //-------------------------------------------------------------
 // Resource files: [csgo]
 //		"resources/stratum2bold.ttf"

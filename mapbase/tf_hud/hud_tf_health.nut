@@ -37,6 +37,7 @@ function CTFHudPlayerHealth::Init()
 	self = vgui.CreatePanel( "Panel", TFHud.m_pPlayerStatus.self, "HudPlayerHealth" );
 	self.SetZPos( 2 );
 	self.SetVisible( true );
+	self.SetPaintBackgroundEnabled( false );
 	self.SetCallback( "PerformLayout", PerformLayout.bindenv(this) );
 	self.SetCallback( "OnTick", OnTick.bindenv(this) );
 	self.AddTickSignal( 100 );
@@ -61,6 +62,7 @@ function CTFHudPlayerHealth::Init()
 
 	m_hHealthImage = vgui.CreatePanel( "Panel", self, "PlayerStatusHealthImage" );
 	m_hHealthImage.SetVisible( true );
+	m_hHealthImage.SetPaintBackgroundEnabled( false );
 	m_hHealthImage.SetZPos( 4 );
 	m_hHealthImage.SetCallback( "Paint", HealthPaint.bindenv(this) );
 
@@ -71,12 +73,14 @@ function CTFHudPlayerHealth::Init()
 
 	m_hHealthValue = vgui.CreatePanel( "Label", self, "PlayerStatusHealthValue" );
 	m_hHealthValue.SetVisible( true );
+	m_hHealthValue.SetPaintBackgroundEnabled( false );
 	m_hHealthValue.SetFont( surface.GetFont( "HudClassHealth", true ) );
 	m_hHealthValue.SetContentAlignment( Alignment.center );
 	m_hHealthValue.SetZPos( 5 );
 
 	m_hArmourValue = vgui.CreatePanel( "Label", self, "PlayerStatusArmourValue" );
 	m_hArmourValue.SetVisible( true );
+	m_hArmourValue.SetPaintBackgroundEnabled( false );
 	m_hArmourValue.SetFont( surface.GetFont( "HudClassHealth", true ) );
 	m_hArmourValue.SetContentAlignment( Alignment.center );
 	m_hArmourValue.SetZPos( 5 );
@@ -84,6 +88,9 @@ function CTFHudPlayerHealth::Init()
 
 function CTFHudPlayerHealth::PerformLayout()
 {
+	TFHud.m_hCrosshair.SetSize( 32, 32 );
+	TFHud.m_hCrosshair.SetPos( XRES(320) - 16, YRES(240) - 16 );
+
 	// "Resource/UI/HudPlayerHealth.res"
 	self.SetPos( 0, ScreenHeight() - YRES(120) );
 	self.SetSize( YRES(250), YRES(120) );

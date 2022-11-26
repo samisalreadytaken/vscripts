@@ -27,6 +27,7 @@ function CSGOHudFlashlight::Init()
 	self.SetZPos( 0 );
 	self.SetAlpha( 0 );
 	self.SetVisible( false );
+	self.SetPaintBackgroundEnabled( false );
 	self.SetCallback( "Paint", Paint.bindenv(this) );
 
 	m_flFlashlight = 1.0;
@@ -145,6 +146,7 @@ function CSGOHudSuitPower::Init()
 	self.SetZPos( 0 );
 	self.SetAlpha( 0 );
 	self.SetVisible( false );
+	self.SetPaintBackgroundEnabled( false );
 	self.SetCallback( "Paint", Paint.bindenv(this) );
 
 	m_flPower = 1.0;

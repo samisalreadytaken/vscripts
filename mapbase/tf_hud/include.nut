@@ -9,10 +9,6 @@
 //		TFHud.SetCrosshairVisible( bool state )
 //		TFHud.SetCrosshairImage( string imageFile, string weaponClassname = null )
 //
-//		fx <- COverlayEffect( "effects/combine_binocoverlay" );
-//		TFHud.AddEffect( fx )
-//		TFHud.RemoveEffect( fx )
-//
 //-------------------------------------------------------------
 // Resource files: [tf]
 //		"resources/tf2.ttf"

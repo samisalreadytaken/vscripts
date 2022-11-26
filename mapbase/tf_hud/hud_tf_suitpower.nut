@@ -25,6 +25,7 @@ function CTFHudSuitPower::Init()
 	m_hEffectMeterLabel = vgui.CreatePanel( "Label", self, "ItemEffectMeterLabel" )
 	m_hEffectMeterLabel.SetZPos( 2 );
 	m_hEffectMeterLabel.SetVisible( true );
+	m_hEffectMeterLabel.SetPaintBackgroundEnabled( false );
 	m_hEffectMeterLabel.SetContentAlignment( Alignment.center );
 	m_hEffectMeterLabel.SetFont( surface.GetFont( "TFFontSmall", true ) );
 	m_hEffectMeterLabel.SetText( "AUX" );

@@ -41,7 +41,6 @@ if ( CLIENT_DLL )
 
 	CSHud <-
 	{
-		self = null
 		m_bVisible = true
 
 		m_pPlayerHealth = null
@@ -56,7 +55,6 @@ if ( CLIENT_DLL )
 
 		m_hCrosshair = null
 		m_Crosshairs = null
-		m_Effects = null
 	}
 
 	IncludeScript( "cs_hud/hudhealtharmor.nut" );
@@ -65,60 +63,11 @@ if ( CLIENT_DLL )
 	IncludeScript( "cs_hud/hudsuit.nut" );
 	IncludeScript( "cs_hud/hudscope.nut" );
 
-	//
-	// Fullscreen overlay effect drawn over the HUD.
-	// NOTE: Refract materials will override HUD render.
-	//
-	//		fx <- COverlayEffect( "effects/combine_binocoverlay" );
-	//		CSHud.AddEffect( fx )
-	//		CSHud.RemoveEffect( fx )
-	//
-	class COverlayEffect
-	{
-		m_iTexture = -1;
-
-		constructor( img )
-		{
-			m_iTexture = surface.ValidateTexture( img, true );
-		}
-
-		function Render()
-		{
-			surface.SetColor( 255, 255, 255, 255 );
-			surface.SetTexture( m_iTexture );
-			surface.DrawTexturedRect( 0, 0, XRES(640), YRES(480) );
-		}
-	}
-
-	function CSHud::AddEffect( effect )
-	{
-		if ( "Render" in effect )
-		{
-			if ( !m_Effects )
-				m_Effects = [];
-
-			m_Effects.append( effect );
-			self.SetPostChildPaintEnabled( true );
-		}
-	}
-
-	function CSHud::RemoveEffect( effect )
-	{
-		if ( m_Effects )
-		{
-			local i = m_Effects.find( effect );
-			if ( i != null )
-			{
-				m_Effects.remove(i);
-				if ( !m_Effects.len() )
-					self.SetPostChildPaintEnabled( false );
-			}
-		}
-	}
-
 	function CSHud::GetRootPanel()
 	{
-		return self;
+		if ( !("GetHudViewport" in vgui) )
+			return vgui.GetClientDLLRootPanel();
+		return vgui.GetHudViewport();
 	}
 
 	function CSHud::SetVisible( state )
@@ -149,7 +98,6 @@ if ( CLIENT_DLL )
 		SetHudElementVisible( "CHudVehicle", istate );
 
 		m_bVisible = state;
-		self.SetVisible( state );
 	}
 
 	function CSHud::Init()
@@ -158,15 +106,6 @@ if ( CLIENT_DLL )
 
 		if ( m_pPlayerHealth && m_pPlayerHealth.self && m_pPlayerHealth.self.IsValid() )
 			return;
-
-		self = vgui.CreatePanel( "Panel", vgui.GetClientDLLRootPanel(), "CS Hud Root" );
-		self.SetPos( 0, 0 );
-		self.SetSize( ScreenWidth(), ScreenHeight() );
-		self.SetPaintEnabled( false );
-		self.SetPaintBackgroundEnabled( false );
-		self.SetPostChildPaintEnabled( false );
-		self.SetCallback( "PostChildPaint", RenderPanelEffects.bindenv(this) );
-		self.SetCallback( "PerformLayout", PerformLayout.bindenv(this) );
 
 			m_pPlayerHealth = CSGOHudHealthArmor( CSHud );
 			m_pWeaponAmmo = CSGOHudWeaponAmmo( CSHud );
@@ -191,13 +130,17 @@ if ( CLIENT_DLL )
 		m_hCrosshair = vgui.CreatePanel( "ImagePanel", GetRootPanel(), "CSGOHudReticle" );
 		m_hCrosshair.SetZPos( 1 );
 		m_hCrosshair.SetVisible( true );
+		// m_hCrosshair.SetPos( 0, 0 );
+		// m_hCrosshair.SetSize( ScreenWidth(), ScreenHeight() );
+		// m_hCrosshair.SetPaintBackgroundEnabled( false );
+		// m_hCrosshair.SetCallback( "Paint", DrawCrosshair.bindenv(this) );
 		m_hCrosshair.SetShouldScaleImage( false );
 		m_hCrosshair.SetImage( "panorama/images/hud/reticle/crosshair", true );
+		m_hCrosshair.SetDrawColor( 0xff, 0xcc, 0x00, 0xff );
 		//crosshairColor1: #82b116;
 		//crosshairColor2: #ffcc00;
 		//crosshairColor3: #00ffff;
 		//crosshairColor4: #96ffff;
-		m_hCrosshair.SetDrawColor( 0xff, 0xcc, 0x00, 0xff );
 
 		SetVisible( m_bVisible );
 
@@ -207,30 +150,54 @@ if ( CLIENT_DLL )
 			CSHud.m_flBackgroundAlpha = clamp( Convars.GetFloat( "cl_hud_background_alpha" ), 0.0, 1.0 );
 		} );
 
-		Convars.RegisterConvar( "cs_hud_enabled", m_bVisible.tointeger().tostring(), "", FCVAR_CLIENTDLL | FCVAR_ARCHIVE );
-		Convars.SetChangeCallback( "cs_hud_enabled", function(...)
-		{
-			local state = Convars.GetBool( "cs_hud_enabled" );
-			CSHud.SetVisible( state );
-		} );
-
 		NetMsg.Receive( "CSHud.StatusUpdate", StatusUpdate.bindenv(this) );
 	}
-
-	function CSHud::RenderPanelEffects()
+/*
+	function CSHud::DrawCrosshair()
 	{
-		foreach( effect in m_Effects )
+		surface.SetColor( 0x82, 0xb1, 0x16, 0xcc );
+
+		local ww = XRES(320);
+		local hh = YRES(240);
+
+		local size = 8;
+		local gap = 6;
+		local thickness = 2;
+		local thicknessHalf = thickness / 2;
+
+		// top
+		local x0 = ww - thicknessHalf;
+		local y0 = hh - gap - size;
+		surface.DrawFilledRect( x0, y0, thickness, size );
+
+		// left
+		local y1 = hh - thicknessHalf;
+		local x1 = ww - gap - size;
+		surface.DrawFilledRect( x1, y1, size, thickness );
+
+		// right
+		local y2 = hh - thicknessHalf;
+		local x2 = ww + gap;
+		surface.DrawFilledRect( x2, y2, size, thickness );
+
+		// bottom
+		local x3 = ww - thicknessHalf;
+		local y3 = hh + gap;
+		surface.DrawFilledRect( x3, y3, thickness, size );
+
+		local outline = 1;
 		{
-			effect.Render();
+			thickness += outline+outline;
+			size += outline+outline;
+
+			surface.SetColor( 0x00, 0x00, 0x00, 0xcc );
+			surface.DrawOutlinedRect( x0-outline, y0-outline, thickness, size, outline );
+			surface.DrawOutlinedRect( x1-outline, y1-outline, size, thickness, outline );
+			surface.DrawOutlinedRect( x2-outline, y2-outline, size, thickness, outline );
+			surface.DrawOutlinedRect( x3-outline, y3-outline, thickness, size, outline );
 		}
 	}
-
-	function CSHud::PerformLayout()
-	{
-		m_hCrosshair.SetSize( 32, 32 );
-		m_hCrosshair.SetPos( XRES(320) - 16, YRES(240) - 16 );
-	}
-
+*/
 	function CSHud::OnSelectWeapon( weapon )
 	{
 		if ( m_Crosshairs )
@@ -322,7 +289,6 @@ if ( CLIENT_DLL )
 			{
 				m_pFlashlight.StopFade();
 			}
-
 
 			local flPower = NetMsg.ReadFloat();
 			m_pSuitPower.m_flPower = flPower;

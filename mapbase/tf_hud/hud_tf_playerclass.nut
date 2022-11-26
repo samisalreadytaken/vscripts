@@ -17,6 +17,7 @@ function CTFHudPlayerClass::Init()
 	self = vgui.CreatePanel( "Panel", TFHud.m_pPlayerStatus.self, "HudPlayerClass" );
 	self.SetZPos( 1 );
 	self.SetVisible( true );
+	self.SetPaintBackgroundEnabled( false );
 	self.SetCallback( "PerformLayout", PerformLayout.bindenv(this) );
 
 	m_hClassImage = vgui.CreatePanel( "ImagePanel", self, "PlayerStatusClassImage" )

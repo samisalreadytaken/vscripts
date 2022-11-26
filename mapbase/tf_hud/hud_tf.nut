@@ -62,7 +62,6 @@ if ( CLIENT_DLL )
 
 	TFHud <-
 	{
-		self = null
 		m_bVisible = true
 
 		m_pPlayerStatus = null
@@ -80,7 +79,6 @@ if ( CLIENT_DLL )
 		m_hAnim = null
 		m_hCrosshair = null
 		m_Crosshairs = null
-		m_Effects = null
 	}
 
 	IncludeScript( "tf_hud/hud_tf_playerstatus.nut" );
@@ -91,7 +89,7 @@ if ( CLIENT_DLL )
 	IncludeScript( "tf_hud/hud_tf_flashlight.nut" );
 	IncludeScript( "tf_hud/hud_tf_suitpower.nut" );
 	IncludeScript( "tf_hud/hud_tf_scope.nut" );
-
+/*
 	//
 	// Fullscreen overlay effect drawn over the HUD.
 	// NOTE: Refract materials will override HUD render.
@@ -143,9 +141,19 @@ if ( CLIENT_DLL )
 		}
 	}
 
+	function TFHud::RenderPanelEffects()
+	{
+		foreach( effect in m_Effects )
+		{
+			effect.Render();
+		}
+	}
+*/
 	function TFHud::GetRootPanel()
 	{
-		return self;
+		if ( !("GetHudViewport" in vgui) )
+			return vgui.GetClientDLLRootPanel();
+		return vgui.GetHudViewport();
 	}
 
 	function TFHud::SetVisible( state )
@@ -176,7 +184,6 @@ if ( CLIENT_DLL )
 		SetHudElementVisible( "CHudVehicle", istate );
 
 		m_bVisible = state;
-		self.SetVisible( state );
 
 		SetPlayerClass( m_nPlayerTeam, m_nPlayerClass, 1 );
 	}
@@ -187,15 +194,6 @@ if ( CLIENT_DLL )
 
 		if ( m_pPlayerHealth && m_pPlayerHealth.self && m_pPlayerHealth.self.IsValid() )
 			return;
-
-		self = vgui.CreatePanel( "Panel", vgui.GetClientDLLRootPanel(), "TF Hud Root" );
-		self.SetPos( 0, 0 );
-		self.SetSize( ScreenWidth(), ScreenHeight() );
-		self.SetPaintEnabled( false );
-		self.SetPaintBackgroundEnabled( false );
-		self.SetPostChildPaintEnabled( false );
-		self.SetCallback( "PostChildPaint", RenderPanelEffects.bindenv(this) );
-		self.SetCallback( "PerformLayout", PerformLayout.bindenv(this) );
 
 			m_pPlayerStatus = CTFHudPlayerStatus();
 			m_pPlayerClass = CTFHudPlayerClass();
@@ -220,6 +218,8 @@ if ( CLIENT_DLL )
 		m_pPlayerHealth.m_bBleeding = false;
 
 		m_hAnim = vgui.CreatePanel( "Panel", GetRootPanel(), "TFHudAnim" );
+		m_hAnim.SetPaintEnabled( false );
+		m_hAnim.SetPaintBackgroundEnabled( false );
 		m_hAnim.SetCallback( "OnTick", AnimThink.bindenv(this) );
 		m_hAnim.AddTickSignal( 25 );
 
@@ -231,28 +231,7 @@ if ( CLIENT_DLL )
 
 		SetVisible( m_bVisible );
 
-		Convars.RegisterConvar( "tf_hud_enabled", m_bVisible.tointeger().tostring(), "", FCVAR_CLIENTDLL | FCVAR_ARCHIVE );
-		Convars.SetChangeCallback( "tf_hud_enabled", function(...)
-		{
-			local state = Convars.GetBool( "tf_hud_enabled" );
-			TFHud.SetVisible( state );
-		} );
-
 		NetMsg.Receive( "TFHud.StatusUpdate", StatusUpdate.bindenv(this) );
-	}
-
-	function TFHud::RenderPanelEffects()
-	{
-		foreach( effect in m_Effects )
-		{
-			effect.Render();
-		}
-	}
-
-	function TFHud::PerformLayout()
-	{
-		m_hCrosshair.SetSize( 32, 32 );
-		m_hCrosshair.SetPos( XRES(320) - 16, YRES(240) - 16 );
 	}
 
 	function TFHud::AnimThink()

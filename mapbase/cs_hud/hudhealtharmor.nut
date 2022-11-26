@@ -49,6 +49,7 @@ function CSGOHudHealthArmor::Init()
 	self.SetSize( XRES(640), YRES(480) );
 	self.SetZPos( 2 );
 	self.SetVisible( true );
+	self.SetPaintBackgroundEnabled( false );
 	self.SetCallback( "PerformLayout", PerformLayout.bindenv(this) );
 	self.SetCallback( "OnTick", OnTick.bindenv(this) );
 	self.SetCallback( "Paint", Paint.bindenv(this) );
@@ -75,6 +76,9 @@ function CSGOHudHealthArmor::SetArmor( nArmor )
 
 function CSGOHudHealthArmor::PerformLayout()
 {
+	CSHud.m_hCrosshair.SetSize( 32, 32 );
+	CSHud.m_hCrosshair.SetPos( XRES(320) - 16, YRES(240) - 16 );
+
 	m_nHealthLabelWide = surface.GetCharacterWidth( m_hFont, '0' ) * 3;
 
 	// Recalculate

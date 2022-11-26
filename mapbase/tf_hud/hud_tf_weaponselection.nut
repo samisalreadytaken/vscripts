@@ -61,6 +61,7 @@ function CTFHudWeaponSelection::CItemPanel::constructor( slot, pParent )
 
 	m_pBase = vgui.CreatePanel( "Panel", pParent, "ItemPanel" );
 	m_pBase.SetVisible( true );
+	m_pBase.SetPaintBackgroundEnabled( false );
 
 	m_pBackground = vgui.CreatePanel( "ImagePanel", m_pBase, "background" );
 	m_pBackground.SetVisible( true );
@@ -71,6 +72,7 @@ function CTFHudWeaponSelection::CItemPanel::constructor( slot, pParent )
 	{
 		m_pNumberLabel = vgui.CreatePanel( "Label", m_pBackground, "NumberLabel" );
 		m_pNumberLabel.SetVisible( true );
+		m_pNumberLabel.SetPaintBackgroundEnabled( false );
 		m_pNumberLabel.SetZPos( 2 );
 		m_pNumberLabel.SetFont( m_hNumberFont );
 		m_pNumberLabel.SetText( ""+(slot+1) );
@@ -78,18 +80,21 @@ function CTFHudWeaponSelection::CItemPanel::constructor( slot, pParent )
 
 	// m_pNameLabel = vgui.CreatePanel( "Label", m_pBackground, "NameLabel" );
 	// m_pNameLabel.SetVisible( true );
+	// m_pNameLabel.SetPaintBackgroundEnabled( false );
 	// m_pNameLabel.SetZPos( 3 );
 	// m_pNameLabel.SetContentAlignment( Alignment.south );
 	// m_pNameLabel.SetCenterWrap( true );
 
 	m_pWeaponIcon = vgui.CreatePanel( "Label", m_pBackground, "Icon" );
 	m_pWeaponIcon.SetVisible( true );
+	m_pWeaponIcon.SetPaintBackgroundEnabled( false );
 	m_pWeaponIcon.SetZPos( 2 );
 	m_pWeaponIcon.SetFont( surface.GetFont( "WeaponIcons", true ) );
 	m_pWeaponIcon.SetContentAlignment( Alignment.center );
 
 	m_pWeaponIconBlur = vgui.CreatePanel( "Label", m_pBackground, "IconBlur" );
 	m_pWeaponIconBlur.SetVisible( true );
+	m_pWeaponIconBlur.SetPaintBackgroundEnabled( false );
 	m_pWeaponIconBlur.SetZPos( 1 );
 	m_pWeaponIconBlur.SetFont( surface.GetFont( "WeaponIconsSelected", true ) );
 	m_pWeaponIconBlur.SetContentAlignment( Alignment.center );
