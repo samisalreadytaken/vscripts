@@ -3,20 +3,18 @@
 --                       github.com/samisalreadytaken
 -------------------------------------------------------------------------
 
-if not IsServer() then
+if not SERVER_DLL then
 	return
 end
-
-local VS = require "vs_library-013"
 
 if g_iHackConvertEventWepSwitch then
 	StopListeningToGameEvent( g_iHackConvertEventWepSwitch )
 	g_iHackConvertEventWepSwitch = nil
 end
 
-local Entities,DoEntFireByInstanceHandle,SpawnEntityFromTableSynchronous,
+local Entities,DoEntFireByInstanceHandle,SpawnEntityFromTableSynchronous,UTIL_Remove,
 	Vector,Msg,Warning,Fmt =
-	Entities,DoEntFireByInstanceHandle,SpawnEntityFromTableSynchronous,
+	Entities,DoEntFireByInstanceHandle,SpawnEntityFromTableSynchronous,UTIL_Remove,
 	Vector,Msg,Warning,string.format
 
 local HACK_TYPE = {}
@@ -134,7 +132,9 @@ local function ConvertHack( hEnt, nType )
 	local hPlug = SpawnEntityFromTableSynchronous( "info_hlvr_holo_hacking_plug", m_KeyValues )
 
 	-- add to hierarchy
-	hPlug:SetParent( hEnt:GetMoveParent() or hEnt, "" )
+	-- NOTE: Parent to the old plug to cover all cases. Otherwise use parent attachment "hacking_point_attach"
+	hPlug:SetParent( hEnt, "" )
+
 	if hTarget then
 		hTarget:SetOwner( hPlug )
 		hTarget:SetParent( hPlug, "" )
@@ -142,6 +142,9 @@ local function ConvertHack( hEnt, nType )
 
 	local sc = hPlug:GetOrCreatePrivateScriptScope()
 	sc.m_hHackConvertParent = hEnt
+
+	-- don't try to convert me again
+	hEnt:GetOrCreatePrivateScriptScope().m_bHackConverted = true
 
 	for i = 1,13 do
 		local v = OUTPUTS[i]
@@ -163,13 +166,16 @@ local function ConvertHack( hEnt, nType )
 			hEnt:FireOutput( "OnHackStopped", m_hPlayer, hEnt, nil, 0 )
 			hEnt:FireOutput( "OnHackSuccessAnimationComplete", m_hPlayer, hEnt, nil, 0 )
 		end
+
+		-- If it's simple activate, it can be automated.
+		-- However simply firing BeginHack does not play the animations (projector_out, hacked), and
+		-- they can't seem to be manually played either.
+		-- DoEntFireByInstanceHandle( hPlug, "BeginHack", "", 0.0, m_hPlayer, nil )
 	end
 
 	-- the original is preserved for the outputs
 	DoEntFireByInstanceHandle( hEnt, "Disable", "", 0, nil, nil )
 	hEnt:AddEffects(32) -- EF_NODRAW
-
-	hPlug:EmitSound("HackingSphere.Disappear")
 
 	Msg("hack_convert: success\n")
 end
@@ -194,7 +200,7 @@ local function ThinkHackConvert()
 	if holo then
 
 		if iFrom == m_iConvertTo then
-			return 1.0
+			return m_flThinkInterval
 		end
 
 		local plug = holo:GetOwner()
@@ -209,8 +215,16 @@ local function ThinkHackConvert()
 				end
 			end
 --]]
+			UTIL_Remove( holo )
+
+			if plug:GetOrCreatePrivateScriptScope().m_bHackConverted then
+				-- a new holo was spawned, it's dead now
+				return m_flThinkInterval
+			end
+
+			Msg(Fmt( "hack_convert: %d->%d\n", iFrom, m_iConvertTo ))
 			ConvertHack( plug, m_iConvertTo )
-			return 1.0
+			return m_flThinkInterval
 		end
 
 	end
@@ -222,7 +236,7 @@ local function OnWeaponSwitch(event)
 
 	if event.item == "hlvr_multitool" then
 
-		m_flThinkInterval = 0.2
+		m_flThinkInterval = 0.15
 		m_hPlayer:SetContextThink( "ThinkHackConvert", ThinkHackConvert, 0.0 )
 
 	elseif m_flThinkInterval ~= 2.0 then
@@ -352,7 +366,7 @@ Convars:RegisterCommand("hack_convert_enable", function( cmd, input )
 			g_iHackConvertEventWepSwitch = ListenToGameEvent( "weapon_switch", OnWeaponSwitch, nil )
 		end
 
-		m_flThinkInterval = 0.2
+		m_flThinkInterval = 0.15
 		m_hPlayer:SetContextThink( "ThinkHackConvert", ThinkHackConvert, 0.0 )
 
 		if not Entities:FindByClassname( nil, "info_hlvr_holo_hacking_plug" ) then
@@ -404,6 +418,8 @@ Convars:RegisterCommand("hack_convert_introvar", function( cmd, input )
 	end
 
 end, "Puzzle intro variation", FCVAR_NONE)
+
+local VS = require "vs_library-014"
 
 if not VS.OnPlayerSpawn( Init, "hack_convert: could not find player, aborting", true ) then
 	Init()
