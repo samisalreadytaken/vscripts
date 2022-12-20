@@ -120,6 +120,7 @@ local AddThinkToEnt = AddThinkToEnt;
 local Time = Time;
 local EmitSoundOnClient = EmitSoundOnClient;
 local IsPlayerABot = IsPlayerABot;
+local GetPlayerFromUserID = GetPlayerFromUserID;
 
 local FireScriptEvent = FireScriptEvent;
 local ScriptEventCallbacks = ScriptEventCallbacks; // static when using mapspawn_ping
@@ -159,6 +160,7 @@ enum PingType
 	// UNCOMMON,
 	INCAP,
 	ONFIRE,
+	DEAD_SURVIVOR,
 
 	WARNING,
 	// WARNING_URGENT,
@@ -249,6 +251,7 @@ m_PingIsWarning <-
 m_PingIsItem <-
 {
 	[PingType.INCAP]			= null, // HACKHACK: make it an item for early death
+	[PingType.DEAD_SURVIVOR]	= null,
 
 	[PingType.MEDKIT]					= null,
 	[PingType.PILLS]					= null,
@@ -323,6 +326,7 @@ local PingMaterial = array( PingType.MAX_COUNT );
 	// PingMaterial[PingType.UNCOMMON]		= "ping_system/ping_base.vmt",
 	PingMaterial[PingType.INCAP]		= "ping_system/ping_base.vmt",
 	PingMaterial[PingType.ONFIRE]			= "ping_system/ping_base_fire.vmt",
+	PingMaterial[PingType.DEAD_SURVIVOR]	= "ping_system/ping_dead_survivor.vmt",
 
 	PingMaterial[PingType.WARNING]			= "ping_system/ping_warning.vmt",
 	// PingMaterial[PingType.WARNING_URGENT]	= "ping_system/ping_warning.vmt",
@@ -529,7 +533,7 @@ function Init()
 	if ( !b )
 		error( "PingSystem: ERROR invalid RR!\n");
 
-	Msg("PingSystem::Init() [20]\n");
+	Msg("PingSystem::Init() [21]\n");
 }
 
 function OnGameEvent_round_start(ev)
@@ -772,6 +776,7 @@ enum PingResponse
 	dominated,
 	chat,
 	// remark
+	death
 }
 
 m_ValidConcepts <-
@@ -1379,6 +1384,51 @@ function rr_Ping( Q )
 	}
 }
 
+function OnGameEvent_dead_survivor_visible( event )
+{
+	if ( PingResponse.death in s_AutoBlock )
+		return;
+
+	local player = GetPlayerFromUserID( event.userid );
+	if ( !player )
+		return;
+
+	local entity = EntIndexToHScript( event.subject );
+	if ( !entity )
+		return;
+
+	if (PING_DEBUG)
+		printf( "dead_survivor_visible %s -> %s [%s]\n", ""+player, ""+GetPlayerFromUserID(event.deadplayer), ""+entity );
+
+	s_bPlaySound = false;
+	return PingEntity( player, entity );
+}
+
+function OnGameEvent_player_death( event )
+{
+	// player_death is fired for common infected kills as well, and without 'userid'...
+	if ( "userid" in event )
+	{
+		if ( PingResponse.death in s_AutoBlock )
+			return;
+
+		local player = GetPlayerFromUserID( event.userid );
+		if ( player && player.GetZombieType() == m_ZombieTypeForSI.SURVIVOR )
+		{
+			local entity = FindEntityByClassWithin( null, "survivor_death_model", player.GetOrigin(), 0.1 );
+			if ( entity )
+			{
+				if (PING_DEBUG)
+					printf( "player_death %s [%s]\n", ""+player, ""+entity );
+
+				s_bPlaySound = false;
+				return PingEntity( player, entity );
+			}
+		}
+	}
+}
+
+
 local s_nErrCount = 0;
 
 local PreFadeOut = function( hSpr, hOwner, hTarget = null )
@@ -1639,7 +1689,7 @@ function SpriteCreate( owner, type, origin, target = null, hParent = null )
 		}
 		else
 		{
-			if (PING_DEBUG) error("NULL ent in player pings " + pEnt);
+			if (PING_DEBUG) error("NULL ent in player pings " + pEnt + "\n");
 
 			sprite_kv.model = ping[0];
 			pEnt = SpawnEntityFromTable( "env_sprite", sprite_kv );
@@ -1988,6 +2038,7 @@ m_IsPingableEntity <-
 	upgrade_ammo_explosive = null,
 	upgrade_ammo_incendiary = null,
 	upgrade_laser_sight = null,
+	survivor_death_model = null,
 	prop_physics = null
 }
 
@@ -2281,6 +2332,12 @@ function PingEntity( player, pEnt, vecPingPos = null )
 			vecPingPos.z += 12.0;
 			break;
 
+		case "survivor_death_model":
+			pingType = PingType.DEAD_SURVIVOR;
+			vecPingPos = pEnt.GetCenter();
+			vecPingPos.z += 12.0;
+			break;
+
 		// Partial matches and undefined entities
 		default:
 		{
@@ -2548,6 +2605,7 @@ function DisableAutoPing( i = 1 )
 		add( PingResponse.special );
 		add( PingResponse.dominated );
 		add( PingResponse.weapon );
+		add( PingResponse.death );
 		break;
 
 	case 2:
