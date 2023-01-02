@@ -2,22 +2,30 @@
 //                       github.com/samisalreadytaken
 //-----------------------------------------------------------------------
 //
-// AchievementManager -----------------------------------------
+// SteamAchievements ------------------------------------------
 //
 //	"SteamAchievementsPostInit" hook is called post init.
 //
 // server:
-//		SteamAchievements::SetAchievement( player, string ID )
-//		SteamAchievements::SetStat( player, string ID, int progress, bool notify )
-//		SteamAchievements::IncrementStat( player, string ID, int amount, bool notify )
-//		SteamAchievements::GetStat( player, string ID )
-//		SteamAchievements::IndicateAchievementProgress( player, string ID )
 //		SteamAchievements::LoadFromFile( string fileName )
+//		SteamAchievements::SetAchievement( player, string ID )
+//		SteamAchievements::SetStat( player, string ID, int progress )
+//		SteamAchievements::IncrementStat( player, string ID, int amount )
+//		SteamAchievements::IndicateAchievementProgress( player, string ID )
+//		SteamAchievements::GetAchievement( player, string ID )
+//		SteamAchievements::GetStat( player, string ID )
+//		SteamAchievements::GetAchievementUnlockTime( player, string ID ) // unix time, 0 if not unlocked
+//		SteamAchievements::GetAchievementUnlockDateString( player, string ID, bool bLocalTime, bool bISO8601 )
 //		SteamAchievements::StoreStats( player ) // write to permanent storage, automatically called on player disconnect
 //		SteamAchievements::ClearAchievement( player, string ID )
 //
 // client:
 //		SteamAchievements::LoadFromFile( string fileName )
+//		SteamAchievements::RequestCurrentStats()
+//		SteamAchievements::GetAchievement( string ID )
+//		SteamAchievements::GetStat( string ID )
+//		SteamAchievements::GetAchievementUnlockTime( string ID )
+//		SteamAchievements::GetAchievementUnlockDateString( string ID, bool bLocalTime, bool bISO8601 )
 //
 //
 //
@@ -103,11 +111,13 @@ local Init = function(...)
 		IncludeScript( "steam/utils.nut" );
 
 		IncludeScript( "steam/NotificationManager.nut" );
-		IncludeScript( "steam/AchievementManager.nut" );
 
 		IncludeScript( "steam/FriendNotification.nut" );
 		IncludeScript( "steam/AchievementNotification.nut" );
 	}
+
+	// always redefine classes. saverestore bug. see mapbase-source#221
+	IncludeScript( "steam/AchievementManager.nut" );
 
 	SteamAchievements.Init();
 
