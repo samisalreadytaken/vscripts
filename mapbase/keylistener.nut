@@ -19,6 +19,8 @@ local NetMsg = NetMsg;
 local g_OnPressed = {}
 local g_OnReleased = {}
 
+local Init;
+
 if ( SERVER_DLL )
 {
 	local g_KeyLookup = {}
@@ -52,36 +54,44 @@ if ( SERVER_DLL )
 		}
 	}
 
-	NetMsg.Receive( "KeyListener.Reg", function( player )
+	Init = function(...)
 	{
-		bQ = true;
-
-		local c = NetMsg.ReadByte();
-		while ( c-- )
+		NetMsg.Receive( "KeyListener.Reg", function( player )
 		{
-			local button = NetMsg.ReadByte();
-			local key = NetMsg.ReadString().toupper();
-			if ( key in g_KeyLookup )
+			bQ = true;
+
+			local c = NetMsg.ReadByte();
+			while ( c-- )
 			{
-				local callbacks = delete g_KeyLookup[ key ];
+				local button = NetMsg.ReadByte();
+				local key = NetMsg.ReadString().toupper();
+				if ( key in g_KeyLookup )
+				{
+					local callbacks = delete g_KeyLookup[ key ];
 
-				g_OnPressed[ button ] <- callbacks[0];
-				g_OnReleased[ button ] <- callbacks[1];
+					g_OnPressed[ button ] <- callbacks[0];
+					g_OnReleased[ button ] <- callbacks[1];
 
-				printf( "KeyListener.Register: %s[%d]\n", key, button );
+					printf( "KeyListener.Register: %s[%d]\n", key, button );
+				}
 			}
-		}
-	} );
+		} );
 
-	NetMsg.Receive( "KeyListener.InputDown", function( player )
-	{
-		return g_OnPressed[ NetMsg.ReadByte() ]();
-	} );
+		NetMsg.Receive( "KeyListener.InputDown", function( player )
+		{
+			return g_OnPressed[ NetMsg.ReadByte() ]();
+		} );
 
-	NetMsg.Receive( "KeyListener.InputRelease", function( player )
-	{
-		return g_OnReleased[ NetMsg.ReadByte() ]();
-	} );
+		NetMsg.Receive( "KeyListener.InputRelease", function( player )
+		{
+			return g_OnReleased[ NetMsg.ReadByte() ]();
+		} );
+
+		return Entities.First().SetContextThink( "KeyListener_", function(_)
+		{
+			return StopListeningToAllGameEvents( "KeyListener" );
+		}, 0.1 );
+	}
 }
 
 if ( CLIENT_DLL )
@@ -124,7 +134,7 @@ if ( CLIENT_DLL )
 	{
 		local button = input.StringToButtonCode( keyName );
 		if ( button <= 0 )
-			return Warning( "Invalid key name '"+keyName+"'\n" );
+			return Warning( "SetKeyListener: Invalid key name '"+keyName+"'\n" );
 
 		g_KeyState[ button ] <- false;
 
@@ -184,44 +194,51 @@ if ( CLIENT_DLL )
 		return 0.0;
 	}
 
-	NetMsg.Receive( "KeyListener.Reg", function()
+	Init = function(...)
 	{
-		local c = NetMsg.ReadByte();
-		local i = c;
-		NetMsg.Start( "KeyListener.Reg" );
-			NetMsg.WriteByte( c );
-			while ( i-- )
-			{
-				local key = NetMsg.ReadString();
-				local button = input.StringToButtonCode( key );
-				if ( button <= 0 )
-					Warning( "Invalid key name '"+key+"'\n" );
+		NetMsg.Receive( "KeyListener.Reg", function()
+		{
+			local c = NetMsg.ReadByte();
+			local i = c;
+			NetMsg.Start( "KeyListener.Reg" );
+				NetMsg.WriteByte( c );
+				while ( i-- )
+				{
+					local key = NetMsg.ReadString();
+					local button = input.StringToButtonCode( key );
+					if ( button <= 0 )
+						Warning( "Invalid key name '"+key+"'\n" );
 
-				g_KeyState[ button ] <- false;
+					g_KeyState[ button ] <- false;
 
-				if ( NetMsg.ReadBool() )
-					g_PressedSV[ button ] <- true;
+					if ( NetMsg.ReadBool() )
+						g_PressedSV[ button ] <- true;
 
-				if ( NetMsg.ReadBool() )
-					g_ReleasedSV[ button ] <- true;
+					if ( NetMsg.ReadBool() )
+						g_ReleasedSV[ button ] <- true;
 
-				NetMsg.WriteByte( button );
-				NetMsg.WriteString( key );
+					NetMsg.WriteByte( button );
+					NetMsg.WriteString( key );
 
-				local bind = input.BindingForKey( button );
-				if ( bind )
-					printf( "KeyListener.Register: %s[%d] (bind '%s')\n", key, button, bind );
-				else
-					printf( "KeyListener.Register: %s[%d]\n", key, button );
-			}
-		NetMsg.Send();
-	} );
+					local bind = input.BindingForKey( button );
+					if ( bind )
+						printf( "KeyListener.Register: %s[%d] (bind '%s')\n", key, button, bind );
+					else
+						printf( "KeyListener.Register: %s[%d]\n", key, button );
+				}
+			NetMsg.Send();
+		} );
 
-	local Init = function(...)
-	{
-		return Entities.First().SetContextThink( "KeyListener", KeyListenerThink, 0.1 );
+		Entities.First().SetContextThink( "KeyListener", KeyListenerThink, 0.1 );
+
+		return Entities.First().SetContextThink( "KeyListener_", function(_)
+		{
+			return StopListeningToAllGameEvents( "KeyListener" );
+		}, 0.1 );
 	}
-
-	ListenToGameEvent( "player_spawn", Init, "KeyListener" );
-	Hooks.Add( this, "OnRestore", Init, "KeyListener" );
 }
+
+ListenToGameEvent( "player_spawn", Init, "KeyListener" );
+Hooks.Add( this, "OnRestore", Init, "KeyListener" );
+
+KeyListener_Init <- Init;
