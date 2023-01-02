@@ -3,6 +3,7 @@
 //-----------------------------------------------------------------------
 //
 local XRES = XRES, YRES = YRES;
+local input = input, Time = Time;
 
 
 const MAX_WEAPONS = 48;
@@ -181,7 +182,7 @@ function CTFHudWeaponSelection::Init()
 	self.SetVisible( false );
 	self.SetPaintEnabled( false );
 	self.SetPaintBackgroundEnabled( false );
-	self.AddTickSignal( 50 );
+	self.AddTickSignal( 25 );
 	self.SetCallback( "OnTick", OnTick.bindenv(this) );
 	self.SetCallback( "PerformLayout", PerformLayout.bindenv(this) );
 
@@ -242,10 +243,10 @@ function CTFHudWeaponSelection::OnTick()
 {
 	if ( m_bFading )
 	{
-		local a = self.GetAlpha();
-		if ( a > 32 )
+		local t = (Time() - m_flHideTime) / 0.5;
+		if ( t < 1.0 )
 		{
-			self.SetAlpha( a - 32 );
+			self.SetAlpha( (1.0 - t) * 255.0 );
 		}
 		else
 		{
@@ -548,6 +549,7 @@ function CTFHudWeaponSelection::LastWeapon(...)
 	if ( m_hLastWeapon && m_hLastWeapon.IsValid() )
 	{
 		input.MakeWeaponSelection( m_hLastWeapon );
+		TFHud.OnSelectWeapon( m_hLastWeapon );
 	}
 
 	m_hLastWeapon = player.GetActiveWeapon();

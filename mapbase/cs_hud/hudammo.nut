@@ -4,6 +4,7 @@
 //
 local XRES = XRES, YRES = YRES;
 local surface = surface;
+local Fmt = format;
 
 
 class CSGOHudWeaponAmmo
@@ -222,7 +223,7 @@ function CSGOHudWeaponAmmo::OnTick()
 		}
 		else
 		{
-			if ( m_bVisibleClip )
+			if ( m_bVisible )
 			{
 				m_bVisible = false;
 				self.SetVisible( false );

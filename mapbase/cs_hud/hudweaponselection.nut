@@ -3,9 +3,7 @@
 //-----------------------------------------------------------------------
 //
 local XRES = XRES, YRES = YRES;
-local surface = surface;
-local Localize = Localize;
-local input = input;
+local surface = surface, Localize = Localize, input = input, Time = Time;
 
 
 const MAX_WEAPONS = 48;
@@ -55,12 +53,13 @@ class CSGOHudWeaponSelection.CItemPanel
 	m_yposNumber = 0
 
 	m_nPos = -1
+
+	m_index = 0
 }
 
-function CSGOHudWeaponSelection::CItemPanel::constructor( slot, pos )
+function CSGOHudWeaponSelection::CItemPanel::constructor( slot )
 {
 	m_chNumber = '0'+(slot+1);
-	m_nPos = pos;
 
 	m_hFontLabel = surface.GetFont( "weapon-selection-item-name-text", true );
 	m_hFontIcon = surface.GetFont( "weapon-selection-item-icon", true );
@@ -70,13 +69,17 @@ function CSGOHudWeaponSelection::CItemPanel::constructor( slot, pos )
 function CSGOHudWeaponSelection::CItemPanel::Paint()
 {
 	// Draw the number if this is the first position in a slot
-	if ( !m_nPos )
+	if ( m_index )
 	{
 		// background
 		local flAlpha = CSHud.m_flBackgroundAlpha;
 		surface.SetColor( 0x00, 0x00, 0x00, 0xcc * flAlpha );
-		surface.DrawFilledRectFade( XRES(640-140-24), m_yposNumber-YRES(1), XRES(140), YRES(34), 0x00, 0xff, true );
-		surface.DrawFilledRect( XRES(640-24), m_yposNumber-YRES(1), XRES(24), YRES(34) );
+
+		local w = XRES(140), h = YRES(34);
+		local x = XRES(640-24) - w, y = m_yposNumber-YRES(1);
+
+		surface.DrawFilledRectFade( x, y, w, h, 0x00, 0xff, true );
+		surface.DrawFilledRect( x + w, y, XRES(24), h );
 
 		// number label shadow
 		surface.SetTextFont( m_hFontLabel );
@@ -93,17 +96,23 @@ function CSGOHudWeaponSelection::CItemPanel::Paint()
 	if ( !m_chIcon )
 		return;
 
-	// Draw a darker background if this is the selected slot
 	if ( m_bSelected )
 	{
+		// Draw a darker background if this is the selected slot
 		local flAlpha = CSHud.m_flBackgroundAlpha;
 		surface.SetColor( 0x00, 0x00, 0x00, 0xcc * flAlpha );
-		surface.DrawFilledRectFade( XRES(640-140-24), m_yposNumber-YRES(1), XRES(140), YRES(34), 0x00, 0xff, true );
-		surface.DrawFilledRect( XRES(640-24), m_yposNumber-YRES(1), XRES(24), YRES(34) );
-	}
 
-	if ( m_bSelected )
-	{
+		local w = XRES(140), h = YRES(34);
+		local x = XRES(640-24) - w, y = m_yposNumber-YRES(1);
+
+		surface.DrawFilledRectFade( x, y, w, h, 0x00, 0xff, true );
+		surface.DrawFilledRect( x + w, y, XRES(24), h );
+
+		// borders
+		w += XRES(24);
+		surface.DrawFilledRectFade( x, y, w, 1, 0x00, 0xff, true );
+		surface.DrawFilledRectFade( x, y + h-1, w, 1, 0x00, 0xff, true );
+
 		// icon blur
 		surface.SetTextFont( m_hFontIconBlur );
 		surface.SetTextColor( 0xb9, 0x94, 0x00, 0xff );
@@ -157,11 +166,26 @@ function CSGOHudWeaponSelection::CItemPanel::SetPos( x, y )
 	if ( !m_chIcon )
 		return;
 
-	m_xposIcon = x - surface.GetCharacterWidth( m_hFontIcon, m_chIcon ) - YRES(70) * m_nPos - YRES(8);
-	m_yposIcon = y;
+	local xOffset = x - YRES(70) * m_nPos - YRES(8);
 
-	m_xposLabel = x - surface.GetTextWidth( m_hFontLabel, m_szName ) - YRES(70) * m_nPos - YRES(8);
-	m_yposLabel = y + surface.GetFontTall( m_hFontIcon ) - YRES(4);
+	m_xposIcon = xOffset - surface.GetCharacterWidth( m_hFontIcon, m_chIcon );
+	m_yposIcon = y + YRES(2);
+
+	local width = 0;
+
+	if ( m_szName.find("\n") == null )
+	{
+		width = surface.GetTextWidth( m_hFontLabel, m_szName );
+	}
+	else
+	{
+		local p = split( m_szName, "\n" );
+		foreach ( s in p )
+			width += surface.GetTextWidth( m_hFontLabel, s );
+	}
+
+	m_xposLabel = xOffset - width;
+	m_yposLabel = y + YRES(37) - surface.GetFontTall( m_hFontLabel ); // m_yposNumber - YRES(1) + YRES(34) - surface.GetFontTall( m_hFontLabel ) - YRES(1);
 }
 
 function CSGOHudWeaponSelection::Init()
@@ -172,7 +196,7 @@ function CSGOHudWeaponSelection::Init()
 	self.SetVisible( false );
 	self.SetPaintEnabled( true );
 	self.SetPaintBackgroundEnabled( false );
-	self.AddTickSignal( 50 );
+	self.AddTickSignal( 25 );
 	self.SetCallback( "OnTick", OnTick.bindenv(this) );
 	self.SetCallback( "Paint", Paint.bindenv(this) );
 	self.SetCallback( "PerformLayout", PerformLayout.bindenv(this) );
@@ -198,7 +222,9 @@ function CSGOHudWeaponSelection::Init()
 
 	for ( local i = 0; i < MAX_WEAPON_SLOTS; ++i )
 	{
-		m_ItemPanels[i] = [ CItemPanel( i, 0 ) ];
+		local p = CItemPanel( i );
+		p.m_index = 1;
+		m_ItemPanels[i] = [ p ];
 	}
 }
 
@@ -241,10 +267,10 @@ function CSGOHudWeaponSelection::OnTick()
 {
 	if ( m_bFading )
 	{
-		local a = self.GetAlpha();
-		if ( a > 32 )
+		local t = (Time() - m_flHideTime) / 0.5;
+		if ( t < 1.0 )
 		{
-			self.SetAlpha( a - 32 );
+			self.SetAlpha( (1.0 - t) * 255.0 );
 		}
 		else
 		{
@@ -364,6 +390,7 @@ function CSGOHudWeaponSelection::PerformLayoutInternal()
 	for ( local slot = 0; slot < MAX_WEAPON_SLOTS; ++slot )
 	{
 		local wide, tall = m_nSmallBoxTall;
+		local curpos = 0;
 
 		for ( local pos = 0; pos < MAX_WEAPON_POSITIONS; ++pos )
 		{
@@ -380,7 +407,7 @@ function CSGOHudWeaponSelection::PerformLayoutInternal()
 					foreach( i, v in m_ItemPanels[slot] )
 					{
 						if ( !v )
-							m_ItemPanels[slot][i] = CItemPanel( slot, i );
+							m_ItemPanels[slot][i] = CItemPanel( slot );
 					}
 				}
 
@@ -389,6 +416,7 @@ function CSGOHudWeaponSelection::PerformLayoutInternal()
 				panel.m_chIcon = m_IconChars[ wep.GetClassname() ];
 				panel.m_bHasAnyAmmo = wep.HasAnyAmmo();
 				panel.m_bSelected = ( slot == m_iActiveSlot && pos == m_iActivePos );
+				panel.m_nPos = curpos++;
 
 				tall = m_nSmallBoxTall;
 			}
@@ -520,6 +548,7 @@ function CSGOHudWeaponSelection::LastWeapon(...)
 	if ( m_hLastWeapon && m_hLastWeapon.IsValid() )
 	{
 		input.MakeWeaponSelection( m_hLastWeapon );
+		CSHud.OnSelectWeapon( m_hLastWeapon );
 	}
 
 	m_hLastWeapon = player.GetActiveWeapon();

@@ -158,16 +158,7 @@ if ( CLIENT_DLL )
 
 	function TFHud::SetVisible( state )
 	{
-		if ( state )
-		{
-			m_pWeaponSelection.RegisterCommands();
-			m_pScope.RegisterCommands();
-		}
-		else
-		{
-			m_pWeaponSelection.UnregisterCommands();
-			m_pScope.UnregisterCommands();
-		}
+		m_bVisible = state;
 
 		local istate = !state;
 
@@ -183,7 +174,16 @@ if ( CLIENT_DLL )
 		SetHudElementVisible( "CHudCrosshair", istate );
 		SetHudElementVisible( "CHudVehicle", istate );
 
-		m_bVisible = state;
+		if ( state )
+		{
+			m_pWeaponSelection.RegisterCommands();
+			m_pScope.RegisterCommands();
+		}
+		else
+		{
+			m_pWeaponSelection.UnregisterCommands();
+			m_pScope.UnregisterCommands();
+		}
 
 		SetPlayerClass( m_nPlayerTeam, m_nPlayerClass, 1 );
 	}

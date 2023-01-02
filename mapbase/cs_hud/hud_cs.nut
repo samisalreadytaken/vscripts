@@ -28,6 +28,7 @@ if ( SERVER_DLL )
 				NetMsg.WriteFloat( player.GetFlashlightBattery() * 0.01 );
 				NetMsg.WriteFloat( player.GetAuxPower() * 0.01 );
 			}
+			NetMsg.WriteBool( !!player.GetVehicleEntity() );
 		NetMsg.Send( player, false );
 
 		return 0.1;
@@ -49,12 +50,13 @@ if ( CLIENT_DLL )
 		m_pFlashlight = null
 		m_pSuitPower = null
 		m_pScope = null
+		m_pCrosshair = null
 
 		m_flBackgroundAlpha = 0.5
 		m_bSuitEquipped = false
+		m_bVehicle = false
 
-		m_hCrosshair = null
-		m_Crosshairs = null
+		m_CrosshairGap = null
 	}
 
 	IncludeScript( "cs_hud/hudhealtharmor.nut" );
@@ -62,6 +64,7 @@ if ( CLIENT_DLL )
 	IncludeScript( "cs_hud/hudweaponselection.nut" );
 	IncludeScript( "cs_hud/hudsuit.nut" );
 	IncludeScript( "cs_hud/hudscope.nut" );
+	IncludeScript( "cs_hud/hudreticle.nut" );
 
 	function CSHud::GetRootPanel()
 	{
@@ -72,16 +75,7 @@ if ( CLIENT_DLL )
 
 	function CSHud::SetVisible( state )
 	{
-		if ( state )
-		{
-			m_pWeaponSelection.RegisterCommands();
-			m_pScope.RegisterCommands();
-		}
-		else
-		{
-			m_pWeaponSelection.UnregisterCommands();
-			m_pScope.UnregisterCommands();
-		}
+		m_bVisible = state;
 
 		local istate = !state;
 
@@ -97,7 +91,24 @@ if ( CLIENT_DLL )
 		SetHudElementVisible( "CHudCrosshair", istate );
 		SetHudElementVisible( "CHudVehicle", istate );
 
-		m_bVisible = state;
+		if ( state )
+		{
+			m_pWeaponSelection.RegisterCommands();
+			m_pScope.RegisterCommands();
+
+			local player = Entities.GetLocalPlayer();
+			if ( player )
+			{
+				local weapon = player.GetActiveWeapon();
+				if ( weapon )
+					OnSelectWeapon( weapon );
+			}
+		}
+		else
+		{
+			m_pWeaponSelection.UnregisterCommands();
+			m_pScope.UnregisterCommands();
+		}
 	}
 
 	function CSHud::Init()
@@ -113,6 +124,7 @@ if ( CLIENT_DLL )
 			m_pFlashlight = CSGOHudFlashlight( CSHud );
 			m_pSuitPower = CSGOHudSuitPower( CSHud );
 			m_pScope = CCSHudScope();
+			m_pCrosshair = CSGOHudReticle();
 
 		m_pPlayerHealth.Init();
 		m_pWeaponAmmo.Init();
@@ -120,27 +132,11 @@ if ( CLIENT_DLL )
 		m_pFlashlight.Init();
 		m_pSuitPower.Init();
 		m_pScope.Init();
+		m_pCrosshair.Init();
 
 		m_pPlayerHealth.m_nHealthWarningThreshold = 24;
 		m_pPlayerHealth.m_flMaxHealth = 100.0;
 		m_pPlayerHealth.m_flMaxArmor = 100.0;
-
-		// "layout/hud/hudreticle.xml"
-		// "styles/hud/hudreticle.css"
-		m_hCrosshair = vgui.CreatePanel( "ImagePanel", GetRootPanel(), "CSGOHudReticle" );
-		m_hCrosshair.SetZPos( 1 );
-		m_hCrosshair.SetVisible( true );
-		// m_hCrosshair.SetPos( 0, 0 );
-		// m_hCrosshair.SetSize( ScreenWidth(), ScreenHeight() );
-		// m_hCrosshair.SetPaintBackgroundEnabled( false );
-		// m_hCrosshair.SetCallback( "Paint", DrawCrosshair.bindenv(this) );
-		m_hCrosshair.SetShouldScaleImage( false );
-		m_hCrosshair.SetImage( "panorama/images/hud/reticle/crosshair", true );
-		m_hCrosshair.SetDrawColor( 0xff, 0xcc, 0x00, 0xff );
-		//crosshairColor1: #82b116;
-		//crosshairColor2: #ffcc00;
-		//crosshairColor3: #00ffff;
-		//crosshairColor4: #96ffff;
 
 		SetVisible( m_bVisible );
 
@@ -152,79 +148,50 @@ if ( CLIENT_DLL )
 
 		NetMsg.Receive( "CSHud.StatusUpdate", StatusUpdate.bindenv(this) );
 	}
-/*
-	function CSHud::DrawCrosshair()
-	{
-		surface.SetColor( 0x82, 0xb1, 0x16, 0xcc );
 
-		local ww = XRES(320);
-		local hh = YRES(240);
-
-		local size = 8;
-		local gap = 6;
-		local thickness = 2;
-		local thicknessHalf = thickness / 2;
-
-		// top
-		local x0 = ww - thicknessHalf;
-		local y0 = hh - gap - size;
-		surface.DrawFilledRect( x0, y0, thickness, size );
-
-		// left
-		local y1 = hh - thicknessHalf;
-		local x1 = ww - gap - size;
-		surface.DrawFilledRect( x1, y1, size, thickness );
-
-		// right
-		local y2 = hh - thicknessHalf;
-		local x2 = ww + gap;
-		surface.DrawFilledRect( x2, y2, size, thickness );
-
-		// bottom
-		local x3 = ww - thicknessHalf;
-		local y3 = hh + gap;
-		surface.DrawFilledRect( x3, y3, thickness, size );
-
-		local outline = 1;
-		{
-			thickness += outline+outline;
-			size += outline+outline;
-
-			surface.SetColor( 0x00, 0x00, 0x00, 0xcc );
-			surface.DrawOutlinedRect( x0-outline, y0-outline, thickness, size, outline );
-			surface.DrawOutlinedRect( x1-outline, y1-outline, size, thickness, outline );
-			surface.DrawOutlinedRect( x2-outline, y2-outline, size, thickness, outline );
-			surface.DrawOutlinedRect( x3-outline, y3-outline, thickness, size, outline );
-		}
-	}
-*/
 	function CSHud::OnSelectWeapon( weapon )
 	{
-		if ( m_Crosshairs )
+		if ( m_CrosshairGap )
 		{
 			local classname = weapon.GetClassname();
-			if ( classname in m_Crosshairs )
+			if ( classname in m_CrosshairGap )
 			{
-				return m_hCrosshair.SetImage( m_Crosshairs[classname], true );
+				local gap = m_CrosshairGap[classname];
+				if ( gap != -1 )
+				{
+					if ( !m_pCrosshair.m_bVisible )
+						m_pCrosshair.SetVisible( true );
+
+					m_pCrosshair.m_nGapTarget = gap;
+					m_pCrosshair.m_flStartTime = Time();
+				}
+				else
+				{
+					m_pCrosshair.SetVisible( false );
+				}
+			}
+			else
+			{
+				m_pCrosshair.m_nGapTarget = YRES(6);
+				m_pCrosshair.m_flStartTime = Time();
 			}
 		}
 	}
 
-	function CSHud::SetCrosshairImage( img, classname = null )
+	function CSHud::SetCrosshairGap( classname, val )
 	{
 		if ( classname )
 		{
-			m_Crosshairs[classname] <- img;
+			if ( !m_CrosshairGap )
+				m_CrosshairGap = {}
+
+			m_CrosshairGap[classname] <- val;
 		}
 		else
 		{
-			m_hCrosshair.SetImage( img, true );
+			m_pCrosshair.m_nGapTarget = val;
+			m_pCrosshair.m_flStartTime = Time();
 		}
-	}
-
-	function CSHud::SetCrosshairVisible( state )
-	{
-		return m_hCrosshair.SetVisible( state );
 	}
 /*
 	// autoaim crosshair
@@ -260,11 +227,11 @@ if ( CLIENT_DLL )
 			if ( x < 0.0 || x > 1.0 || y < 0.0 || y > 1.0 || screen.z > 1.0 )
 				return;
 
-			m_hCrosshair.SetPos( ScreenWidth() * x - 16 + 0.5, ScreenHeight() * y - 16 + 0.5 );
+			m_pCrosshair.SetPos( ScreenWidth() * x - 16 + 0.5, ScreenHeight() * y - 16 + 0.5 );
 		}
 		else
 		{
-			m_hCrosshair.SetPos( XRES(320) - 16, YRES(240) - 16 );
+			m_pCrosshair.SetPos( XRES(320) - 16, YRES(240) - 16 );
 		}
 	}
 */
@@ -312,6 +279,31 @@ if ( CLIENT_DLL )
 			if ( m_pSuitPower.self.IsVisible() )
 			{
 				m_pSuitPower.self.SetVisible( false );
+			}
+		}
+
+		if ( NetMsg.ReadBool() )
+		{
+			if ( !m_bVehicle )
+			{
+				m_bVehicle = true;
+				m_pWeaponSelection.UnregisterCommands();
+				m_pWeaponAmmo.self.SetVisible( false );
+				SetCrosshairGap( null, YRES(6) );
+			}
+		}
+		else if ( m_bVehicle )
+		{
+			m_bVehicle = false;
+			m_pWeaponSelection.RegisterCommands();
+
+			// FIXME: Ammo panel will become visible after getting out of
+			// a vehicle with a weapon without ammo (crowbar, physgun...)
+			local weapon = player.GetActiveWeapon();
+			if ( weapon )
+			{
+				m_pWeaponAmmo.self.SetVisible( true );
+				OnSelectWeapon( weapon );
 			}
 		}
 	}

@@ -4,9 +4,6 @@
 //
 // Counter-Strike: Global Offensive Panorama HUD
 //
-//		CSHud.SetCrosshairVisible( bool state )
-//		CSHud.SetCrosshairImage( string imageFile, string weaponClassname = null )
-//
 //-------------------------------------------------------------
 // Resource files: [csgo]
 //		"resources/stratum2bold.ttf"

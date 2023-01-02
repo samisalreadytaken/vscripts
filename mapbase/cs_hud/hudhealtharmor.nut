@@ -76,9 +76,6 @@ function CSGOHudHealthArmor::SetArmor( nArmor )
 
 function CSGOHudHealthArmor::PerformLayout()
 {
-	CSHud.m_hCrosshair.SetSize( 32, 32 );
-	CSHud.m_hCrosshair.SetPos( XRES(320) - 16, YRES(240) - 16 );
-
 	m_nHealthLabelWide = surface.GetCharacterWidth( m_hFont, '0' ) * 3;
 
 	// Recalculate
@@ -175,15 +172,14 @@ function CSGOHudHealthArmor::DrawBackground( bHealthThreshold, flAlpha, height, 
 
 function CSGOHudHealthArmor::Paint()
 {
-	local flAlpha = CSHud.m_flBackgroundAlpha;
-
-	// local width = YRES(172);
-	local height = YRES(22);
-
-	local y0 = YRES(480) - height;
-
 	if ( m_nHealth > 0 )
 	{
+		local flAlpha = CSHud.m_flBackgroundAlpha;
+
+		// local width = YRES(172);
+		local height = YRES(22);
+		local y0 = YRES(480) - height;
+
 		local bar_w = YRES(32.5);
 		local bar_h = YRES(3.75);
 		{
@@ -198,12 +194,6 @@ function CSGOHudHealthArmor::Paint()
 				// health bar
 				surface.SetColor.acall( kClrLow );
 				surface.DrawFilledRect( bar_x, y0 + YRES(10), bar_progress, bar_h );
-
-				// health icon blur
-				surface.SetTextFont( m_hFontIconBlur );
-				surface.SetTextColor( 0xff, 0x00, 0x00, 0xff );
-				surface.SetTextPos( icon_x, y0 );
-				surface.DrawUnicodeChar( '+', 0 );
 
 				// health icon
 				surface.SetTextFont( m_hFontIcon );
@@ -291,16 +281,5 @@ function CSGOHudHealthArmor::Paint()
 			// armour label
 			surface.DrawColoredText( m_hFont, YRES(105) + m_nOffsetArmorLabel, y0, 0xff, 0xff, 0xff, 0xff, m_szArmor );
 		}
-	}
-	else
-	{
-		// bg
-		local w = YRES(12);
-		local x = w;
-		surface.SetColor( 0x00, 0x00, 0x00, 0xcc * flAlpha );
-		surface.DrawFilledRectFade( 0, y0, w, height, 0x00, 0xff, true );
-		w = YRES(110);
-		surface.DrawFilledRect( x, y0, w, height );
-		surface.DrawFilledRectFade( x + w, y0, YRES(50), height, 0xff, 0x00, true );
 	}
 }

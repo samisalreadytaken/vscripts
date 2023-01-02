@@ -66,7 +66,9 @@ function CCSHudScope::OnThink(_)
 	{
 		m_bVisible = false;
 		self.SetVisible( false );
-		CSHud.SetCrosshairVisible( true );
+
+		if ( CSHud.m_pCrosshair.m_bVisible )
+			CSHud.m_pCrosshair.self.SetVisible( true );
 
 		surface.PlaySound( "ui/weapon/zoom.wav" );
 	}
@@ -79,7 +81,7 @@ function CCSHudScope::OnThink(_)
 			{
 				m_bVisible = true;
 				self.SetVisible( true );
-				CSHud.SetCrosshairVisible( false );
+				CSHud.m_pCrosshair.self.SetVisible( false );
 
 				surface.PlaySound( "ui/weapon/zoom.wav" );
 			}
