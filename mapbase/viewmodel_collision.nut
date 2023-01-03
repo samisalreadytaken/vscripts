@@ -161,7 +161,22 @@ local function Think(_)
 
 local Init = function(...)
 {
-	Entities.First().SetContextThink( "ViewModelCollision", Think, 0.25 );
+	Convars.RegisterConvar( "viewmodel_collision", "1", "", FCVAR_CLIENTDLL );
+	Convars.SetChangeCallback( "viewmodel_collision", function(...)
+	{
+		switch ( Convars.GetInt("viewmodel_collision") )
+		{
+		case 0:
+			return Entities.First().SetContextThink( "ViewModelCollision", null, 0.0 );
+		case 1:
+			return Entities.First().SetContextThink( "ViewModelCollision", Think, 0.25 );
+		}
+	} );
+
+	return Entities.First().SetContextThink( "ViewModelCollision_", function(_)
+	{
+		return StopListeningToAllGameEvents( "ViewModelCollision" );
+	}, 0.1 );
 }
 
 ListenToGameEvent( "player_spawn", Init, "ViewModelCollision" );
