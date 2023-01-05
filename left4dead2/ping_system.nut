@@ -230,6 +230,7 @@ enum PingType
 	RESCUE,
 	SAFEROOM,
 	FUELBARREL,
+	LADDER,
 
 	// chatter
 	AFFIRMATIVE,
@@ -394,6 +395,7 @@ local PingMaterial = array( PingType.MAX_COUNT );
 	PingMaterial[PingType.RESCUE]		= "ping_system/ping_rescue.vmt",
 	PingMaterial[PingType.SAFEROOM]		= "ping_system/ping_saferoom.vmt",
 	PingMaterial[PingType.FUELBARREL]	= "ping_system/ping_fuelbarrel.vmt",
+	PingMaterial[PingType.LADDER]		= "ping_system/ping_ladder.vmt",
 
 	PingMaterial[PingType.AFFIRMATIVE]	= "ping_system/ping_affirmative.vmt",
 	PingMaterial[PingType.NEGATIVE]		= "ping_system/ping_negative.vmt",
@@ -533,7 +535,7 @@ function Init()
 	if ( !b )
 		error( "PingSystem: ERROR invalid RR!\n");
 
-	Msg("PingSystem::Init() [21]\n");
+	Msg("PingSystem::Init() [22]\n");
 }
 
 function OnGameEvent_round_start(ev)
@@ -2336,6 +2338,11 @@ function PingEntity( player, pEnt, vecPingPos = null )
 			pingType = PingType.DEAD_SURVIVOR;
 			vecPingPos = pEnt.GetCenter();
 			vecPingPos.z += 12.0;
+			break;
+
+		case "func_simpleladder":
+		case "func_ladder":
+			pingType = PingType.LADDER;
 			break;
 
 		// Partial matches and undefined entities
