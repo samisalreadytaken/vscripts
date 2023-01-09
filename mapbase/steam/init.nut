@@ -28,6 +28,8 @@
 //		SteamAchievements::GetAchievementUnlockDateString( string ID, bool bLocalTime, bool bISO8601 )
 //
 //
+// if 'AchievementDisplay.nut' is included, use 'display_achievements' console command to view all loaded achievements.
+//
 //
 // AchievementNotification ------------------------------------
 //
@@ -114,6 +116,9 @@ local Init = function(...)
 
 		IncludeScript( "steam/FriendNotification.nut" );
 		IncludeScript( "steam/AchievementNotification.nut" );
+
+		if ( CLIENT_DLL )
+			IncludeScript( "steam/AchievementDisplay.nut" );
 	}
 
 	// always redefine classes. saverestore bug. see mapbase-source#221
@@ -123,6 +128,9 @@ local Init = function(...)
 
 	if ( CLIENT_DLL )
 		SteamNotificationManager.Init();
+
+	if ( CLIENT_DLL )
+		SteamAchievementsDisplay.Init();
 
 	Hooks.Call( "SteamAchievementsPostInit", null );
 }
