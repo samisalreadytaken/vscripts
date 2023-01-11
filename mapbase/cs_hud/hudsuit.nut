@@ -90,27 +90,27 @@ function CSGOHudFlashlight::Paint()
 	}
 
 	// bar
-	local bar_h = YRES(3.75);
+	local bar_h = YRES(4.5);
 	local bar_w = width;
 	local bar_x = x0 + width / 4;
 	local bar_y = y0 + YRES(10);
 
-	surface.SetColor( 0x66, 0x66, 0x66, 0xdd );
+	surface.SetColor( 0x66, 0x66, 0x66, 0x99 );
 	surface.DrawFilledRect( bar_x, bar_y, bar_w, bar_h );
 
 	if ( m_flFlashlight > 0.25 )
 	{
-		surface.SetColor( 0xe7, 0xe7, 0xe7, 0xdd );
+		surface.SetColor( 0xe7, 0xe7, 0xe7, 0xff );
 	}
 	else
 	{
-		surface.SetColor( 0xff, 0x00, 0x00, 0xdd );
+		surface.SetColor( 0xff, 0x00, 0x00, 0xff );
 	}
 
 	surface.DrawFilledRect( bar_x, bar_y, bar_w * m_flFlashlight, bar_h );
 
 	// outline
-	surface.SetColor( 0x33, 0x33, 0x33, 0x66 );
+	surface.SetColor( 0x88, 0x88, 0x88, 0x7f );
 	surface.DrawOutlinedRect( bar_x - 1, bar_y - 1, bar_w + 2, bar_h + 2, 1 );
 
 	// icon
@@ -209,26 +209,26 @@ function CSGOHudSuitPower::Paint()
 	}
 
 	// bar
-	local bar_h = YRES(3.75);
+	local bar_h = YRES(4.5);
 	local bar_w = width;
 	local bar_x = x0 + width / 4;
 	local bar_y = y0 + YRES(10);
 
-	surface.SetColor( 0x66, 0x66, 0x66, 0xdd );
+	surface.SetColor( 0x66, 0x66, 0x66, 0x99 );
 	surface.DrawFilledRect( bar_x, bar_y, bar_w, bar_h );
 
 	if ( m_flPower > 0.25 )
 	{
-		surface.SetColor( 0xe7, 0xe7, 0xe7, 0xdd );
+		surface.SetColor( 0xe7, 0xe7, 0xe7, 0xff );
 	}
 	else
 	{
-		surface.SetColor( 0xff, 0x00, 0x00, 0xdd );
+		surface.SetColor( 0xff, 0x00, 0x00, 0xff );
 	}
 
 	surface.DrawFilledRect( bar_x, bar_y, bar_w * m_flPower, bar_h );
 
 	// outline
-	surface.SetColor( 0x33, 0x33, 0x33, 0x66 );
+	surface.SetColor( 0x88, 0x88, 0x88, 0x7f );
 	surface.DrawOutlinedRect( bar_x - 1, bar_y - 1, bar_w + 2, bar_h + 2, 1 );
 }

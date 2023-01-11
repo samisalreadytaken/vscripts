@@ -485,11 +485,12 @@ function CSGOHudWeaponSelection::SelectWeapon( weapon )
 	{
 		m_hLastWeapon = hCurWep;
 	}
+
 	input.MakeWeaponSelection( weapon );
 
-	player.EmitSound( "Player.WeaponSelectionMoveSlot" );
-
 	CSHud.OnSelectWeapon( weapon );
+
+	player.EmitSound( "Player.WeaponSelectionMoveSlot" );
 
 	return PerformLayoutInternal();
 }
@@ -528,11 +529,12 @@ function CSGOHudWeaponSelection::SelectSlot( slot )
 		{
 			m_hLastWeapon = hCurWep;
 		}
+
 		input.MakeWeaponSelection( wep );
 
-		player.EmitSound( "Player.WeaponSelectionMoveSlot" );
-
 		CSHud.OnSelectWeapon( wep );
+
+		player.EmitSound( "Player.WeaponSelectionMoveSlot" );
 	}
 	else
 	{

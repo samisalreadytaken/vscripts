@@ -5,7 +5,7 @@
 local XRES = XRES, YRES = YRES;
 local surface = surface;
 
-local kClrNormal = [ surface, 0xe7, 0xe7, 0xe7, 0xdd ];
+local kClrNormal = [ surface, 0xe7, 0xe7, 0xe7, 0xff ];
 local kClrLow = [ surface, 0xff, 0x00, 0x00, 0xdd ];
 
 
@@ -35,8 +35,9 @@ class CSGOHudHealthArmor
 
 	m_hFont = null
 	m_hFontBlur = null
-	m_hFontIcon = null
-	m_hFontIconBlur = null
+
+	m_hTexHealth = null
+	m_hTexShield = null
 
 	m_nOffsetArmorLabel = 0
 	m_nOffsetHealthLabel = 0
@@ -57,8 +58,8 @@ function CSGOHudHealthArmor::Init()
 
 	m_hFont = surface.GetFont( "hud-HA-text", true );
 	m_hFontBlur = surface.GetFont( "hud-HA-text-blur", true );
-	m_hFontIcon = surface.GetFont( "hud-HA-icon", true );
-	m_hFontIconBlur = surface.GetFont( "hud-HA-icon-blur", true );
+	m_hTexHealth = surface.ValidateTexture( "panorama/images/icons/ui/health", true );
+	m_hTexShield = surface.ValidateTexture( "panorama/images/icons/ui/shield", true );
 
 	m_clrHealthBar = kClrNormal;
 }
@@ -170,6 +171,11 @@ function CSGOHudHealthArmor::DrawBackground( bHealthThreshold, flAlpha, height, 
 	}
 }
 
+//
+// NOTE:
+// There is no progress bar drop shadow
+// Positions are not pixel perfect on every resolution
+//
 function CSGOHudHealthArmor::Paint()
 {
 	if ( m_nHealth > 0 )
@@ -180,14 +186,30 @@ function CSGOHudHealthArmor::Paint()
 		local height = YRES(22);
 		local y0 = YRES(480) - height;
 
-		local bar_w = YRES(32.5);
-		local bar_h = YRES(3.75);
+		local bar_w = YRES(32.75);
+		local bar_h = YRES(4.5);
+		local icon_y = y0 + YRES(7);
 		{
-			local icon_x = YRES(12);
+			local icon_s = YRES(8.75);
+			local icon_x = YRES(11.5);
 			local bar_x = YRES(51);
 			local bar_progress = (bar_w * m_flHealth).tointeger();
 
-			if ( m_nHealth <= m_nHealthWarningThreshold )
+			if ( m_nHealth > m_nHealthWarningThreshold )
+			{
+				DrawBackground( false, flAlpha, height, y0 );
+
+				// health bar
+				surface.SetColor.acall( m_clrHealthBar );
+				surface.DrawFilledRect( bar_x, y0 + YRES(10), bar_progress, bar_h );
+
+				// health icon
+				surface.DrawTexturedBox( m_hTexHealth, icon_x, icon_y, icon_s, icon_s, 0xcc, 0xcc, 0xcc, 165 );
+
+				// health label blur
+				surface.DrawColoredText( m_hFontBlur, YRES(22) + m_nOffsetHealthLabel, y0 + YRES(1), 0x00, 0x00, 0x00, 0xff, m_szHealth );
+			}
+			else
 			{
 				DrawBackground( true, flAlpha, height, y0 );
 
@@ -196,90 +218,61 @@ function CSGOHudHealthArmor::Paint()
 				surface.DrawFilledRect( bar_x, y0 + YRES(10), bar_progress, bar_h );
 
 				// health icon
-				surface.SetTextFont( m_hFontIcon );
-				surface.SetTextColor( 0xff, 0x00, 0x00, 0xdd );
-				surface.SetTextPos( icon_x, y0 );
-				surface.DrawUnicodeChar( '+', 0 );
+				surface.SetTexture( m_hTexHealth );
+				surface.SetColor( 0xff, 0x00, 0x00, 165 );
+				surface.DrawTexturedRect( icon_x, icon_y, icon_s, icon_s );
 
-				// blur
-				surface.DrawColoredText( m_hFontBlur, YRES(21) + m_nOffsetHealthLabel, y0, 0xdd, 0x00, 0x00, 0xff, m_szHealth );
-			}
-			else
-			{
-				DrawBackground( false, flAlpha, height, y0 );
-
-				// health bar
-				surface.SetColor.acall( m_clrHealthBar );
-				surface.DrawFilledRect( bar_x, y0 + YRES(10), bar_progress, bar_h );
-
-				// health icon blur
-				surface.SetTextFont( m_hFontIconBlur );
-				surface.SetTextColor( 0x00, 0x00, 0x00, 0xff );
-				surface.SetTextPos( icon_x, y0 );
-				surface.DrawUnicodeChar( '+', 0 );
-
-				// health icon
-				surface.SetTextFont( m_hFontIcon );
-				surface.SetTextColor( 0xcc, 0xcc, 0xcc, 0xcc );
-				surface.SetTextPos( icon_x, y0 );
-				surface.DrawUnicodeChar( '+', 0 );
-
-				// blur
-				surface.DrawColoredText( m_hFontBlur, YRES(21) + m_nOffsetHealthLabel, y0, 0x00, 0x00, 0x00, 0xff, m_szHealth );
+				// label blur
+				// NOTE: Glow is too weak, draw it twice
+				local x = YRES(22) + m_nOffsetHealthLabel, y = y0 + YRES(1);
+				surface.DrawColoredText( m_hFontBlur, x, y, 0xff, 0x00, 0x00, 0xff, m_szHealth );
+				surface.DrawColoredText( m_hFontBlur, x, y, 0xff, 0x00, 0x00, 0xff, m_szHealth );
 			}
 
 			// health bar
 			if ( m_flHealth < 1.0 )
 			{
-				surface.SetColor( 0x66, 0x66, 0x66, 0xdd );
+				surface.SetColor( 0x66, 0x66, 0x66, 0x99 );
 				surface.DrawFilledRect( bar_x + bar_progress, y0 + YRES(10), bar_w - bar_progress, bar_h );
 			}
 
 			// bar outline
-			surface.SetColor( 0x33, 0x33, 0x33, 0x66 );
+			surface.SetColor( 0x88, 0x88, 0x88, 0x7f );
 			surface.DrawOutlinedRect( bar_x - 1, y0 + YRES(10) - 1, bar_w + 2, bar_h + 2, 1 );
 
 			// health label
-			surface.DrawColoredText( m_hFont, YRES(21) + m_nOffsetHealthLabel, y0, 0xff, 0xff, 0xff, 0xff, m_szHealth );
+			surface.DrawColoredText( m_hFont, YRES(22) + m_nOffsetHealthLabel, y0 + YRES(1), 0xe7, 0xe7, 0xe7, 0xff, m_szHealth );
 		}
 
 		if ( CSHud.m_bSuitEquipped )
 		{
-			local icon_x = YRES(96);
-			local bar_x = YRES(136);
+			local icon_s = YRES(8);
+			local icon_x = YRES(97);
+			local bar_x = YRES(135.5);
 			local bar_progress = (bar_w * m_flArmor).tointeger();
 
 			// armour bar
-			surface.SetColor( 0xe7, 0xe7, 0xe7, 0xdd );
+			surface.SetColor( 0xe7, 0xe7, 0xe7, 0xff );
 			surface.DrawFilledRect( bar_x, y0 + YRES(10), bar_progress, bar_h );
 
 			if ( m_flArmor < 1.0 )
 			{
-				surface.SetColor( 0x66, 0x66, 0x66, 0xdd );
+				surface.SetColor( 0x66, 0x66, 0x66, 0x99 );
 				surface.DrawFilledRect( bar_x + bar_progress, y0 + YRES(10), bar_w - bar_progress, bar_h );
 			}
 
 			// bar outline
-			surface.SetColor( 0x33, 0x33, 0x33, 0x66 );
+			surface.SetColor( 0x88, 0x88, 0x88, 0x7f );
 			surface.DrawOutlinedRect( bar_x - 1, y0 + YRES(10) - 1, bar_w + 2, bar_h + 2, 1 );
 
-			// armour icon blur
-			surface.SetTextFont( m_hFontIconBlur );
-			surface.SetTextColor( 0x00, 0x00, 0x00, 0xff );
-			surface.SetTextPos( icon_x, y0 );
-			surface.DrawUnicodeChar( '*', 0 );
-
 			// armour icon
-			surface.SetTextFont( m_hFontIcon );
-			surface.SetTextColor( 0xcc, 0xcc, 0xcc, 0xcc );
-			surface.SetTextPos( icon_x, y0 );
-			surface.DrawUnicodeChar( '*', 0 );
+			surface.DrawTexturedBox( m_hTexShield, icon_x, icon_y, icon_s, icon_s, 0xcc, 0xcc, 0xcc, 165 );
 
-			// blur
-			surface.DrawColoredText( m_hFontBlur, YRES(105) + m_nOffsetArmorLabel, y0, 0x00, 0x00, 0x00, 0xff, m_szArmor );
+			// armour label blur
+			surface.DrawColoredText( m_hFontBlur, YRES(107) + m_nOffsetArmorLabel, y0 + YRES(1), 0x00, 0x00, 0x00, 0xff, m_szArmor );
 
 			// armour label
-			surface.DrawColoredText( m_hFont, YRES(105) + m_nOffsetArmorLabel, y0, 0xff, 0xff, 0xff, 0xff, m_szArmor );
+			surface.DrawColoredText( m_hFont, YRES(107) + m_nOffsetArmorLabel, y0 + YRES(1), 0xe7, 0xe7, 0xe7, 0xff, m_szArmor );
 		}
 	}
 }

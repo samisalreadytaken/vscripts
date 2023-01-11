@@ -10,6 +10,8 @@
 //		"sound/ui/weapon/zoom.wav"
 //		"materials/overlays/scope_lens"
 //		"materials/sprites/scope_arc"
+//		"materials/panorama/images/icons/ui/health" (32x32)
+//		"materials/panorama/images/icons/ui/shield" (32x32)
 //		"materials/panorama/images/hud/reticle/crosshair"
 //			"/crosshairpip2.png"
 //			"/reticlecircle.png"

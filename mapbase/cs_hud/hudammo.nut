@@ -274,10 +274,10 @@ function CSGOHudWeaponAmmo::Paint()
 		surface.DrawUnicodeChar( m_chCurTextureDataAmmo, 0 );
 
 		// blur
-		surface.DrawColoredText( m_hFontBlur, x + m_nOffsetClipLabel, y0, 0x00, 0x00, 0x00, 0xff, m_szAmmoClip );
+		surface.DrawColoredText( m_hFontBlur, x + m_nOffsetClipLabel, y0 + YRES(1), 0x00, 0x00, 0x00, 0xff, m_szAmmoClip );
 
 		// label
-		surface.DrawColoredText( m_hFont, x + m_nOffsetClipLabel, y0, 0xff, 0xff, 0xff, 0xff, m_szAmmoClip );
+		surface.DrawColoredText( m_hFont, x + m_nOffsetClipLabel, y0 + YRES(1), 0xe7, 0xe7, 0xe7, 0xff, m_szAmmoClip );
 
 		if ( m_bVisibleReserve )
 		{
@@ -309,10 +309,10 @@ function CSGOHudWeaponAmmo::Paint()
 		surface.DrawUnicodeChar( m_chCurTextureDataAmmo2, 0 );
 
 		// blur
-		surface.DrawColoredText( m_hFontBlur, x, y0, 0x00, 0x00, 0x00, 0xff, m_szAmmoSecondary );
+		surface.DrawColoredText( m_hFontBlur, x, y0 + YRES(1), 0x00, 0x00, 0x00, 0xff, m_szAmmoSecondary );
 
 		// label
-		surface.DrawColoredText( m_hFont, x, y0, 0xff, 0xff, 0xff, 0xff, m_szAmmoSecondary );
+		surface.DrawColoredText( m_hFont, x, y0 + YRES(1), 0xe7, 0xe7, 0xe7, 0xff, m_szAmmoSecondary );
 	}
 }
 
@@ -328,8 +328,7 @@ function CSGOHudWeaponAmmo::SetAmmoInClip( nAmt )
 // also keeps the '/' in the same position
 function CSGOHudWeaponAmmo::SetAmmoInReserve( nAmt )
 {
-	local text = Fmt( "/ %3d", nAmt );
-	m_szAmmoReserve = text;
+	m_szAmmoReserve = Fmt( "/ %3d", nAmt );
 }
 
 function CSGOHudWeaponAmmo::SetVisibleInClip( state )

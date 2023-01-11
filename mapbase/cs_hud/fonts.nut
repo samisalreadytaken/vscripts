@@ -4,7 +4,7 @@ surface.AddCustomFontFile( "resources/stratum2bold.ttf" );
 surface.CreateFont( "hud-HA-text",
 {
 	"name"			: "Stratum2 Bold"
-	"tall"			: 21
+	"tall"			: 20
 	"weight"		: 500
 	"antialias" 	: true
 	"dropshadow" 	: false
@@ -15,7 +15,7 @@ surface.CreateFont( "hud-HA-text-blur",
 {
 	"name"			: "Stratum2 Bold"
 	"blur"			: 3
-	"tall"			: 21
+	"tall"			: 20
 	"weight"		: 500
 	"antialias" 	: true
 	"dropshadow" 	: false
@@ -48,6 +48,7 @@ surface.CreateFont( "hud-HA-icon",
 	"name"			: "HalfLife2"
 	"tall"			: 18
 	"weight"		: 0
+	"antialias" 	: true
 	"proportional" 	: true
 } );
 
