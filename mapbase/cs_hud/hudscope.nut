@@ -3,7 +3,7 @@
 //-----------------------------------------------------------------------
 //
 local XRES = XRES, YRES = YRES;
-local surface = surface;
+local surface = surface, NetProps = NetProps;
 
 
 class CCSHudScope
@@ -26,7 +26,6 @@ function CCSHudScope::Init()
 	self.SetVisible( m_bVisible );
 	self.SetPaintEnabled( true );
 	self.SetPaintBackgroundEnabled( false );
-	self.SetCallback( "PerformLayout", PerformLayout.bindenv(this) );
 	self.SetCallback( "Paint", Paint.bindenv(this) );
 
 	m_hScopeLens = surface.ValidateTexture( "overlays/scope_lens", true );
@@ -46,8 +45,8 @@ function CCSHudScope::UnregisterCommands()
 {
 	Entities.First().SetContextThink( "CSHudScopeThink", null, 0.0 );
 
-	Convars.RegisterCommand( "+zoom", null, "", FCVAR_CLIENTDLL );
-	Convars.RegisterCommand( "-zoom", null, "", FCVAR_CLIENTDLL );
+	Convars.UnregisterCommand( "+zoom" );
+	Convars.UnregisterCommand( "-zoom" );
 }
 
 function CCSHudScope::SuitZoom( cmd, _ )
@@ -91,17 +90,10 @@ function CCSHudScope::OnThink(_)
 	return 0.1;
 }
 
-local wide = ScreenWidth();
-local tall = ScreenHeight();
-
-function CCSHudScope::PerformLayout()
-{
-	wide = ScreenWidth();
-	tall = ScreenHeight();
-}
-
 function CCSHudScope::Paint()
 {
+	local wide = XRES(640);
+	local tall = YRES(480);
 	local wideHalf = wide / 2;
 	local tallHalf = tall / 2;
 	local texTall = tallHalf;

@@ -4,7 +4,7 @@
 //
 local XRES = XRES, YRES = YRES;
 local surface = surface;
-local Fmt = format;
+local Fmt = format, NetProps = NetProps;
 
 
 class CSGOHudWeaponAmmo
@@ -46,6 +46,17 @@ class CSGOHudWeaponAmmo
 	m_nOffsetClipIcon = 0
 	m_nOffsetClipLabel = 0
 	m_nClipLabelWide = 0
+}
+
+// TODO: Use native RemoveTickSignal when added
+function CSGOHudWeaponAmmo::RemoveTickSignal()
+{
+	self.SetCallback( "OnTick", null );
+}
+
+function CSGOHudWeaponAmmo::AddTickSignal()
+{
+	self.SetCallback( "OnTick", OnTick.bindenv(this) );
 }
 
 function CSGOHudWeaponAmmo::Init()
@@ -100,6 +111,18 @@ function CSGOHudWeaponAmmo::PerformLayout()
 	// Recalculate
 	m_hWeapon = null;
 	OnTick();
+}
+
+function CSGOHudWeaponAmmo::SetVehicle( type )
+{
+	switch ( type )
+	{
+		case "APC":
+			return self.SetCallback( "OnTick", OnTickAPC.bindenv(this) );
+
+		case null:
+			return self.SetCallback( "OnTick", OnTick.bindenv(this) );
+	}
 }
 
 function CSGOHudWeaponAmmo::OnTick()
@@ -231,6 +254,41 @@ function CSGOHudWeaponAmmo::OnTick()
 				SetVisibleInClip( false );
 				SetVisibleInReserve( false );
 			}
+		}
+	}
+}
+
+function CSGOHudWeaponAmmo::OnTickAPC()
+{
+	local nAmmo1 = NetProps.GetPropInt( CSHud.m_hVehicle, "m_iMachineGunBurstLeft" );
+	local nAmmoSecondary = NetProps.GetPropInt( CSHud.m_hVehicle, "m_iRocketSalvoLeft" );
+
+	// update on change
+	if ( nAmmo1 != m_nAmmo1 || nAmmoSecondary != m_nAmmoSecondary )
+	{
+		m_nAmmo1 = nAmmo1;
+		m_nAmmoSecondary = nAmmoSecondary;
+		m_szAmmoSecondary = "" + nAmmoSecondary;
+
+		m_chCurTextureDataAmmo2 = m_TextureDataAmmo[ "weapon_rpg" ];
+		m_chCurTextureDataAmmo = m_TextureDataAmmo[ "weapon_ar2" ];
+
+		SetAmmoInClip( nAmmo1 );
+
+		if ( !m_bVisibleClip )
+		{
+			SetVisibleInClip( true );
+		}
+
+		if ( m_bVisibleReserve )
+		{
+			SetVisibleInReserve( false );
+		}
+
+		if ( !m_bVisible )
+		{
+			m_bVisible = true;
+			self.SetVisible( true );
 		}
 	}
 }

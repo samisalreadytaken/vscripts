@@ -1,9 +1,11 @@
 
 surface.AddCustomFontFile( "resources/stratum2bold.ttf" );
 
+local stratum = IsLinux() ? "Stratum2" : "Stratum2 Bold";
+
 surface.CreateFont( "hud-HA-text",
 {
-	"name"			: "Stratum2 Bold"
+	"name"			: stratum
 	"tall"			: 20
 	"weight"		: 500
 	"antialias" 	: true
@@ -13,7 +15,7 @@ surface.CreateFont( "hud-HA-text",
 
 surface.CreateFont( "hud-HA-text-blur",
 {
-	"name"			: "Stratum2 Bold"
+	"name"			: stratum
 	"blur"			: 3
 	"tall"			: 20
 	"weight"		: 500
@@ -24,7 +26,7 @@ surface.CreateFont( "hud-HA-text-blur",
 
 surface.CreateFont( "hud-HA-text-sm",
 {
-	"name"			: "Stratum2 Bold"
+	"name"			: stratum
 	"tall"			: 10
 	"weight"		: 500
 	"antialias" 	: true
@@ -34,7 +36,7 @@ surface.CreateFont( "hud-HA-text-sm",
 
 surface.CreateFont( "hud-HA-text-sm-blur",
 {
-	"name"			: "Stratum2 Bold"
+	"name"			: stratum
 	"blur"			: 2
 	"tall"			: 10
 	"weight"		: 500
@@ -64,7 +66,7 @@ surface.CreateFont( "hud-HA-icon-blur",
 
 surface.CreateFont( "weapon-selection-item-name-text",
 {
-	"name"			: "Stratum2 Bold"
+	"name"			: stratum
 	"tall"			: 6
 	"weight"		: 500
 	"additive"		: false

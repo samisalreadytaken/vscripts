@@ -34,6 +34,16 @@ class CSGOHudReticle
 
 	m_nCircleWidthHalf = 0
 	m_nCircleHeightHalf = 0
+
+	m_r = 0xff
+	m_g = 0xcc
+	m_b = 0x00
+	m_a = 0xcc
+	m_size = 5
+	m_gap = 3
+	m_thickness = 1
+	m_outlinethickness = 1
+	m_dot = 0
 }
 
 function CSGOHudReticle::Init()
@@ -70,9 +80,13 @@ function CSGOHudReticle::Init()
 	m_nCircleWidthHalf = m_nCircleWidth / 2;
 	m_nCircleHeightHalf = m_nCircleHeight / 2;
 
-	Convars.RegisterConvar( "cl_crosshairstyle", "2", "", FCVAR_CLIENTDLL );
+	local f = FCVAR_CLIENTDLL | FCVAR_ARCHIVE;
+
+	Convars.RegisterConvar( "cl_crosshairstyle", "1", "", f );
 	Convars.SetChangeCallback( "cl_crosshairstyle", function(...)
 	{
+		CSHud.m_bCvarChange = true;
+
 		switch ( Convars.GetInt("cl_crosshairstyle") )
 		{
 		case 1:
@@ -87,6 +101,69 @@ function CSGOHudReticle::Init()
 		default:
 			CSHud.m_pCrosshair.self.SetCallback( "Paint", null );
 		}
+	} );
+
+	Convars.RegisterConvar( "cl_crosshaircolor_r", ""+m_r, "", f );
+	Convars.SetChangeCallback( "cl_crosshaircolor_r", function(...)
+	{
+		CSHud.m_bCvarChange = true;
+		CSHud.m_pCrosshair.m_r = clamp( Convars.GetInt("cl_crosshaircolor_r"), 0, 255 );
+	} );
+
+	Convars.RegisterConvar( "cl_crosshaircolor_g", ""+m_g, "", f );
+	Convars.SetChangeCallback( "cl_crosshaircolor_g", function(...)
+	{
+		CSHud.m_bCvarChange = true;
+		CSHud.m_pCrosshair.m_g = clamp( Convars.GetInt("cl_crosshaircolor_g"), 0, 255 );
+	} );
+
+	Convars.RegisterConvar( "cl_crosshaircolor_b", ""+m_b, "", f );
+	Convars.SetChangeCallback( "cl_crosshaircolor_b", function(...)
+	{
+		CSHud.m_bCvarChange = true;
+		CSHud.m_pCrosshair.m_b = clamp( Convars.GetInt("cl_crosshaircolor_b"), 0, 255 );
+	} );
+
+	Convars.RegisterConvar( "cl_crosshairalpha", ""+m_a, "", f );
+	Convars.SetChangeCallback( "cl_crosshairalpha", function(...)
+	{
+		CSHud.m_bCvarChange = true;
+		CSHud.m_pCrosshair.m_a = clamp( Convars.GetInt("cl_crosshairalpha"), 0, 255 );
+	} );
+
+	Convars.RegisterConvar( "cl_crosshairsize", ""+m_size, "", f );
+	Convars.SetChangeCallback( "cl_crosshairsize", function(...)
+	{
+		CSHud.m_bCvarChange = true;
+		CSHud.m_pCrosshair.m_size = max( Convars.GetInt("cl_crosshairsize"), 0 );
+	} );
+
+	Convars.RegisterConvar( "cl_crosshairgap", ""+m_gap, "", f );
+	Convars.SetChangeCallback( "cl_crosshairgap", function(...)
+	{
+		CSHud.m_bCvarChange = true;
+		CSHud.m_pCrosshair.m_gap = Convars.GetInt("cl_crosshairgap");
+	} );
+
+	Convars.RegisterConvar( "cl_crosshairthickness", ""+m_thickness, "", f );
+	Convars.SetChangeCallback( "cl_crosshairthickness", function(...)
+	{
+		CSHud.m_bCvarChange = true;
+		CSHud.m_pCrosshair.m_thickness = Convars.GetInt("cl_crosshairthickness");
+	} );
+
+	Convars.RegisterConvar( "cl_crosshair_outlinethickness", ""+m_outlinethickness, "", f );
+	Convars.SetChangeCallback( "cl_crosshair_outlinethickness", function(...)
+	{
+		CSHud.m_bCvarChange = true;
+		CSHud.m_pCrosshair.m_outlinethickness = Convars.GetInt("cl_crosshair_outlinethickness");
+	} );
+
+	Convars.RegisterConvar( "cl_crosshairdot", ""+m_dot, "", f );
+	Convars.SetChangeCallback( "cl_crosshairdot", function(...)
+	{
+		CSHud.m_bCvarChange = true;
+		CSHud.m_pCrosshair.m_dot = Convars.GetInt("cl_crosshairdot");
 	} );
 }
 
@@ -106,15 +183,15 @@ function CSGOHudReticle::PaintStyle1()
 		}
 	}
 
-	local ww = XRES(320);
-	local hh = YRES(240);
+	local cx = XRES(320);
+	local cy = YRES(240);
 
 	surface.DrawTexturedBox( m_hTexCircle,
-		ww - m_nCircleWidthHalf, hh - m_nCircleHeightHalf, m_nCircleWidth, m_nCircleHeight,
+		cx - m_nCircleWidthHalf, cy - m_nCircleHeightHalf, m_nCircleWidth, m_nCircleHeight,
 		0xff, 0xff, 0xff, 0xcc );
 
-	surface.SetColor( 0xff, 0xcc, 0x00, 0xff );
-	surface.DrawLine( ww, hh, ww+1, hh+1 );
+	surface.SetColor( m_r, m_g, m_b, 0xff );
+	surface.DrawLine( cx, cy, cx+1, cy+1 );
 
 	local size = m_nPipHeight;
 	local gap = m_nGap;
@@ -122,82 +199,90 @@ function CSGOHudReticle::PaintStyle1()
 	local thicknessHalf = m_nPipWidthHalf;
 
 	// top
-	local x = ww - thicknessHalf;
-	local y = hh - gap - size;
+	local x = cx - thicknessHalf;
+	local y = cy - gap - size;
 	surface.SetTexture( m_hTexPipUp );
 	surface.DrawTexturedRect( x, y, thickness, size );
 
+	// bottom
+	y = cy + gap;
+	surface.SetTexture( m_hTexPipDown );
+	surface.DrawTexturedRect( x, y, thickness, size );
+
 	// left
-	y = hh - thicknessHalf;
-	x = ww - gap - size;
+	x = cx - gap - size;
+	y = cy - thicknessHalf;
 	surface.SetTexture( m_hTexPipLeft );
 	surface.DrawTexturedRect( x, y, size, thickness );
 
 	// right
-	y = hh - thicknessHalf;
-	x = ww + gap;
+	x = cx + gap;
 	surface.SetTexture( m_hTexPipRight );
 	surface.DrawTexturedRect( x, y, size, thickness );
-
-	// bottom
-	x = ww - thicknessHalf;
-	y = hh + gap;
-	surface.SetTexture( m_hTexPipDown );
-	surface.DrawTexturedRect( x, y, thickness, size );
 }
 
 function CSGOHudReticle::PaintStyle2()
 {
-	return surface.DrawTexturedBox( m_hTexStyle2, XRES(320) - 16, YRES(240) - 16, 32, 32, 0xff, 0xcc, 0x00, 0xff );
+	surface.DrawTexturedBox( m_hTexStyle2, XRES(320) - 16, YRES(240) - 16, 32, 32, m_r, m_g, m_b, 0xff );
 }
 
 function CSGOHudReticle::PaintStyle4()
 {
-	surface.SetColor( 0x82, 0xb1, 0x16, 0xcc );
+	surface.SetColor( m_r, m_g, m_b, m_a );
 
-	local ww = XRES(320);
-	local hh = YRES(240);
+	local cx = XRES(320);
+	local cy = YRES(240);
 
-	local size = 8;
-	local gap = 6;
-	local thickness = 2;
+	local size = m_size;
+	local gap = m_gap;
+	local thickness = m_thickness;
 	local thicknessHalf = thickness / 2;
+	local offset1 = gap + thicknessHalf + size;
+	local offset2 = size + thickness + gap + gap;
 
 	// top
-	local x0 = ww - thicknessHalf;
-	local y0 = hh - gap - size;
+	local x0 = cx - thicknessHalf;
+	local y0 = cy - offset1;
 	surface.DrawFilledRect( x0, y0, thickness, size );
 
+	// bottom
+	local y3 = y0 + offset2;
+	surface.DrawFilledRect( x0, y3, thickness, size );
+
 	// left
-	local y1 = hh - thicknessHalf;
-	local x1 = ww - gap - size;
+	local x1 = cx - offset1;
+	local y1 = cy - thicknessHalf;
 	surface.DrawFilledRect( x1, y1, size, thickness );
 
 	// right
-	local y2 = hh - thicknessHalf;
-	local x2 = ww + gap;
-	surface.DrawFilledRect( x2, y2, size, thickness );
+	local x2 = x1 + offset2;
+	surface.DrawFilledRect( x2, y1, size, thickness );
 
-	// bottom
-	local x3 = ww - thicknessHalf;
-	local y3 = hh + gap;
-	surface.DrawFilledRect( x3, y3, thickness, size );
+	if ( m_dot )
+	{
+		surface.DrawFilledRect( x0, y1, thickness, thickness );
+	}
 
-	local outline = 1;
+	local outline = m_outlinethickness;
 	{
 		thickness += outline+outline;
 		size += outline+outline;
 
-		surface.SetColor( 0x00, 0x00, 0x00, 0xcc );
+		surface.SetColor( 0x00, 0x00, 0x00, m_a );
 		surface.DrawOutlinedRect( x0-outline, y0-outline, thickness, size, outline );
 		surface.DrawOutlinedRect( x1-outline, y1-outline, size, thickness, outline );
-		surface.DrawOutlinedRect( x2-outline, y2-outline, size, thickness, outline );
-		surface.DrawOutlinedRect( x3-outline, y3-outline, thickness, size, outline );
+		surface.DrawOutlinedRect( x2-outline, y1-outline, size, thickness, outline );
+		surface.DrawOutlinedRect( x0-outline, y3-outline, thickness, size, outline );
+
+		if ( m_dot )
+		{
+			surface.DrawOutlinedRect( x0-outline, y1-outline, thickness, thickness, outline );
+		}
 	}
 }
 
 function CSGOHudReticle::SetVisible( state )
 {
 	m_bVisible = state;
-	self.SetVisible( state );
+	return self.SetVisible( state );
 }

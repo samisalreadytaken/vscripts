@@ -30,23 +30,10 @@ local Init = function(...)
 	{
 		CSHud.Init( vargv[0] );
 	}
-	else
+	else // CLIENT_DLL
 	{
+		NetMsg.Receive( "CSHud.Load", null );
 		CSHud.Init();
-	}
-}
-
-local InitRestore = function(...)
-{
-	if ( SERVER_DLL )
-	{
-		Init( Entities.GetLocalPlayer() );
-	}
-
-	if ( CLIENT_DLL )
-	{
-		// Level transition hack
-		Entities.First().SetContextThink( "CSHud", Init, 0.0 );
 	}
 }
 
@@ -56,16 +43,64 @@ ListenToGameEvent( "player_spawn", function( event )
 	{
 		Init( GetPlayerByUserID( event.userid ) );
 	}
-	else
+	else // CLIENT_DLL
 	{
 		Init();
 		Entities.First().SetContextThink( "CSHud", function(_) { StopListeningToAllGameEvents( "CSHud" ); }, 0.01 );
 	}
 }, "CSHud" );
 
-Hooks.Add( this, "OnRestore", InitRestore, "CSHud" );
+// Save/restore
+{
+	local InitRestore = function(...)
+	{
+		if ( SERVER_DLL )
+		{
+			Init( Entities.GetLocalPlayer() );
+		}
+		else // CLIENT_DLL
+		{
+			// Level transition hack
+			Entities.First().SetContextThink( "CSHud", Init, 0.0 );
+		}
+	}
 
+	Hooks.Add( this, "OnRestore", InitRestore, "CSHud" );
 
+	// Handle loads on saves that were not saved with this HUD
+	if ( SERVER_DLL )
+	{
+		local t = GetLoadType();
+		if ( t == MapLoad.LoadGame || t == MapLoad.Transition )
+		{
+			Entities.First().SetContextThink( "CSHud.Load", function(_)
+			{
+				if ( "CSHud" in getroottable() )
+					return;
+
+				print( "This save file does not include CSHud, loading...\n" );
+
+				Hooks.Add( this, "OnRestore", InitRestore, "CSHud" );
+
+				local player = Entities.GetLocalPlayer();
+				Init( player );
+				NetMsg.Start( "CSHud.Load" );
+				NetMsg.Send( player, true );
+			}, 0.1 );
+		}
+	}
+	else // CLIENT_DLL
+	{
+		// Hooks are reset on save restore because hook functions are stored in the VM.
+		// NetMsg functions are not reset because they are stored in C++.
+		// Hence the need to re-register the hook but not the net messages.
+		NetMsg.Receive( "CSHud.Load", function()
+		{
+			Hooks.Add( this, "OnRestore", InitRestore, "CSHud" );
+			Init();
+		} );
+	}
+}
 
 if ( !("GetPlayerByUserID" in this) )
 {

@@ -3,7 +3,7 @@
 //-----------------------------------------------------------------------
 //
 local XRES = XRES, YRES = YRES;
-local surface = surface;
+local surface = surface, Entities = Entities;
 
 
 class CSGOHudFlashlight

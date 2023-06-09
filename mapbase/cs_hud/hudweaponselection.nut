@@ -244,16 +244,16 @@ function CSGOHudWeaponSelection::RegisterCommands()
 
 function CSGOHudWeaponSelection::UnregisterCommands()
 {
-	Convars.RegisterCommand( "lastinv", null, "", FCVAR_CLIENTDLL );
-	Convars.RegisterCommand( "phys_swap", null, "", FCVAR_GAMEDLL );
-	Convars.RegisterCommand( "invnext", null, "", FCVAR_CLIENTDLL );
-	Convars.RegisterCommand( "invprev", null, "", FCVAR_CLIENTDLL );
-	Convars.RegisterCommand( "slot1", null, "", FCVAR_CLIENTDLL );
-	Convars.RegisterCommand( "slot2", null, "", FCVAR_CLIENTDLL );
-	Convars.RegisterCommand( "slot3", null, "", FCVAR_CLIENTDLL );
-	Convars.RegisterCommand( "slot4", null, "", FCVAR_CLIENTDLL );
-	Convars.RegisterCommand( "slot5", null, "", FCVAR_CLIENTDLL );
-	Convars.RegisterCommand( "slot6", null, "", FCVAR_CLIENTDLL );
+	Convars.UnregisterCommand( "lastinv" );
+	Convars.UnregisterCommand( "phys_swap" );
+	Convars.UnregisterCommand( "invnext" );
+	Convars.UnregisterCommand( "invprev" );
+	Convars.UnregisterCommand( "slot1" );
+	Convars.UnregisterCommand( "slot2" );
+	Convars.UnregisterCommand( "slot3" );
+	Convars.UnregisterCommand( "slot4" );
+	Convars.UnregisterCommand( "slot5" );
+	Convars.UnregisterCommand( "slot6" );
 }
 
 function CSGOHudWeaponSelection::Paint()
