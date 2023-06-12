@@ -35,6 +35,17 @@ if ( SERVER_DLL )
 			return;
 
 		player.SetContextThink( "TFHud.StatusUpdate", StatusUpdate, 0.0 );
+
+		NetMsg.Receive( "TFHud.Reload", function( player )
+		{
+			print("SV: Reloading tf_hud...\n");
+
+			player.SetContextThink( "TFHud.StatusUpdate", null, 0.0 );
+			delete ::TFHud;
+
+			IncludeScript( "tf_hud/hud_tf.nut" );
+			::TFHud.Init( player );
+		} );
 	}
 
 	function TFHud::StatusUpdate( player )
@@ -81,14 +92,14 @@ if ( CLIENT_DLL )
 		m_Crosshairs = null
 	}
 
-	IncludeScript( "tf_hud/hud_tf_playerstatus.nut" );
-	IncludeScript( "tf_hud/hud_tf_playerclass.nut" );
-	IncludeScript( "tf_hud/hud_tf_health.nut" );
-	IncludeScript( "tf_hud/hud_tf_ammo.nut" );
-	IncludeScript( "tf_hud/hud_tf_weaponselection.nut" );
-	IncludeScript( "tf_hud/hud_tf_flashlight.nut" );
-	IncludeScript( "tf_hud/hud_tf_suitpower.nut" );
-	IncludeScript( "tf_hud/hud_tf_scope.nut" );
+	IncludeScript( "tf_hud/hud_tf_playerstatus.nut", TFHud );
+	IncludeScript( "tf_hud/hud_tf_playerclass.nut", TFHud );
+	IncludeScript( "tf_hud/hud_tf_health.nut", TFHud );
+	IncludeScript( "tf_hud/hud_tf_ammo.nut", TFHud );
+	IncludeScript( "tf_hud/hud_tf_weaponselection.nut", TFHud );
+	IncludeScript( "tf_hud/hud_tf_flashlight.nut", TFHud );
+	IncludeScript( "tf_hud/hud_tf_suitpower.nut", TFHud );
+	IncludeScript( "tf_hud/hud_tf_scope.nut", TFHud );
 /*
 	//
 	// Fullscreen overlay effect drawn over the HUD.
@@ -176,13 +187,39 @@ if ( CLIENT_DLL )
 
 		if ( state )
 		{
+			NetMsg.Receive( "TFHud.StatusUpdate", StatusUpdate.bindenv(this) );
+
 			m_pWeaponSelection.RegisterCommands();
 			m_pScope.RegisterCommands();
+
+			m_pWeaponAmmo.AddTickSignal();
+
+			local player = Entities.GetLocalPlayer();
+			if ( player )
+			{
+				local weapon = player.GetActiveWeapon();
+				if ( weapon )
+					OnSelectWeapon( weapon );
+			}
 		}
 		else
 		{
+			NetMsg.Receive( "TFHud.StatusUpdate", dummy );
+
 			m_pWeaponSelection.UnregisterCommands();
 			m_pScope.UnregisterCommands();
+
+			m_pWeaponAmmo.RemoveTickSignal();
+
+			m_pPlayerStatus.self.SetVisible( false );
+			m_pWeaponAmmo.self.SetVisible( false );
+			m_pWeaponAmmo.m_hSecondaryBG.SetVisible( false );
+			m_pWeaponSelection.self.SetVisible( false );
+			m_pFlashlight.self.SetVisible( false );
+			m_pSuitPower.self.SetVisible( false );
+			m_pScope.self.SetVisible( false );
+			m_pScope.m_bVisible = false;
+			m_hCrosshair.SetVisible( false );
 		}
 
 		SetPlayerClass( m_nPlayerTeam, m_nPlayerClass, 1 );
@@ -231,7 +268,47 @@ if ( CLIENT_DLL )
 
 		SetVisible( m_bVisible );
 
-		NetMsg.Receive( "TFHud.StatusUpdate", StatusUpdate.bindenv(this) );
+		Convars.RegisterCommand( "tf_hud_reload", Reload, "", 0 );
+
+		// mapbase 7.1 hack, ignore
+		if ( !("GetHudViewport" in vgui) )
+			vgui.CreatePanel( "Panel", vgui.GetRootPanel(), "" ).Destroy();
+	}
+
+	// Purge and reload the HUD
+	// To keep forward compatibility, this should always clean itself,
+	// then run `hud_tf.nut` and `TFHud.Init()`
+	//
+	// BUGBUG: Overridden concommands stop working when TFHud.Reload() is called on some saves.
+	// Saving and loading the game again in this state is fine.
+	// TODO: After fixing this, auto-update the HUD on save files by comparing versions.
+	function TFHud::Reload(...)
+	{
+		print("CL: Reloading tf_hud...\n");
+
+		::TFHud.SetVisible( false );
+
+		::TFHud.m_pPlayerStatus.self.Destroy();
+		::TFHud.m_pWeaponAmmo.self.Destroy();
+		::TFHud.m_pWeaponSelection.self.Destroy();
+		::TFHud.m_pFlashlight.self.Destroy();
+		::TFHud.m_pSuitPower.self.Destroy();
+		::TFHud.m_pScope.self.Destroy();
+
+		::TFHud.m_hAnim.Destroy();
+		::TFHud.m_hCrosshair.Destroy();
+
+		delete ::TFHud;
+
+		Entities.First().SetContextThink( "TFHud.Reload", function(_)
+		{
+			IncludeScript( "tf_hud/fonts.nut" );
+			IncludeScript( "tf_hud/hud_tf.nut" );
+			::TFHud.Init();
+
+			NetMsg.Start( "TFHud.Reload" );
+			NetMsg.Send();
+		}, 0.1 );
 	}
 
 	function TFHud::AnimThink()
@@ -321,7 +398,7 @@ if ( CLIENT_DLL )
 
 	function TFHud::StatusUpdate()
 	{
-		m_pPlayerHealth.m_nArmour = NetMsg.ReadShort();
+		m_pPlayerHealth.m_nArmor = NetMsg.ReadShort();
 
 		if ( NetMsg.ReadBool() )
 		{

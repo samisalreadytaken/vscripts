@@ -3,7 +3,7 @@
 //-----------------------------------------------------------------------
 //
 local XRES = XRES, YRES = YRES;
-local surface = surface;
+local surface = surface, NetProps = NetProps;
 
 
 class CTFHudScope
@@ -28,7 +28,6 @@ function CTFHudScope::Init()
 	self.SetVisible( m_bVisible );
 	self.SetPaintEnabled( true );
 	self.SetPaintBackgroundEnabled( false );
-	self.SetCallback( "PerformLayout", PerformLayout.bindenv(this) );
 	self.SetCallback( "Paint", Paint.bindenv(this) );
 
 	m_hScopeTex0 = surface.ValidateTexture( "hud/scope_sniper_lr", true );
@@ -50,8 +49,8 @@ function CTFHudScope::UnregisterCommands()
 {
 	Entities.First().SetContextThink( "TFHudScopeThink", null, 0.0 );
 
-	Convars.RegisterCommand( "+zoom", null, "", FCVAR_CLIENTDLL );
-	Convars.RegisterCommand( "-zoom", null, "", FCVAR_CLIENTDLL );
+	Convars.UnregisterCommand( "+zoom" );
+	Convars.UnregisterCommand( "-zoom" );
 }
 
 function CTFHudScope::SuitZoom( cmd, _ )
@@ -93,17 +92,10 @@ function CTFHudScope::OnThink(_)
 	return 0.1;
 }
 
-local wide = ScreenWidth();
-local tall = ScreenHeight();
-
-function CTFHudScope::PerformLayout()
-{
-	wide = ScreenWidth();
-	tall = ScreenHeight();
-}
-
 function CTFHudScope::Paint()
 {
+	local wide = XRES(640);
+	local tall = YRES(480);
 	local wideHalf = wide / 2;
 	local tallHalf = tall / 2;
 	local texTall = tallHalf;

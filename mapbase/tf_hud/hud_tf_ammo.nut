@@ -31,6 +31,17 @@ class CTFHudWeaponAmmo
 	m_nAmmoSecondary = -1
 }
 
+// TODO: Use native RemoveTickSignal when added
+function CTFHudWeaponAmmo::RemoveTickSignal()
+{
+	self.SetCallback( "OnTick", null );
+}
+
+function CTFHudWeaponAmmo::AddTickSignal()
+{
+	self.SetCallback( "OnTick", OnTick.bindenv(this) );
+}
+
 function CTFHudWeaponAmmo::Init()
 {
 	self = vgui.CreatePanel( "Panel", TFHud.GetRootPanel(), "TFHudWeaponAmmo" );
@@ -300,49 +311,49 @@ function CTFHudWeaponAmmo::SetAmmoInClip( nAmt )
 {
 	local text = "" + nAmt;
 	m_hInClip.SetText( text );
-	m_hInClipShadow.SetText( text );
+	return m_hInClipShadow.SetText( text );
 }
 
 function CTFHudWeaponAmmo::SetAmmoInReserve( nAmt )
 {
 	local text = "" + nAmt;
 	m_hInReserve.SetText( text );
-	m_hInReserveShadow.SetText( text );
+	return m_hInReserveShadow.SetText( text );
 }
 
 function CTFHudWeaponAmmo::SetAmmoNoClip( nAmt )
 {
 	local text = "" + nAmt;
 	m_hNoClip.SetText( text );
-	m_hNoClipShadow.SetText( text );
+	return m_hNoClipShadow.SetText( text );
 }
 
 function CTFHudWeaponAmmo::SetAmmoSecondary( nAmt )
 {
 	local text = "" + nAmt;
 	m_hSecondary.SetText( text );
-	m_hSecondaryShadow.SetText( text );
+	return m_hSecondaryShadow.SetText( text );
 }
 
 function CTFHudWeaponAmmo::SetVisibleInClip( state )
 {
 	m_hInClip.SetVisible( state );
-	m_hInClipShadow.SetVisible( state );
+	return m_hInClipShadow.SetVisible( state );
 }
 
 function CTFHudWeaponAmmo::SetVisibleInReserve( state )
 {
 	m_hInReserve.SetVisible( state );
-	m_hInReserveShadow.SetVisible( state );
+	return m_hInReserveShadow.SetVisible( state );
 }
 
 function CTFHudWeaponAmmo::SetVisibleNoClip( state )
 {
 	m_hNoClip.SetVisible( state );
-	m_hNoClipShadow.SetVisible( state );
+	return m_hNoClipShadow.SetVisible( state );
 }
 
 function CTFHudWeaponAmmo::SetVisibleSecondary( state )
 {
-	m_hSecondaryBG.SetVisible( state );
+	return m_hSecondaryBG.SetVisible( state );
 }

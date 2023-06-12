@@ -13,7 +13,7 @@ class CTFHudPlayerHealth
 	m_hHealthBonusImage = null
 	m_hHealthImage = null
 	m_hHealthValue = null
-	m_hArmourValue = null
+	m_hArmorValue = null
 
 	m_iHealthTex = null
 	m_iDeadTex = null
@@ -21,7 +21,7 @@ class CTFHudPlayerHealth
 	m_flMaxHealth = 0.0
 	m_nHealth = 0
 	m_flHealth = 0.0
-	m_nArmour = 0
+	m_nArmor = 0
 
 	m_nHealthWarningThreshold = 0
 
@@ -66,10 +66,8 @@ function CTFHudPlayerHealth::Init()
 	m_hHealthImage.SetZPos( 4 );
 	m_hHealthImage.SetCallback( "Paint", HealthPaint.bindenv(this) );
 
-	surface.ValidateTexture( "hud/health_color", true );
-	surface.ValidateTexture( "hud/health_dead", true );
-	m_iHealthTex = surface.GetTextureID( "hud/health_color" );
-	m_iDeadTex = surface.GetTextureID( "hud/health_dead" );
+	m_iHealthTex = surface.ValidateTexture( "hud/health_color", true );
+	m_iDeadTex = surface.ValidateTexture( "hud/health_dead", true );
 
 	m_hHealthValue = vgui.CreatePanel( "Label", self, "PlayerStatusHealthValue" );
 	m_hHealthValue.SetVisible( true );
@@ -78,12 +76,12 @@ function CTFHudPlayerHealth::Init()
 	m_hHealthValue.SetContentAlignment( Alignment.center );
 	m_hHealthValue.SetZPos( 5 );
 
-	m_hArmourValue = vgui.CreatePanel( "Label", self, "PlayerStatusArmourValue" );
-	m_hArmourValue.SetVisible( true );
-	m_hArmourValue.SetPaintBackgroundEnabled( false );
-	m_hArmourValue.SetFont( surface.GetFont( "HudClassHealth", true ) );
-	m_hArmourValue.SetContentAlignment( Alignment.center );
-	m_hArmourValue.SetZPos( 5 );
+	m_hArmorValue = vgui.CreatePanel( "Label", self, "PlayerStatusArmorValue" );
+	m_hArmorValue.SetVisible( true );
+	m_hArmorValue.SetPaintBackgroundEnabled( false );
+	m_hArmorValue.SetFont( surface.GetFont( "HudClassHealth", true ) );
+	m_hArmorValue.SetContentAlignment( Alignment.center );
+	m_hArmorValue.SetZPos( 5 );
 }
 
 function CTFHudPlayerHealth::PerformLayout()
@@ -111,9 +109,9 @@ function CTFHudPlayerHealth::PerformLayout()
 	m_hHealthValue.SetSize( YRES(50), YRES(18) );
 	m_hHealthValue.SetFgColor( 117, 107, 94, 255 );
 
-	m_hArmourValue.SetPos( YRES(76), m_hHealthImage.GetYPos() - YRES(18) - YRES(2) );
-	m_hArmourValue.SetSize( YRES(50), YRES(18) );
-	m_hArmourValue.SetFgColor( 117, 107, 94, 255 );
+	m_hArmorValue.SetPos( YRES(76), m_hHealthImage.GetYPos() - YRES(18) - YRES(2) );
+	m_hArmorValue.SetSize( YRES(50), YRES(18) );
+	m_hArmorValue.SetFgColor( 117, 107, 94, 255 );
 
 	// Update visibility
 	OnTick();
@@ -129,7 +127,7 @@ function CTFHudPlayerHealth::OnTick()
 	}
 	else
 	{
-		m_hArmourValue.SetText( "" + m_nArmour );
+		m_hArmorValue.SetText( "" + m_nArmor );
 	}
 
 	if ( nHealth == m_nHealth )
