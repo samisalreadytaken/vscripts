@@ -483,19 +483,23 @@ if ( SERVER_DLL )
 	//
 	function SteamAchievements::StoreStats( player )
 	{
-		Msg(Fmt( "SteamAchievements::StoreStats(%d)\n", player.entindex() ));
+		Msg(Fmt( "SteamAchievements::StoreStats(%d) [%d]\n", player.entindex(), player.GetUserID() ));
 
 		if ( !(player in m_mapID) )
 			return Warning( "Player "+player.entindex()+" is not found in ID map\n" );
 
 		local playerID = m_mapID[ player ];
 		local fileName = Fmt( LOG_FILE_NAME, playerID );
+		local kv = m_AchievementState[ playerID ];
+
+		// Nothing to write
+		if ( !kv.len() )
+			return;
 
 		local pKV = FileToKeyValues( fileName );
 		if ( !pKV )
 			return Warning( "Achievement log file is missing!\n" );
 
-		local kv = m_AchievementState[ playerID ];
 		// pKV.TableToSubKeys( kv );
 		foreach( achID, achState in kv )
 		{
