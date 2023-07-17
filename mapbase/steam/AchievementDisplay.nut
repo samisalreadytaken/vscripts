@@ -129,7 +129,9 @@ function SteamAchievementsDisplay::CreatePanels()
 	{
 		foreach ( achName, ach in SteamAchievements.m_Achievements )
 		{
-			m_SortedPanels.append( CAchievementPanel( m_pEmbedded, ach ) );
+			// TODO: Display non-achievement stats differently
+			if ( 0 in ach.m_rgchName )
+				m_SortedPanels.append( CAchievementPanel( m_pEmbedded, ach ) );
 		}
 	}
 	else

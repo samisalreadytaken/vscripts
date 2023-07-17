@@ -251,12 +251,6 @@ if ( CLIENT_DLL ){
 			ach.m_rgchDescription = pKV.GetKeyString( "desc" );
 			ach.m_szIconImageAchieved = pKV.GetKeyString( "iconAchieved" );
 			ach.m_szIconImageUnachieved = pKV.GetKeyString( "iconUnachieved" );
-
-			if ( !(0 in ach.m_szIconImageAchieved) )
-				ach.m_szIconImageAchieved = null;
-
-			if ( !(0 in ach.m_szIconImageUnachieved) )
-				ach.m_szIconImageUnachieved = ach.m_szIconImageAchieved;
 } // CLIENT_DLL
 		}
 	}
