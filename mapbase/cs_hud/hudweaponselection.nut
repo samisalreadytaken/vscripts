@@ -2,6 +2,7 @@
 //                       github.com/samisalreadytaken
 //-----------------------------------------------------------------------
 //
+local CSHud = this;
 local XRES = XRES, YRES = YRES;
 local surface = surface, Localize = Localize, input = input, Time = Time;
 
@@ -13,13 +14,14 @@ const MAX_WEAPON_POSITIONS = 4;
 
 class CSGOHudWeaponSelection
 {
-	CSHud = null;
-	constructor( CSHud )
+	constructor( player )
 	{
-		this.CSHud = CSHud;
+		this.player = player;
 	}
 
 	self = null
+	player = null
+
 	m_IconChars = null
 	m_ItemPanels = null
 

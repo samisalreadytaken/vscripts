@@ -2,13 +2,20 @@
 //                       github.com/samisalreadytaken
 //-----------------------------------------------------------------------
 //
+local CSHud = this;
 local XRES = XRES, YRES = YRES;
 local surface = surface, NetProps = NetProps;
 
 
 class CCSHudScope
 {
+	constructor( player )
+	{
+		this.player = player;
+	}
+
 	self = null
+	player = null
 
 	m_bVisible = false
 

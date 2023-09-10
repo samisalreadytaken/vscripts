@@ -9,10 +9,15 @@ if ( SERVER_DLL )
 {
 	CSHud <- {}
 
+	// Singleplayer only
+	local m_PlayerSquad;
+
 	function CSHud::Init( player )
 	{
 		if ( !player )
 			return;
+
+		m_PlayerSquad = Squads.FindSquad( "player_squad" );
 
 		player.SetContextThink( "CSHud.StatusUpdate", StatusUpdate, 0.0 );
 
@@ -20,12 +25,13 @@ if ( SERVER_DLL )
 		// Though these values can change at any time,
 		// query a few times to at least catch map initialisation settings.
 		{
-			player.SetContextThink( "CSHud.StatusUpdate2", StatusUpdate2, 0.001 );
 			player.SetContextThink( "CSHud.StatusUpdate3", StatusUpdate2, 1.0 );
 			player.SetContextThink( "CSHud.StatusUpdate4", StatusUpdate2, 2.0 );
 			player.SetContextThink( "CSHud.StatusUpdate5", StatusUpdate2, 3.0 );
 			player.SetContextThink( "CSHud.StatusUpdate6", StatusUpdate2, 4.0 );
 		}
+
+		player.SetContextThink( "CSHud.StatusUpdate2", StatusUpdate2, 0.001 );
 
 		NetMsg.Receive( "CSHud.Reload", function( player )
 		{
@@ -37,6 +43,20 @@ if ( SERVER_DLL )
 			IncludeScript( "cs_hud/hud_cs.nut" );
 			::CSHud.Init( player );
 		} );
+	}
+
+	// Get the number of non-silent commandable NPCs in player squad.
+	local function GetNumSquadCommandables()
+	{
+		local c = 0;
+		// Don't ignore silent members in count, it is checked manually below
+		// because members are accessed by index.
+		for ( local n = m_PlayerSquad.NumMembers( false ); n--; )
+		{
+			local npc = m_PlayerSquad.GetMember( n );
+			( npc.IsCommandable() && !m_PlayerSquad.IsSilentMember( npc ) && ++c );
+		}
+		return c;
 	}
 
 	function CSHud::StatusUpdate( player )
@@ -63,6 +83,9 @@ if ( SERVER_DLL )
 			{
 				NetMsg.WriteShort( 0 );
 			}
+
+			// TODO: Send medic count as well
+			NetMsg.WriteByte( GetNumSquadCommandables() );
 		NetMsg.Send( player, false );
 
 		return 0.1;
@@ -71,6 +94,8 @@ if ( SERVER_DLL )
 	// Max health is not networked, sk_suit_maxarmor is replicated
 	function CSHud::StatusUpdate2( player )
 	{
+		m_PlayerSquad = Squads.FindSquad( "player_squad" );
+
 		NetMsg.Start( "CSHud.StatusUpdate2" );
 			NetMsg.WriteLong( player.GetMaxHealth() );
 		NetMsg.Send( player, true );
@@ -82,11 +107,12 @@ if ( CLIENT_DLL )
 {
 	local XRES = XRES, YRES = YRES;
 
-	// Only tested on Linux, Windows is a guess.
 	local PROP_DRIVABLE_APC_CLASSNAME = IsWindows() ? "class C_PropDrivableAPC" : "17C_PropDrivableAPC";
 
 	CSHud <-
 	{
+		player = null
+
 		m_bVisible = true
 
 		m_pPlayerHealth = null
@@ -97,6 +123,7 @@ if ( CLIENT_DLL )
 		m_pScope = null
 		m_pCrosshair = null
 		//m_pLocator = null
+		m_pSquadStatus = null
 
 		m_flBackgroundAlpha = 0.5
 		m_bSuitEquipped = null // 'null' so that StatusUpdate() detects 'false' as change
@@ -115,6 +142,7 @@ if ( CLIENT_DLL )
 	IncludeScript( "cs_hud/hudscope.nut", CSHud );
 	IncludeScript( "cs_hud/hudreticle.nut", CSHud );
 	//IncludeScript( "cs_hud/hudlocator.nut", CSHud );
+	IncludeScript( "cs_hud/hudsquadstatus.nut", CSHud );
 
 	function CSHud::GetRootPanel()
 	{
@@ -141,6 +169,7 @@ if ( CLIENT_DLL )
 		SetHudElementVisible( "CHudCrosshair", istate );
 		SetHudElementVisible( "CHudVehicle", istate );
 		//SetHudElementVisible( "CHudLocator", istate ); // does not work
+		SetHudElementVisible( "CHudSquadStatus", istate );
 
 		if ( state )
 		{
@@ -184,6 +213,7 @@ if ( CLIENT_DLL )
 			m_pScope.m_bVisible = state;
 			m_pCrosshair.SetVisible( state );
 			//m_pLocator.SetVisible( state, null, null );
+			m_pSquadStatus.SetVisible( state );
 
 			//Convars.SetFloat( "hud_locator_alpha", Convars.GetDefaultValue( "hud_locator_alpha" ).tofloat() );
 		}
@@ -196,14 +226,17 @@ if ( CLIENT_DLL )
 		if ( m_pPlayerHealth && m_pPlayerHealth.self && m_pPlayerHealth.self.IsValid() )
 			return;
 
-			m_pPlayerHealth = CSGOHudHealthArmor( CSHud );
-			m_pWeaponAmmo = CSGOHudWeaponAmmo( CSHud );
-			m_pWeaponSelection = CSGOHudWeaponSelection( CSHud );
-			m_pFlashlight = CSGOHudFlashlight( CSHud );
-			m_pSuitPower = CSGOHudSuitPower( CSHud );
-			m_pScope = CCSHudScope();
+		player = Entities.GetLocalPlayer();
+
+			m_pPlayerHealth = CSGOHudHealthArmor( player );
+			m_pWeaponAmmo = CSGOHudWeaponAmmo( player );
+			m_pWeaponSelection = CSGOHudWeaponSelection( player );
+			m_pFlashlight = CSGOHudFlashlight();
+			m_pSuitPower = CSGOHudSuitPower();
+			m_pScope = CCSHudScope( player );
 			m_pCrosshair = CSGOHudReticle();
-			//m_pLocator = CSGOHudLocator( CSHud );
+			//m_pLocator = CSGOHudLocator();
+			m_pSquadStatus = CSGOHudSquadStatus();
 
 		m_pPlayerHealth.Init();
 		m_pWeaponAmmo.Init();
@@ -213,6 +246,7 @@ if ( CLIENT_DLL )
 		m_pScope.Init();
 		m_pCrosshair.Init();
 		//m_pLocator.Init();
+		m_pSquadStatus.Init();
 
 		m_pPlayerHealth.m_nHealthWarningThreshold = 24;
 		m_pPlayerHealth.m_flMaxHealth = 100.0;
@@ -315,6 +349,7 @@ if ( CLIENT_DLL )
 		::CSHud.m_pScope.self.Destroy();
 		::CSHud.m_pCrosshair.self.Destroy();
 		//::CSHud.m_pLocator.self.Destroy();
+		::CSHud.m_pSquadStatus.self.Destroy();
 
 		delete ::CSHud;
 
@@ -525,21 +560,38 @@ if ( CLIENT_DLL )
 			}
 		}
 
-		// Hide crosshair when dead
-		if ( m_pCrosshair.m_bVisible )
+		local iSquadMemberCount = NetMsg.ReadByte();
+		if ( m_pSquadStatus.m_iSquadMembers != iSquadMemberCount )
 		{
-			if ( player.GetHealth() <= 0 )
+			m_pSquadStatus.m_iSquadMembers = iSquadMemberCount;
+
+			if ( iSquadMemberCount )
 			{
-				m_pCrosshair.SetVisible( false );
+				m_pSquadStatus.SetVisible( true );
+			}
+			else
+			{
+				m_pSquadStatus.SetVisible( false );
 			}
 		}
 
-		//if ( m_pLocator.m_bVisible )
-		//{
-		//	if ( player.GetHealth() <= 0 )
-		//	{
-		//		m_pLocator.SetVisible( false, null, null );
-		//	}
-		//}
+		// Hide elements when dead
+		if ( !m_pPlayerHealth.m_nHealth )
+		{
+			if ( m_pCrosshair.m_bVisible )
+			{
+				m_pCrosshair.SetVisible( false );
+			}
+
+			//if ( m_pLocator.m_bVisible )
+			//{
+			//	m_pLocator.SetVisible( false, null, null );
+			//}
+
+			if ( m_pSquadStatus.m_bVisible )
+			{
+				m_pSquadStatus.SetVisible( false );
+			}
+		}
 	}
 }

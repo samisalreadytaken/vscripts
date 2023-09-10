@@ -2,6 +2,7 @@
 //                       github.com/samisalreadytaken
 //-----------------------------------------------------------------------
 //
+local CSHud = this;
 local XRES = XRES, YRES = YRES;
 local surface = surface;
 local MainViewOrigin = MainViewOrigin, MainViewAngles = MainViewAngles,
@@ -10,12 +11,6 @@ local MainViewOrigin = MainViewOrigin, MainViewAngles = MainViewAngles,
 
 class CSGOHudLocator
 {
-	CSHud = null;
-	constructor( CSHud )
-	{
-		this.CSHud = CSHud;
-	}
-
 	self = null
 	m_bVisible = false
 

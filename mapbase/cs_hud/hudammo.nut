@@ -2,6 +2,7 @@
 //                       github.com/samisalreadytaken
 //-----------------------------------------------------------------------
 //
+local CSHud = this;
 local XRES = XRES, YRES = YRES;
 local surface = surface;
 local Fmt = format, NetProps = NetProps;
@@ -9,13 +10,13 @@ local Fmt = format, NetProps = NetProps;
 
 class CSGOHudWeaponAmmo
 {
-	CSHud = null;
-	constructor( CSHud )
+	constructor( player )
 	{
-		this.CSHud = CSHud;
+		this.player = player;
 	}
 
 	self = null
+	player = null
 
 	m_szAmmoClip = ""
 	m_szAmmoReserve = ""
@@ -295,8 +296,6 @@ function CSGOHudWeaponAmmo::OnTickAPC()
 
 function CSGOHudWeaponAmmo::Paint()
 {
-	local flAlpha = CSHud.m_flBackgroundAlpha;
-
 	local width = YRES(143);
 	local height = YRES(22);
 
@@ -305,6 +304,8 @@ function CSGOHudWeaponAmmo::Paint()
 
 	// bg
 	{
+		local flAlpha = CSHud.m_flBackgroundAlpha;
+
 		local w = YRES(44);
 		local x = x0;
 		surface.SetColor( 0x00, 0x00, 0x00, 0xcc * flAlpha );

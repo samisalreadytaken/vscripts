@@ -2,18 +2,13 @@
 //                       github.com/samisalreadytaken
 //-----------------------------------------------------------------------
 //
+local CSHud = this;
 local XRES = XRES, YRES = YRES;
 local surface = surface, Entities = Entities;
 
 
 class CSGOHudFlashlight
 {
-	CSHud = null;
-	constructor( CSHud )
-	{
-		this.CSHud = CSHud;
-	}
-
 	self = null
 	m_flFlashlight = 0.0
 
@@ -71,8 +66,6 @@ function CSGOHudFlashlight::StopFade()
 
 function CSGOHudFlashlight::Paint()
 {
-	local flAlpha = CSHud.m_flBackgroundAlpha;
-
 	local width = YRES(20);
 	local height = YRES(22);
 
@@ -81,6 +74,8 @@ function CSGOHudFlashlight::Paint()
 
 	// bg
 	{
+		local flAlpha = CSHud.m_flBackgroundAlpha;
+
 		local w = width / 2;
 		surface.SetColor( 0x00, 0x00, 0x00, 0xcc * flAlpha );
 		surface.DrawFilledRectFade( x0, y0, w, height, 0x00, 0xff, true );
@@ -127,12 +122,6 @@ function CSGOHudFlashlight::Paint()
 
 class CSGOHudSuitPower
 {
-	CSHud = null;
-	constructor( CSHud )
-	{
-		this.CSHud = CSHud;
-	}
-
 	self = null
 	m_flPower = 0.0
 
@@ -190,8 +179,6 @@ function CSGOHudSuitPower::StopFade()
 
 function CSGOHudSuitPower::Paint()
 {
-	local flAlpha = CSHud.m_flBackgroundAlpha;
-
 	local width = YRES(50);
 	local height = YRES(22);
 
@@ -200,6 +187,8 @@ function CSGOHudSuitPower::Paint()
 
 	// bg
 	{
+		local flAlpha = CSHud.m_flBackgroundAlpha;
+
 		local w = width / 2;
 		surface.SetColor( 0x00, 0x00, 0x00, 0xcc * flAlpha );
 		surface.DrawFilledRectFade( x0, y0, w, height, 0x00, 0xff, true );

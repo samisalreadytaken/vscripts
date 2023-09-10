@@ -2,6 +2,7 @@
 //                       github.com/samisalreadytaken
 //-----------------------------------------------------------------------
 //
+local CSHud = this;
 local XRES = XRES, YRES = YRES;
 local surface = surface;
 
@@ -11,13 +12,13 @@ local kClrLow = [ surface, 0xff, 0x00, 0x00, 0xdd ];
 
 class CSGOHudHealthArmor
 {
-	CSHud = null;
-	constructor( CSHud )
+	constructor( player )
 	{
-		this.CSHud = CSHud;
+		this.player = player;
 	}
 
 	self = null
+	player = null
 
 	m_flMaxHealth = 100.0
 	m_nHealth = -1
