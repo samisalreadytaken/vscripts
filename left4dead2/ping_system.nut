@@ -16,102 +16,21 @@
 //
 
 
-const CONTENTS_EMPTY				= 0x0;;
-const CONTENTS_SOLID				= 0x1;;
 const CONTENTS_WINDOW				= 0x2;;
-const CONTENTS_AUX					= 0x4;;
-const CONTENTS_GRATE				= 0x8;;
-const CONTENTS_SLIME				= 0x10;;
-const CONTENTS_WATER				= 0x20;;
-const CONTENTS_BLOCKLOS				= 0x40;;
-const CONTENTS_OPAQUE				= 0x80;;
-const LAST_VISIBLE_CONTENTS			= 0x80;;
-const ALL_VISIBLE_CONTENTS			= 0xFF;;
-const CONTENTS_TESTFOGVOLUME		= 0x100;;
-const CONTENTS_TEAM1				= 0x800;;
-const CONTENTS_TEAM2				= 0x1000;;
-const CONTENTS_IGNORE_NODRAW_OPAQUE	= 0x2000;;
-const CONTENTS_MOVEABLE				= 0x4000;;
-const CONTENTS_AREAPORTAL			= 0x8000;;
-const CONTENTS_PLAYERCLIP			= 0x10000;;
-const CONTENTS_MONSTERCLIP			= 0x20000;;
-const CONTENTS_ORIGIN				= 0x1000000;;
-const CONTENTS_MONSTER				= 0x2000000;;
-const CONTENTS_DEBRIS				= 0x4000000;;
-const CONTENTS_DETAIL				= 0x8000000;;
-const CONTENTS_TRANSLUCENT			= 0x10000000;;
-const CONTENTS_LADDER				= 0x20000000;;
-const CONTENTS_HITBOX				= 0x40000000;;
-
-const MASK_ALL						= 0xFFFFFFFF;;
-//(CONTENTS_SOLID|CONTENTS_MOVEABLE|CONTENTS_WINDOW|CONTENTS_MONSTER|CONTENTS_GRATE)
-const MASK_SOLID					= 0x200400B;;
-const MASK_PLAYERSOLID				= 0x201400B;;
-const MASK_NPCSOLID					= 0x202400B;;
-const MASK_WATER					= 0x4030;;
-const MASK_OPAQUE					= 0x4081;;
-const MASK_OPAQUE_AND_NPCS			= 0x2004081;;
-const MASK_BLOCKLOS					= 0x4041;;
-const MASK_BLOCKLOS_AND_NPCS		= 0x2004041;;
-const MASK_VISIBLE					= 0x6081;;
-const MASK_VISIBLE_AND_NPCS			= 0x2006081;;
-//(CONTENTS_SOLID|CONTENTS_MOVEABLE|CONTENTS_MONSTER|CONTENTS_WINDOW|CONTENTS_DEBRIS|CONTENTS_HITBOX)
-const MASK_SHOT						= 0x46004003;;
 //(CONTENTS_SOLID|CONTENTS_MOVEABLE|CONTENTS_MONSTER|CONTENTS_WINDOW|CONTENTS_DEBRIS|CONTENTS_GRATE)
 const MASK_SHOT_HULL				= 0x600400B;;
-const MASK_SHOT_PORTAL				= 0x2004003;;
-const MASK_SOLID_BRUSHONLY			= 0x400B;;
-const MASK_PLAYERSOLID_BRUSHONLY	= 0x1400B;;
-const MASK_NPCSOLID_BRUSHONLY		= 0x2400B;;
-const MASK_NPCWORLDSTATIC			= 0x2000B;;
-const MASK_SPLITAREAPORTAL			= 0x30;;
 
-const IN_ATTACK		= 0x1;;
-const IN_JUMP		= 0x2;;
-const IN_DUCK		= 0x4;;
-const IN_FORWARD	= 0x8;;
-const IN_BACK		= 0x10;;
-const IN_USE		= 0x20;;
-const IN_CANCEL		= 0x40;;
-const IN_LEFT		= 0x80;;
-const IN_RIGHT		= 0x100;;
-const IN_MOVELEFT	= 0x200;;
-const IN_MOVERIGHT	= 0x400;;
-const IN_ATTACK2	= 0x800;;
-const IN_RUN		= 0x1000;;
-const IN_RELOAD		= 0x2000;;
-const IN_ALT1		= 0x4000;;
 const IN_ALT2		= 0x8000;;
-const IN_SCORE		= 0x10000;;
-const IN_SPEED		= 0x20000;;
-const IN_WALK		= 0x40000;;
-const IN_ZOOM		= 0x80000;;
-const IN_WEAPON1	= 0x100000;;
-const IN_WEAPON2	= 0x200000;;
-const IN_BULLRUSH	= 0x400000;;
-const IN_GRENADE1	= 0x800000;;
-const IN_GRENADE2	= 0x1000000;;
-const IN_ATTACK3	= 0x2000000;;
 
 const EF_NODRAW		= 32;;
 const FL_FAKECLIENT	= 256;;
 
-const FLT_EPSILON		= 1.192092896e-7;;
-const FLT_MAX			= 3.402823466e+38;;
-const FLT_MIN			= 1.175494351e-38;;
-
-const INT_MAX			= 0x7FFFFFFF;;
-const INT_MIN			= 0x80000000;;
-
-const DEG2RAD			= 0.017453293;;
-const RAD2DEG			= 57.295779513;;
-const PI				= 3.141592654;;
-const RAND_MAX			= 0x7FFF;;
 const MAX_COORD_FLOAT	= 16384.0;;
 const MAX_TRACE_LENGTH	= 56755.840862417;;
 
 local CONST = getconsttable();
 local Assert = assert;
+local Msg = Msg;
 
 local SpawnEntityFromTable = SpawnEntityFromTable;
 local TraceLine = TraceLine;
@@ -143,13 +62,15 @@ const COS_25DEG = 0.906308;;
 const COS_90DEG = 0.0;;
 
 
-const PING_DEBUG = 1;
-const PING_DEBUG_DRAW = 0;
-const PING_DEBUG_VERBOSE = 1;
+local PING_DEBUG = 1;
+local PING_DEBUG_DRAW = 0;
+local PING_DEBUG_VERBOSE = 1;
+function PING_DEBUG(i) { PING_DEBUG = i; }
+function PING_DEBUG_DRAW(i) { PING_DEBUG_DRAW = i; }
+function PING_DEBUG_VERBOSE(i) { PING_DEBUG_VERBOSE = i; }
 
 
 const PING_ITEM_SEARCH_RADIUS = 12.0;
-
 
 
 enum PingType
@@ -236,7 +157,7 @@ enum PingType
 	AFFIRMATIVE,
 	NEGATIVE,
 	WAIT,
-	NOTICE,
+
 	HURRY,
 	LOOKOUT,
 
@@ -400,14 +321,14 @@ local PingMaterial = array( PingType.MAX_COUNT );
 	PingMaterial[PingType.AFFIRMATIVE]	= "ping_system/ping_affirmative.vmt",
 	PingMaterial[PingType.NEGATIVE]		= "ping_system/ping_negative.vmt",
 	PingMaterial[PingType.WAIT]			= "ping_system/ping_wait.vmt",
-	PingMaterial[PingType.NOTICE]		= "ping_system/ping_notice.vmt",
+	//PingMaterial[PingType.NOTICE]		= "ping_system/ping_notice.vmt",
 	PingMaterial[PingType.HURRY]		= "ping_system/ping_wait.vmt",
 	PingMaterial[PingType.LOOKOUT]		= "ping_system/ping_lookout.vmt"
 
 
 enum PingColour
 {
-	NULL			= 0,
+
 	BASE			= "255 255 255 255",
 	TEAMMATE		= "78 100 150 255",
 	WARNING			= "255 0 0 255",
@@ -480,6 +401,7 @@ if ( !("m_Players" in this) )
 	// m_Users <- {}		// CBasePlayer : CPingUser
 
 	m_hManager <- null;
+	m_rr <- null;
 }
 
 local m_Players = m_Players;
@@ -500,7 +422,7 @@ function Precache()
 }
 
 
-local InitMan = function()
+local InitMgr = function()
 {
 	if ( m_hManager && m_hManager.IsValid() )
 		return;
@@ -516,33 +438,48 @@ local InitMan = function()
 
 function Init()
 {
-	InitMan();
+	InitMgr();
 
 	for ( local p; p = Entities.FindByClassname( p, "player" ); )
 	{
 		AddPlayer( p, GetNetPropInt( p, "m_iTeamNum" ) );
 	}
 
-	local b = rr_AddDecisionRule(
-		RRule(
-			"PingSystem",
-			[ CriterionFunc( "PingSystem", rr_Ping.bindenv(this) ) ],
-			[ ResponseSingle( ResponseKind.none, "", null, null, { scenename = "" } ) ],
-			RGroupParams()
-		)
-	);
+	// RRule::SelectResponse() and RRule::criteria[0].func are cached on C++,
+	// their return values are checked.
+	// RRule::SelectResponse() is called when criteria match, expected to return ResponseSingle instance.
+	// I don't care about responses as the criterion is used as a callback.
+	local RRule = class extends this.RRule
+	{
+		SelectResponse = dummy;
+	}
 
-	if ( !b )
+	if ( PING_DEBUG )
+	{
+		RRule.SelectResponse <- function()
+		{
+			error( "PingSystem RR criterion matched\n" );
+		}
+	}
+
+	m_rr = RRule( "PingSystem", [ CriterionFunc( "", rr_Ping.bindenv(this) ) ], [ null ], null );
+
+	if ( PING_DEBUG )
+	{
+		// NULL check in debug to be able to reload as rules can't seem to be able to be unregistered
+		m_rr.criteria[0].func = function(Q) { if ( !!this ) return rr_Ping(Q); }.bindenv(this);
+	}
+
+	if ( !rr_AddDecisionRule( m_rr ) )
 		error( "PingSystem: ERROR invalid RR!\n");
 
-	Msg("PingSystem::Init() [22]\n");
+	Msg("PingSystem::Init() [23]\n");
 }
 
 function OnGameEvent_round_start(ev)
 {
-	return InitMan();
+	return InitMgr();
 }
-
 
 function RemoveInvalidPlayers()
 {
@@ -647,7 +584,7 @@ function AddPlayer( hPlayer, plyTeam )
 
 function __DebugPrint()
 {
-	Msg("PingSystem::__DebugPrint: ["+GetFrameCount()+"]\n");
+	Msg("PingSystem::__DebugPrint ["+GetFrameCount()+"]\n");
 
 	local Msg = Msg, Fmt = format;
 	local gPR = Entities.FindByClassname( null, "terror_player_manager" );
@@ -670,7 +607,7 @@ function __DebugPrint()
 			}
 		}
 
-		Msg(Fmt( "\t[%i](%i) %i|%i\t%i %i %i %i %i (%s)\n",
+		Msg(Fmt( "\t[%i](%i) %i|%i\t%i%i%i%i%i (%s)\n",
 			p && p.IsValid() ? p.GetEntityIndex() : -1,
 			p && p.IsValid() ? p.GetPlayerUserId() : -1,
 			teamnum,
@@ -694,16 +631,18 @@ function __DebugPrint()
 
 		foreach( spr in pings )
 		{
-			Msg(Fmt( "\t\t[%i]:\n",
+			Msg(Fmt( "\t\t[%i]",
 				spr && spr.IsValid() ? spr.GetEntityIndex() : -1 ));
 
 			foreach( target, ping in g_Targets )
 			{
 				if ( ping == spr )
 				{
-					Msg(Fmt( "\t\t\t%s\n", ""+target ));
+					Msg( "->"+target );
 				}
 			}
+
+			Msg("\n");
 		}
 	}
 }
@@ -949,6 +888,8 @@ m_ZombieTypeForSI <-
 
 m_UncommonModels <-
 [
+	"",
+
 	"models/infected/common_male_riot.mdl",
 	"models/infected/common_male_clown.mdl",
 
@@ -1017,24 +958,28 @@ local s_AutoBlock =
 	[PingResponse.pass] = null
 }
 
-
 function rr_Ping( Q )
 {
-	local concept = Q.concept;
-	if ( !(concept in m_ValidConcepts) )
-		return;
+	local concept;
 
-
-	if (PING_DEBUG)
+	if ( "concept" in Q )
 	{
-		if ( !( "who" in Q ) && !( "Who" in Q ) )
-		{
-			printf( "[???] %s   <------------------------\n", Q.concept );
-			error("no response target!\n");
-			__DumpScope( 2, Q );
-		}
+		concept = Q.concept;
+	}
+	else if ( "Concept" in Q )
+	{
+
+		concept = Q.Concept;
+	}
+	else if (PING_DEBUG)
+	{
+		print( "[???] ???   <------------------------\n" );
+		error("no concept!\n");
+		__DumpScope( 2, Q );
 	}
 
+	if ( !(concept in m_ValidConcepts) )
+		return;
 
 	local who;
 
@@ -1048,14 +993,22 @@ function rr_Ping( Q )
 		who = Q.Who;
 	}
 
-
 	if (PING_DEBUG)
 	{
-		printf("[%s] %s   <------------------------", who, Q.concept );
+		if ( who )
+		{
+			printf( "[%s] %s   <------------------------", who, Q.concept );
+		}
+		else
+		{
+			printf( "[???] %s   <------------------------", Q.concept );
+			error( "\nno response target!\n" );
+			__DumpScope( 2, Q );
+		}
 	}
 
-
 	local targets = rr_GetResponseTargets();
+
 	if ( who in targets )
 	{
 		who = targets[ who ];
@@ -1081,6 +1034,7 @@ function rr_Ping( Q )
 	}
 
 	local bAuto = !("smartlooktype" in Q) || Q.smartlooktype != "manual";
+	local resp = m_ValidConcepts[ concept ];
 
 	if (PING_DEBUG)
 	{
@@ -1091,8 +1045,6 @@ function rr_Ping( Q )
 		print("\n");
 	}
 
-	local resp = m_ValidConcepts[ concept ];
-
 	if ( bAuto && resp in s_AutoBlock )
 	{
 		if (PING_DEBUG)
@@ -1100,7 +1052,7 @@ function rr_Ping( Q )
 		return;
 	}
 
-	// Don't play sound when auto-pinged or using chatter
+	// Don't play sound when auto-pinged or for chatter
 	s_bPlaySound = !bAuto;
 
 	switch ( resp )
@@ -1114,10 +1066,11 @@ function rr_Ping( Q )
 				Assert( resp in s_AutoBlock );
 			}
 
-			return OnCommandPing( who );
+			OnCommandPing( who );
+			return;
 
 		case PingResponse.weapon:
-
+		{
 			if ( !("weaponname" in Q) )
 			{
 				if (PING_DEBUG) error( "   PingResponse.weapon : NULL\n" );
@@ -1128,7 +1081,8 @@ function rr_Ping( Q )
 				if ( bAuto )
 					return;
 
-				return PingTrace( who );
+				PingTrace( who );
+				return;
 			}
 
 			if (PING_DEBUG) printl( "   PingResponse.weapon : " + Q.weaponname );
@@ -1185,7 +1139,8 @@ function rr_Ping( Q )
 				//	}
 				//}
 
-				return PingEntity( who, pTarget );
+				PingEntity( who, pTarget );
+				return;
 			}
 
 
@@ -1235,17 +1190,21 @@ function rr_Ping( Q )
 
 
 			if ( pTarget )
-				return PingEntity( who, pTarget );
+			{
+				PingEntity( who, pTarget );
+				return;
+			}
 
 			if ( bAuto )
 				return;
 
 			if (PING_DEBUG_VERBOSE) print( "      trace fallback\n" );
 
-			return PingTrace( who );
-
+			PingTrace( who );
+			return;
+		}
 		case PingResponse.special:
-
+		{
 			local specialtype = Q.specialtype;
 
 
@@ -1296,7 +1255,10 @@ function rr_Ping( Q )
 				if (PING_DEBUG) printl( "      SI target : " + pTarget );
 
 				if ( pTarget )
-					return PingEntity( who, pTarget );
+				{
+					PingEntity( who, pTarget );
+					return;
+				}
 			}
 /*			// Uncommon infected
 			else
@@ -1337,7 +1299,8 @@ function rr_Ping( Q )
 							vecPingPos.x = vecPingPos.y = 0.0;
 							vecPingPos.z += 32.0;
 
-							return SpriteCreate( who, PingType.INCAP, vecPingPos, pTarget, pTarget );
+							SpriteCreate( who, PingType.INCAP, vecPingPos, pTarget, pTarget );
+							return;
 						}
 
 						lookupTable = m_ModelForUncommonL4D1;
@@ -1352,11 +1315,12 @@ function rr_Ping( Q )
 
 			if (PING_DEBUG_VERBOSE) print( "      trace fallback\n" );
 
-			return PingTrace( who );
-
+			PingTrace( who );
+			return;
+		}
 		// player is attacked by SI
 		case PingResponse.dominated:
-
+		{
 			if ( !bAuto )
 				return;
 
@@ -1370,10 +1334,10 @@ function rr_Ping( Q )
 				local vecPingPos = hMyDominator.EyePosition();
 				vecPingPos.z = GetHeadOrigin( hMyDominator ).z + 32.0;
 
-				return SpriteCreate( who, PingType.WARNING, vecPingPos, hMyDominator );
+				SpriteCreate( who, PingType.WARNING, vecPingPos, hMyDominator );
 			}
 			return;
-
+		}
 		//case PingResponse.remark:
         //
 		//	if ( (Q.subject != "remark_caralarm") )
@@ -1472,9 +1436,9 @@ local PreFadeOut = function( hSpr, hOwner, hTarget = null )
 // TODO: Make server framerate independent
 local FadeOut = function()
 {
-	if ( m_nRenderAlpha > 64 )
+	if ( m_nRenderAlpha > 63 )
 	{
-		self.__KeyValueFromInt( "renderamt", m_nRenderAlpha -= 64 );
+		self.__KeyValueFromInt( "renderamt", m_nRenderAlpha -= 63 );
 		return 0.0;
 	}
 
@@ -1672,13 +1636,13 @@ function SpriteCreate( owner, type, origin, target = null, hParent = null )
 		// AddThinkToEnt( p, "SpriteThink" );
 
 		// Reuse
-		// NOTE: Reusing will interpolate origin, which might be distracting
 		// NOTE: Need to check if this ping is in other lists!
 		if ( ( pEnt = playerPings.remove(0) ).IsValid() )
 		{
 			if (PING_DEBUG_VERBOSE) print("reusing ping "+pEnt);
 
 			pEnt.SetModel( ping[0] );
+			pEnt.__KeyValueFromInt( "effects", 0x8 ); // NOINTERP
 
 			local sc = pEnt.GetScriptScope();
 			if ( ("m_hTarget" in sc) && sc.m_hTarget in g_Targets )
@@ -1711,7 +1675,6 @@ function SpriteCreate( owner, type, origin, target = null, hParent = null )
 
 	local playerTeam = GetNetPropInt( owner, "m_iTeamNum" );
 	SetNetPropInt( pEnt, "m_iTeamNum", playerTeam );
-	pEnt.__KeyValueFromInt( "effects", 0 );
 	pEnt.__KeyValueFromInt( "rendermode", 2 );
 	if (!clr) Assert( clr );
 	pEnt.__KeyValueFromString( "rendercolor", clr );
@@ -1838,8 +1801,6 @@ function SpriteCreate( owner, type, origin, target = null, hParent = null )
 		sc.m_flLifeTime		<- lifetime;
 		sc.SpriteThink		<- SpriteThink;
 	}
-
-	// DispatchParticleEffect(  );
 
 	if ( s_bPlaySound )
 	{
@@ -2078,7 +2039,7 @@ function PingChatter( player, concept )
 
 	if (PING_DEBUG_VERBOSE) printl("g_lastChatterPing[ "+player+" ] " + lastPing)
 
-	if ( lastPing )
+	if ( lastPing && lastPing.IsValid() )
 	{
 		// NOTE: it might be reused for other pings, reset pos and parent
 
@@ -2508,6 +2469,245 @@ function OnCommandPing( player )
 	return PingTrace( player );
 }
 
+if ( PING_DEBUG )
+{
+	function __Reload()
+	{
+		foreach ( event, listener in ::GameEventCallbacks )
+		{
+			local i = listener.len();
+			while ( i-- )
+			{
+				local scope = listener[i];
+				if ( scope == this )
+				{
+					listener.remove(i);
+					printl( "Removed game event listener PingSystem::" + event );
+					break;
+				}
+			}
+		}
+
+		if ( m_hManager && m_hManager.IsValid() )
+		{
+			printl( "Kill " + m_hManager );
+			m_hManager.Kill();
+		}
+
+		foreach( pl, pings in g_Pings )
+		{
+			foreach( spr in pings )
+			{
+				if ( spr && spr.IsValid() )
+				{
+					printl( "Kill " + spr );
+					spr.Kill();
+				}
+			}
+		}
+
+		if ( "PingSystem" in getroottable() )
+		{
+			print( "Free " + ::PingSystem + " {"+ this + "}\n" );
+			delete ::PingSystem;
+		}
+
+		DoIncludeScript( "ping_system_load", getroottable() );
+
+		return print( "Reloaded PingSystem " + ::PingSystem + "\n" );
+	}
+}
+
+// Chat commands
+//----------------------------------------------------------------------
+
+function OnGameEvent_player_say(ev)
+{
+	if ( PING_DEBUG )
+	{
+		if ( ev.text[0] == '@' )
+		{
+			local env = getroottable();
+			local i = ev.text.find( "@", 1 );
+			local exec;
+			if ( i != null )
+			{
+				local envstr = ev.text.slice( 1, i );
+				if ( envstr.find( "." ) != null )
+				{
+					printf( "env '%s' not supported\n", envstr );
+					return;
+				}
+
+				if ( !(envstr in env) )
+				{
+					printf( "env '%s' not found\n", envstr );
+					return;
+				}
+
+				env = env[envstr];
+
+				exec = ev.text.slice( i+1, ev.text.len() );
+			}
+			else
+			{
+				exec = ev.text.slice( 1, ev.text.len() );
+			}
+
+			printf( "EXEC %s\n", exec );
+
+			try
+			{
+				compilestring( exec ).call( env );
+			}
+			catch ( err )
+			{
+				printf( "ERROR %s\n", err );
+			}
+
+			return;
+		}
+	}
+
+	if ( ev.text[0] != '!' || ev.text.find( "!ping_system" ) != 0 )
+		return;
+
+	local player = GetPlayerFromUserID( ev.userid );
+	if ( GetListenServerHost() != player )
+		return;
+
+	local argv = split( ev.text, " " );
+	local cmd;
+	if ( 1 in argv )
+		cmd = argv[1];
+
+	local _Msg = Msg;
+	local ClientPrint = ClientPrint;
+	Msg = function( msg )
+	{
+		return ClientPrint( null, DirectorScript.HUD_PRINTTALK, msg );
+	}
+
+	switch ( cmd )
+	{
+		case "a":
+		case "autoping":
+			if ( !(2 in argv) )
+			{
+				Msg( "Usage: !ping_system autoping <option>" );
+				foreach ( v,_ in s_AutoBlock )
+				{
+					foreach ( name, val in CONST.PingResponse )
+					{
+						if ( val == v && name != "pass" )
+						{
+							Msg(format( "\tPingResponse.%s\n", name ));
+						}
+					}
+				}
+				break;
+			}
+
+			try { argv[2] = argv[2].tointeger(); }
+			catch ( err )
+			{
+				Msg(format( "value is not an integer '%s'", argv[2] ));
+				break;
+			}
+
+			PingSystem.DisableAutoPing( argv[2] );
+			break;
+
+		case "d":
+		case "duration":
+			if ( !(2 in argv) || !(3 in argv) )
+			{
+				Msg( "Usage: !ping_system duration <type> <time>" );
+				break;
+			}
+
+			try { argv[2] = argv[2].tointeger(); }
+			catch ( err )
+			{
+				local doErr = 1;
+				try
+				{
+					// try parsing enum
+					argv[2] = compilestring( "return "+argv[2] )();
+					if ( typeof argv[2] != "integer" )
+						throw "";
+					doErr = 0;
+				}
+				catch ( err2 )
+				{
+					doErr = 1;
+				}
+
+				if ( doErr )
+				{
+					Msg(format( "value is not valid '%s'", ""+argv[2] ));
+					break;
+				}
+			}
+
+			try { argv[3] = argv[3].tointeger(); }
+			catch ( err )
+			{
+				Msg(format( "value is not an float '%s'", argv[3] ));
+				break;
+			}
+
+			PingSystem.SetPingDuration( argv[2], argv[3] );
+			break;
+
+		case "s":
+		case "scale":
+			if ( !(2 in argv) )
+			{
+				Msg( "Usage: !ping_system scale <value>" );
+				break;
+			}
+
+			try { argv[2] = argv[2].tofloat(); }
+			catch ( err )
+			{
+				Msg(format( "value is not an float '%s'", argv[2] ));
+				break;
+			}
+
+			PingSystem.SetScaleMultiplier( argv[2] );
+			break;
+
+		case "m":
+		case "maxcount":
+			if ( !(2 in argv) )
+			{
+				Msg( "Usage: !ping_system maxcount <amount>" );
+				break;
+			}
+
+			try { argv[2] = argv[2].tointeger(); }
+			catch ( err )
+			{
+				Msg(format( "value is not an integer '%s'", argv[2] ));
+				break;
+			}
+
+			PingSystem.SetMaxPingCount( argv[2] );
+			break;
+
+		default:
+			Msg( "Usage: !ping_system <[c]ommand> [value...]" );
+			Msg( "   autoping" );
+			Msg( "   duration" );
+			Msg( "   scale" );
+			Msg( "   maxcount" );
+			break;
+	}
+
+	Msg = _Msg;
+}
+
 
 ::__CollectGameEventCallbacks( this );
 
@@ -2540,7 +2740,6 @@ if ( PING_DEBUG )
 	}
 }
 
-
 // Settings interface
 //----------------------------------------------------------------------
 
@@ -2570,7 +2769,7 @@ function SetPingDuration( type, time )
 		m_PingLookup[type][m_lifetime] = time.tofloat();
 	}
 
-	Msg(format( "PingSystem::SetPingDuration(%i, %f)\n", type, time.tofloat() ));
+	Msg(format( "PingSystem::SetPingDuration(%i, %g)\n", type, time.tofloat() ));
 }
 
 function SetPingColour( type, r, g, b )
@@ -2627,16 +2826,13 @@ function DisableAutoPing( i = 1 )
 
 	Msg("PingSystem::DisableAutoPing("+i+")\n");
 
-	if (PING_DEBUG)
+	foreach ( v,_ in s_AutoBlock )
 	{
-		foreach ( v,_ in s_AutoBlock )
+		foreach ( name, val in CONST.PingResponse )
 		{
-			foreach ( name, val in CONST.PingResponse )
+			if ( val == v && name != "pass" )
 			{
-				if ( val == v )
-				{
-					printf( "\tPingResponse.%s\n", name );
-				}
+				Msg(format( "\tPingResponse.%s\n", name ));
 			}
 		}
 	}
