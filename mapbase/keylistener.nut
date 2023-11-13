@@ -139,10 +139,22 @@ if ( CLIENT_DLL )
 		g_KeyState[ button ] <- false;
 
 		if ( fnPressed )
+		{
 			g_OnPressed[ button ] <- fnPressed;
+		}
+		else if ( button in g_OnPressed )
+		{
+			delete g_OnPressed[button];
+		}
 
 		if ( fnReleased )
+		{
 			g_OnReleased[ button ] <- fnReleased;
+		}
+		else if ( button in g_OnPressed )
+		{
+			delete g_OnPressed[button];
+		}
 
 		local bind = input.BindingForKey( button );
 		if ( bind )
