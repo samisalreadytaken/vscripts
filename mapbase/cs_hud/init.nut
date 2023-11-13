@@ -17,6 +17,7 @@
 //			"/reticlecircle.png"
 //-------------------------------------------------------------
 
+const CSGOHUD_VERSION = 23111300;
 
 local Init = function(...)
 {
@@ -75,14 +76,63 @@ ListenToGameEvent( "player_spawn", function( event )
 		{
 			Entities.First().SetContextThink( "CSHud.Load", function(_)
 			{
-				if ( "CSHud" in getroottable() )
-					return;
+				local player = Entities.GetLocalPlayer();
 
-				print( "This save file does not include CSHud, loading...\n" );
+				// This is not well tested
+				if ( "CSHud" in getroottable() )
+				{
+					local reload = 0;
+
+					if ( "version" in CSHud )
+					{
+						// Save is more recent, don't reload
+						if ( CSHud.version >= CSGOHUD_VERSION )
+							return;
+
+						reload = 1;
+					}
+					else
+					{
+						if ( "StatusUpdate2" in CSHud ) // StatusUpdate2 was added in the same update as cs_hud_reload
+						{
+							reload = 1;
+						}
+						else
+						{
+							// Do nothing, the added complexity to reload this version is not worth it.
+							print( "This save file includes an ancient version of CSHud. Not updating.\n" );
+							return;
+						}
+					}
+
+					if ( reload )
+					{
+						if ( "version" in CSHud )
+						{
+							printf( "Updating CSHud to %i (from %i)\n", CSGOHUD_VERSION, CSHud.version );
+						}
+						else
+						{
+							printf( "Updating CSHud to %i\n", CSGOHUD_VERSION );
+						}
+
+						// Wait for player to spawn
+						Entities.First().SetContextThink( "CSHud.Load2", function(_)
+						{
+							SendToConsole( "cs_hud_reload" );
+						}, 0.25 );
+					}
+
+					// Let client handle the reload
+					return;
+				}
+				else
+				{
+					print( "This save file does not include CSHud, loading...\n" );
+				}
 
 				Hooks.Add( this, "OnRestore", InitRestore, "CSHud" );
 
-				local player = Entities.GetLocalPlayer();
 				Init( player );
 				NetMsg.Start( "CSHud.Load" );
 				NetMsg.Send( player, true );

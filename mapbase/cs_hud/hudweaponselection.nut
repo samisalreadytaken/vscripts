@@ -5,6 +5,7 @@
 local CSHud = this;
 local XRES = XRES, YRES = YRES;
 local surface = surface, Localize = Localize, input = input, Time = Time;
+local Convars = Convars, dummy = dummy;
 
 
 const MAX_WEAPONS = 48;
@@ -25,12 +26,16 @@ class CSGOHudWeaponSelection
 	m_IconChars = null
 	m_ItemPanels = null
 
-	m_iActiveSlot = 0
-	m_iActivePos = 0
+	m_iSelectedSlot = 0
+	m_iSelectedPos = 0
 	m_hLastWeapon = null
 
 	m_bFading = false
 	m_flHideTime = 1.e+38
+
+	m_iAttackButton = input.StringToButtonCode( input.LookupBinding( "+attack" ) );
+	m_iAttack2Button = input.StringToButtonCode( input.LookupBinding( "+attack2" ) );
+	hud_fastswitch = Convars.GetInt( "hud_fastswitch" );
 }
 
 class CSGOHudWeaponSelection.CItemPanel
@@ -201,7 +206,7 @@ function CSGOHudWeaponSelection::Init()
 	self.AddTickSignal( 25 );
 	self.SetCallback( "OnTick", OnTick.bindenv(this) );
 	self.SetCallback( "Paint", Paint.bindenv(this) );
-	self.SetCallback( "PerformLayout", PerformLayout.bindenv(this) );
+	self.SetCallback( "PerformLayout", PerformLayoutInternal.bindenv(this) );
 
 	m_IconChars =
 	{
@@ -234,6 +239,7 @@ function CSGOHudWeaponSelection::RegisterCommands()
 {
 	Convars.RegisterCommand( "lastinv", LastWeapon.bindenv( this ), "", FCVAR_CLIENTDLL );
 	Convars.RegisterCommand( "phys_swap", PhysSwap.bindenv( this ), "", FCVAR_GAMEDLL );
+	// Next and prev are reversed so that invprev (scroll down by default) moves down the weapon list and vice versa
 	Convars.RegisterCommand( "invnext", CycleToPrevWeapon.bindenv( this ), "", FCVAR_CLIENTDLL );
 	Convars.RegisterCommand( "invprev", CycleToNextWeapon.bindenv( this ), "", FCVAR_CLIENTDLL );
 	Convars.RegisterCommand( "slot1", function(...) { return SelectSlot( 1 ); }.bindenv( this ), "", FCVAR_CLIENTDLL );
@@ -256,6 +262,8 @@ function CSGOHudWeaponSelection::UnregisterCommands()
 	Convars.UnregisterCommand( "slot4" );
 	Convars.UnregisterCommand( "slot5" );
 	Convars.UnregisterCommand( "slot6" );
+	Convars.UnregisterCommand( "+attack" );
+	Convars.UnregisterCommand( "+attack2" );
 }
 
 function CSGOHudWeaponSelection::Paint()
@@ -267,24 +275,53 @@ function CSGOHudWeaponSelection::Paint()
 
 function CSGOHudWeaponSelection::OnTick()
 {
+	local curtime = Time();
+
 	if ( m_bFading )
 	{
-		local t = (Time() - m_flHideTime) / 0.5;
+		local t = (curtime - m_flHideTime) / 0.5;
 		if ( t < 1.0 )
 		{
 			self.SetAlpha( (1.0 - t) * 255.0 );
 		}
-		else
+		else if ( self.IsVisible() )
 		{
+			m_bFading = false;
+			self.SetAlpha( 255 );
 			self.SetVisible( false );
+
+			if ( !hud_fastswitch )
+			{
+				m_iSelectedSlot = m_iSelectedPos = -1;
+				Convars.UnregisterCommand( "+attack" );
+				Convars.UnregisterCommand( "+attack2" );
+			}
 		}
 	}
 	else
 	{
-		if ( self.IsVisible() && ( m_flHideTime <= Time() || input.IsButtonDown( ButtonCode.MOUSE_LEFT ) ) )
+		local mousepressed = ( input.IsButtonDown( m_iAttackButton ) || input.IsButtonDown( m_iAttack2Button ) );
+
+		if ( self.IsVisible() && ( m_flHideTime <= curtime || mousepressed ) )
 		{
+			m_flHideTime = curtime;
 			m_bFading = true;
-		//	player.EmitSound( "Player.WeaponSelectionClose" )
+		}
+
+		// Select weapon
+		if ( mousepressed && !hud_fastswitch )
+		{
+			local weapon = GetWeapon( m_iSelectedSlot, m_iSelectedPos );
+			if ( weapon )
+			{
+				SelectWeapon( weapon );
+
+				m_iSelectedSlot = m_iSelectedPos = -1;
+				Convars.UnregisterCommand( "+attack" );
+				Convars.UnregisterCommand( "+attack2" );
+
+				player.EmitSound( "Player.WeaponSelectionClose" );
+			}
 		}
 	}
 }
@@ -332,8 +369,8 @@ function CSGOHudWeaponSelection::FindPrevWeapon( iSlot, iPos )
 			local wepPos = wep.GetPosition();
 
 			if ( ( wepSlot < iSlot || (wepSlot == iSlot && wepPos < iPos) ) &&
-				( wepSlot > prevSlot || (wepSlot == prevSlot && wepPos > prevPosition) )
-				&& wep.HasAnyAmmo() )
+				( wepSlot > prevSlot || (wepSlot == prevSlot && wepPos > prevPosition) ) &&
+				wep.HasAnyAmmo() )
 			{
 				prevSlot = wepSlot;
 				prevPosition = wepPos;
@@ -378,11 +415,6 @@ function CSGOHudWeaponSelection::GetWeapon( iSlot, iPos )
 	}
 }
 
-function CSGOHudWeaponSelection::PerformLayout()
-{
-	return PerformLayoutInternal();
-}
-
 function CSGOHudWeaponSelection::PerformLayoutInternal()
 {
 	local m_nSmallBoxTall = YRES(34);
@@ -417,7 +449,7 @@ function CSGOHudWeaponSelection::PerformLayoutInternal()
 				panel.m_szName = Localize.GetTokenAsUTF8( wep.GetPrintName() );
 				panel.m_chIcon = m_IconChars[ wep.GetClassname() ];
 				panel.m_bHasAnyAmmo = wep.HasAnyAmmo();
-				panel.m_bSelected = ( slot == m_iActiveSlot && pos == m_iActivePos );
+				panel.m_bSelected = ( slot == m_iSelectedSlot && pos == m_iSelectedPos );
 				panel.m_nPos = curpos++;
 
 				tall = m_nSmallBoxTall;
@@ -442,57 +474,82 @@ function CSGOHudWeaponSelection::PerformLayoutInternal()
 
 function CSGOHudWeaponSelection::CycleToNextWeapon(...)
 {
-	local activeWep = player.GetActiveWeapon();
-	if ( !activeWep )
-		return;
+	local slot, pos;
 
-	local wep = FindNextWeapon( activeWep.GetSlot(), activeWep.GetPosition() );
+	if ( self.IsVisible() )
+	{
+		slot = m_iSelectedSlot;
+		pos = m_iSelectedPos;
+	}
+	else
+	{
+		local wep = player.GetActiveWeapon();
+		if ( !wep )
+			return;
+
+		slot = wep.GetSlot();
+		pos = wep.GetPosition();
+	}
+
+	local wep = FindNextWeapon( slot, pos );
 	if ( !wep )
 		wep = FindNextWeapon( -1, -1 );
 
 	if ( wep )
-		return SelectWeapon( wep );
+	{
+		m_iSelectedSlot = wep.GetSlot();
+		m_iSelectedPos = wep.GetPosition();
+
+		if ( hud_fastswitch )
+		{
+			SelectWeapon( wep );
+		}
+
+		player.EmitSound( "Player.WeaponSelectionMoveSlot" );
+
+		OpenSelection();
+	}
+
+	return PerformLayoutInternal();
 }
 
 function CSGOHudWeaponSelection::CycleToPrevWeapon(...)
 {
-	local activeWep = player.GetActiveWeapon();
-	if ( !activeWep )
-		return;
+	local slot, pos;
 
-	local wep = FindPrevWeapon( activeWep.GetSlot(), activeWep.GetPosition() );
+	if ( self.IsVisible() )
+	{
+		slot = m_iSelectedSlot;
+		pos = m_iSelectedPos;
+	}
+	else
+	{
+		local wep = player.GetActiveWeapon();
+		if ( !wep )
+			return;
+
+		slot = wep.GetSlot();
+		pos = wep.GetPosition();
+	}
+
+	local wep = FindPrevWeapon( slot, pos );
 	if ( !wep )
 		wep = FindPrevWeapon( MAX_WEAPON_SLOTS, MAX_WEAPON_POSITIONS );
 
 	if ( wep )
-		return SelectWeapon( wep );
-}
-
-function CSGOHudWeaponSelection::SelectWeapon( weapon )
-{
-	if ( m_bFading )
 	{
-		m_bFading = false;
-		self.SetAlpha( 255 );
+		m_iSelectedSlot = wep.GetSlot();
+		m_iSelectedPos = wep.GetPosition();
+
+		if ( hud_fastswitch )
+		{
+			SelectWeapon( wep );
+		}
+
+		player.EmitSound( "Player.WeaponSelectionMoveSlot" );
+
+		OpenSelection();
 	}
-
-	m_flHideTime = Time() + 1.0;
-	self.SetVisible( true );
-
-	m_iActiveSlot = weapon.GetSlot();
-	m_iActivePos = weapon.GetPosition();
-
-	local hCurWep = player.GetActiveWeapon();
-	if ( weapon != hCurWep )
-	{
-		m_hLastWeapon = hCurWep;
-	}
-
-	input.MakeWeaponSelection( weapon );
-
-	CSHud.OnSelectWeapon( weapon );
-
-	player.EmitSound( "Player.WeaponSelectionMoveSlot" );
 
 	return PerformLayoutInternal();
 }
@@ -501,20 +558,11 @@ function CSGOHudWeaponSelection::SelectSlot( slot )
 {
 	--slot;
 
-	if ( m_bFading )
-	{
-		m_bFading = false;
-		self.SetAlpha( 255 );
-	}
-
-	m_flHideTime = Time() + 1.0;
-	self.SetVisible( true );
-
 	local pos = 0;
 
-	if ( slot == m_iActiveSlot )
+	if ( slot == m_iSelectedSlot )
 	{
-		pos = m_iActivePos+1;
+		pos = m_iSelectedPos+1;
 	}
 
 	local wep = GetNextActivePos( slot, pos );
@@ -523,18 +571,13 @@ function CSGOHudWeaponSelection::SelectSlot( slot )
 
 	if ( wep )
 	{
-		m_iActiveSlot = slot;
-		m_iActivePos = wep.GetPosition();
+		m_iSelectedSlot = slot;
+		m_iSelectedPos = wep.GetPosition();
 
-		local hCurWep = player.GetActiveWeapon();
-		if ( wep != hCurWep )
+		if ( hud_fastswitch )
 		{
-			m_hLastWeapon = hCurWep;
+			SelectWeapon( wep );
 		}
-
-		input.MakeWeaponSelection( wep );
-
-		CSHud.OnSelectWeapon( wep );
 
 		player.EmitSound( "Player.WeaponSelectionMoveSlot" );
 	}
@@ -543,7 +586,52 @@ function CSGOHudWeaponSelection::SelectSlot( slot )
 		player.EmitSound( "Player.DenyWeaponSelection" );
 	}
 
+	// Show empty weapon selection as well
+	OpenSelection();
+
 	return PerformLayoutInternal();
+}
+
+function CSGOHudWeaponSelection::SelectWeapon( wep )
+{
+	local hCurWep = player.GetActiveWeapon();
+	if ( wep != hCurWep )
+	{
+		m_hLastWeapon = hCurWep;
+	}
+
+	input.MakeWeaponSelection( wep );
+	return CSHud.OnSelectWeapon( wep );
+}
+
+function CSGOHudWeaponSelection::OpenSelection()
+{
+	m_flHideTime = Time() + 1.0;
+
+	if ( m_bFading )
+	{
+		// HACKHACK: Disable +attack
+		// It may have been unregistered on weapon select
+		if ( !hud_fastswitch )
+		{
+			Convars.RegisterCommand( "+attack", dummy, "", FCVAR_CLIENTDLL );
+			Convars.RegisterCommand( "+attack2", dummy, "", FCVAR_CLIENTDLL );
+		}
+
+		m_bFading = false;
+		return self.SetAlpha( 255 );
+	}
+	else if ( !self.IsVisible() )
+	{
+		// HACKHACK: Disable +attack when weapon selection becomes visible
+		if ( !hud_fastswitch )
+		{
+			Convars.RegisterCommand( "+attack", dummy, "", FCVAR_CLIENTDLL );
+			Convars.RegisterCommand( "+attack2", dummy, "", FCVAR_CLIENTDLL );
+		}
+
+		return self.SetVisible( true );
+	}
 }
 
 // NOTE: Does not account for conditions when weapons cannot be switched!
@@ -553,6 +641,19 @@ function CSGOHudWeaponSelection::LastWeapon(...)
 	{
 		input.MakeWeaponSelection( m_hLastWeapon );
 		CSHud.OnSelectWeapon( m_hLastWeapon );
+
+		// Update selection box if weapon selection is visible
+		if ( self.IsVisible() )
+		{
+			m_iSelectedSlot = m_hLastWeapon.GetSlot();
+			m_iSelectedPos = m_hLastWeapon.GetPosition();
+
+			m_flHideTime = Time() + 1.0;
+			m_bFading = false;
+			self.SetAlpha( 255 );
+
+			PerformLayoutInternal();
+		}
 	}
 
 	m_hLastWeapon = player.GetActiveWeapon();
@@ -579,6 +680,13 @@ function CSGOHudWeaponSelection::PhysSwap(...)
 			m_hLastWeapon = hCurWep;
 	}
 
-	m_iActiveSlot = m_iActivePos = -1;
+	if ( self.IsVisible() )
+	{
+		// Hide selection now
+		m_flHideTime = 0.0;
+		player.EmitSound( "Player.WeaponSelectionClose" );
+	}
+
+	m_iSelectedSlot = m_iSelectedPos = -1;
 	return true;
 }

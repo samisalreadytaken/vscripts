@@ -7,7 +7,10 @@ local NetMsg = NetMsg;
 
 if ( SERVER_DLL )
 {
-	CSHud <- {}
+	CSHud <-
+	{
+		version = CSGOHUD_VERSION
+	}
 
 	// Singleplayer only
 	local m_PlayerSquad;
@@ -17,7 +20,9 @@ if ( SERVER_DLL )
 		if ( !player )
 			return;
 
-		m_PlayerSquad = Squads.FindSquad( "player_squad" );
+		// Squad is created after player_spawn event (hl2_player.cpp),
+		// might as well just create it early here
+		m_PlayerSquad = Squads.FindCreateSquad( "player_squad" );
 
 		player.SetContextThink( "CSHud.StatusUpdate", StatusUpdate, 0.0 );
 
@@ -25,13 +30,12 @@ if ( SERVER_DLL )
 		// Though these values can change at any time,
 		// query a few times to at least catch map initialisation settings.
 		{
+			player.SetContextThink( "CSHud.StatusUpdate2", StatusUpdate2, 0.001 );
 			player.SetContextThink( "CSHud.StatusUpdate3", StatusUpdate2, 1.0 );
 			player.SetContextThink( "CSHud.StatusUpdate4", StatusUpdate2, 2.0 );
 			player.SetContextThink( "CSHud.StatusUpdate5", StatusUpdate2, 3.0 );
 			player.SetContextThink( "CSHud.StatusUpdate6", StatusUpdate2, 4.0 );
 		}
-
-		player.SetContextThink( "CSHud.StatusUpdate2", StatusUpdate2, 0.001 );
 
 		NetMsg.Receive( "CSHud.Reload", function( player )
 		{
@@ -94,8 +98,6 @@ if ( SERVER_DLL )
 	// Max health is not networked, sk_suit_maxarmor is replicated
 	function CSHud::StatusUpdate2( player )
 	{
-		m_PlayerSquad = Squads.FindSquad( "player_squad" );
-
 		NetMsg.Start( "CSHud.StatusUpdate2" );
 			NetMsg.WriteLong( player.GetMaxHealth() );
 		NetMsg.Send( player, true );
@@ -106,11 +108,14 @@ if ( SERVER_DLL )
 if ( CLIENT_DLL )
 {
 	local XRES = XRES, YRES = YRES;
+	local Convars = Convars, input = input;
 
 	local PROP_DRIVABLE_APC_CLASSNAME = IsWindows() ? "class C_PropDrivableAPC" : "17C_PropDrivableAPC";
 
 	CSHud <-
 	{
+		version = CSGOHUD_VERSION
+
 		player = null
 
 		m_bVisible = true
@@ -181,6 +186,8 @@ if ( CLIENT_DLL )
 			m_pScope.RegisterCommands();
 
 			m_pWeaponAmmo.AddTickSignal();
+
+			m_pPlayerHealth.self.SetVisible( state );
 
 			local player = Entities.GetLocalPlayer();
 			if ( player )
@@ -263,6 +270,18 @@ if ( CLIENT_DLL )
 			}
 		} );
 
+		SetCrosshairGap( "weapon_crowbar", YRES(6) );
+		SetCrosshairGap( "weapon_stunstick", YRES(6) );
+		SetCrosshairGap( "weapon_pistol", YRES(8) );
+		SetCrosshairGap( "weapon_357", YRES(-1) );
+		SetCrosshairGap( "weapon_shotgun", YRES(24) );
+		SetCrosshairGap( "weapon_crossbow", 0xAAAAFFFF );
+		SetCrosshairGap( "weapon_smg1", YRES(18) );
+		SetCrosshairGap( "weapon_ar2", YRES(6) );
+		SetCrosshairGap( "weapon_frag", YRES(14) );
+		SetCrosshairGap( "weapon_rpg", YRES(-3) );
+		SetCrosshairGap( "weapon_slam", YRES(28) ); // -50
+
 		SetVisible( m_bVisible );
 
 		Convars.RegisterConvar( "cl_hud_background_alpha", m_flBackgroundAlpha.tofloat().tostring(), "", FCVAR_CLIENTDLL | FCVAR_ARCHIVE );
@@ -331,10 +350,6 @@ if ( CLIENT_DLL )
 	// Purge and reload the HUD
 	// To keep forward compatibility, this should always clean itself,
 	// then run `hud_cs.nut` and `CSHud.Init()`
-	//
-	// BUGBUG: Overridden concommands stop working when CSHud.Reload() is called on some saves.
-	// Saving and loading the game again in this state is fine.
-	// TODO: After fixing this, auto-update the HUD on save files by comparing versions.
 	function CSHud::Reload(...)
 	{
 		print("CL: Reloading cs_hud...\n");
@@ -389,10 +404,18 @@ if ( CLIENT_DLL )
 			}
 			else
 			{
+				if ( !m_pCrosshair.m_bVisible )
+					m_pCrosshair.SetVisible( true );
+
 				m_pCrosshair.m_nGapTarget = YRES(6);
 				m_pCrosshair.m_flStartTime = Time();
 			}
 		}
+
+		// Update key bindings and convars
+		m_pWeaponSelection.m_iAttackButton = input.StringToButtonCode( input.LookupBinding( "+attack" ) );
+		m_pWeaponSelection.m_iAttack2Button = input.StringToButtonCode( input.LookupBinding( "+attack2" ) );
+		m_pWeaponSelection.hud_fastswitch = Convars.GetInt( "hud_fastswitch" );
 	}
 
 	function CSHud::SetCrosshairGap( classname, val )
