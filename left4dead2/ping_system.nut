@@ -473,7 +473,7 @@ function Init()
 	if ( !rr_AddDecisionRule( m_rr ) )
 		error( "PingSystem: ERROR invalid RR!\n");
 
-	Msg("PingSystem::Init() [23]\n");
+	Msg("PingSystem::Init() [24]\n");
 }
 
 function OnGameEvent_round_start(ev)
@@ -933,15 +933,15 @@ m_ModelForUncommonL4D1 <-
 
 m_survivorCharacter <-
 {
-	NamVet		= 4,
-	Biker		= 6,
-	Manager		= 7,
-	TeenGirl	= 9,
+	namvet		= 4,
+	biker		= 6,
+	manager		= 7,
+	teengirl	= 9,
 
-	Gambler		= 19,
-	Mechanic	= 20,
-	Coach		= 21,
-	Producer	= 22,
+	gambler		= 19,
+	mechanic	= 20,
+	coach		= 21,
+	producer	= 22,
 }
 
 
@@ -968,7 +968,6 @@ function rr_Ping( Q )
 	}
 	else if ( "Concept" in Q )
 	{
-
 		concept = Q.Concept;
 	}
 	else if (PING_DEBUG)
@@ -1015,9 +1014,11 @@ function rr_Ping( Q )
 	}
 	else
 	{
-		if ( who in m_survivorCharacter )
+		local szWho = who.tolower();
+
+		if ( szWho in m_survivorCharacter )
 		{
-			local id = m_survivorCharacter[ who ];
+			local id = m_survivorCharacter[ szWho ];
 
 			foreach ( p in m_Players )
 			{
@@ -2650,10 +2651,10 @@ function OnGameEvent_player_say(ev)
 				}
 			}
 
-			try { argv[3] = argv[3].tointeger(); }
+			try { argv[3] = argv[3].tofloat(); }
 			catch ( err )
 			{
-				Msg(format( "value is not an float '%s'", argv[3] ));
+				Msg(format( "value is not a float '%s'", argv[3] ));
 				break;
 			}
 
@@ -2671,7 +2672,7 @@ function OnGameEvent_player_say(ev)
 			try { argv[2] = argv[2].tofloat(); }
 			catch ( err )
 			{
-				Msg(format( "value is not an float '%s'", argv[2] ));
+				Msg(format( "value is not a float '%s'", argv[2] ));
 				break;
 			}
 
