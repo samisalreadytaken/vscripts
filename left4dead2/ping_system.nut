@@ -473,7 +473,7 @@ function Init()
 	if ( !rr_AddDecisionRule( m_rr ) )
 		error( "PingSystem: ERROR invalid RR!\n");
 
-	Msg("PingSystem::Init() [24]\n");
+	Msg("PingSystem::Init() [25]\n");
 }
 
 function OnGameEvent_round_start(ev)
@@ -491,11 +491,21 @@ function RemoveInvalidPlayers()
 
 		m_Players.remove(i);
 
+		if ( p in g_Pings )
+		{
+			foreach ( spr in delete g_Pings[p] )
+			{
+				if ( spr && spr.IsValid() )
+				{
+					if ( PING_DEBUG )
+						printl( "removing disconnected player ping " + spr );
+					spr.Kill();
+				}
+			}
+		}
+
 		if ( p in g_ButtonState )
 			delete g_ButtonState[p];
-
-		if ( p in g_Pings )
-			delete g_Pings[p];
 
 		if ( p in g_lastWarningPos )
 			delete g_lastWarningPos[p];
@@ -554,8 +564,6 @@ function AddPlayer( hPlayer, plyTeam )
 
 	if ( !(hPlayer in g_Pings) )
 		g_Pings[ hPlayer ] <- [];
-	else
-		g_Pings[ hPlayer ].clear();
 
 	if ( m_Players.find( hPlayer ) == null )
 		m_Players.append( hPlayer );
@@ -584,10 +592,10 @@ function AddPlayer( hPlayer, plyTeam )
 
 function __DebugPrint()
 {
-	Msg("PingSystem::__DebugPrint ["+GetFrameCount()+"]\n");
-
 	local Msg = Msg, Fmt = format;
 	local gPR = Entities.FindByClassname( null, "terror_player_manager" );
+
+	Msg(Fmt( "PingSystem::__DebugPrint [%f]\n", Time() ));
 
 	for ( local i = m_Players.len(); i--; )
 	{
@@ -622,7 +630,7 @@ function __DebugPrint()
 		));
 	}
 
-	Msg("\n");
+	Msg("\t---\n");
 
 	foreach( pl, pings in g_Pings )
 	{
@@ -1421,9 +1429,9 @@ local PreFadeOut = function( hSpr, hOwner, hTarget = null )
 
 		if ( ++s_nErrCount >= 3 )
 		{
-			__DebugPrint();
 			s_nErrCount = 0;
-			RemoveInvalidPlayers();
+			PingSystem.__DebugPrint();
+			PingSystem.RemoveInvalidPlayers();
 		}
 	}
 
