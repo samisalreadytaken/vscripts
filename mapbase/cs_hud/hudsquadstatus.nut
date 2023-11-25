@@ -20,9 +20,7 @@ class CSGOHudSquadStatus
 function CSGOHudSquadStatus::Init()
 {
 	self = vgui.CreatePanel( "Panel", CSHud.GetRootPanel(), "CSGOHudSquadStatus" )
-	self.SetSize( ScreenWidth(), ScreenHeight() );
-	self.SetZPos( 0 );
-	self.SetAlpha( 0 );
+	self.SetSize( XRES(640), YRES(480) );
 	self.SetVisible( m_bVisible );
 	self.SetPaintBackgroundEnabled( false );
 	self.SetCallback( "Paint", Paint.bindenv(this) );
@@ -30,6 +28,10 @@ function CSGOHudSquadStatus::Init()
 
 	m_hFont = surface.GetFont( "hud-HA-text-sm", true );
 	m_hFontIcon = surface.GetFont( "SquadIcon", true, "ClientScheme" );
+	if ( !m_hFontIcon )
+	{
+		m_hFontIcon = surface.GetFont( "weapon-selection-item-icon", true );
+	}
 }
 
 function CSGOHudSquadStatus::PerformLayout()
@@ -94,10 +96,4 @@ function CSGOHudSquadStatus::Paint()
 		surface.DrawUnicodeChar( 'x', 0 );
 		surface.DrawText( ""+c, 0 );
 	}
-}
-
-function CSGOHudSquadStatus::SetVisible( state )
-{
-	m_bVisible = state;
-	return self.SetVisible( state );
 }

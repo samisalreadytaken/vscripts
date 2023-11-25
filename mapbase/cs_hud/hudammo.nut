@@ -4,8 +4,7 @@
 //
 local CSHud = this;
 local XRES = XRES, YRES = YRES;
-local surface = surface;
-local Fmt = format, NetProps = NetProps;
+local surface = surface, Fmt = format, NetProps = NetProps;
 
 
 class CSGOHudWeaponAmmo
@@ -47,30 +46,25 @@ class CSGOHudWeaponAmmo
 	m_nOffsetClipIcon = 0
 	m_nOffsetClipLabel = 0
 	m_nClipLabelWide = 0
+
+	OnTick = null
 }
 
-// TODO: Use native RemoveTickSignal when added
-function CSGOHudWeaponAmmo::RemoveTickSignal()
-{
-	self.SetCallback( "OnTick", null );
-}
-
-function CSGOHudWeaponAmmo::AddTickSignal()
+function CSGOHudWeaponAmmo::AddTickSignal( t )
 {
 	self.SetCallback( "OnTick", OnTick.bindenv(this) );
+	return self.AddTickSignal( t );
 }
 
 function CSGOHudWeaponAmmo::Init()
 {
 	self = vgui.CreatePanel( "Panel", CSHud.GetRootPanel(), "CSGOHudWeaponAmmo" );
 	self.SetSize( XRES(640), YRES(480) );
-	self.SetZPos( 0 );
 	self.SetVisible( false );
 	self.SetPaintBackgroundEnabled( false );
 	self.SetCallback( "PerformLayout", PerformLayout.bindenv(this) );
 	self.SetCallback( "Paint", Paint.bindenv(this) );
-	self.SetCallback( "OnTick", OnTick.bindenv(this) );
-	self.AddTickSignal( 50 );
+	OnTick = OnTickWeapon;
 
 	m_hFont = surface.GetFont( "hud-HA-text", true );
 	m_hFontBlur = surface.GetFont( "hud-HA-text-blur", true );
@@ -110,6 +104,8 @@ function CSGOHudWeaponAmmo::PerformLayout()
 	m_nClipLabelWide = surface.GetCharacterWidth( m_hFont, '0' ) * 3 - YRES(4);
 
 	// Recalculate
+	m_bVisible = false;
+	self.SetVisible( false );
 	m_hWeapon = null;
 	OnTick();
 }
@@ -119,14 +115,44 @@ function CSGOHudWeaponAmmo::SetVehicle( type )
 	switch ( type )
 	{
 		case "APC":
-			return self.SetCallback( "OnTick", OnTickAPC.bindenv(this) );
+		{
+			m_bVisibleClip = true;
+			m_bVisibleReserve = false;
 
+			m_chCurTextureDataAmmo2 = m_TextureDataAmmo[ "weapon_rpg" ];
+			m_chCurTextureDataAmmo = m_TextureDataAmmo[ "weapon_ar2" ];
+
+			OnTick = OnTickAPC;
+			break;
+		}
+		case "AIRBOAT":
+		{
+			m_bVisibleClip = true;
+			m_bVisibleReserve = false;
+
+			m_szAmmoSecondary = "";
+			m_chCurTextureDataAmmo = m_TextureDataAmmo[ "weapon_ar2" ];
+
+			OnTick = OnTickAirboat;
+			break;
+		}
 		case null:
-			return self.SetCallback( "OnTick", OnTick.bindenv(this) );
+		{
+			// Recalculate visibility state
+			m_bVisible = false;
+			self.SetVisible( false );
+			m_hWeapon = null;
+			OnTickWeapon();
+
+			OnTick = OnTickWeapon;
+			break;
+		}
 	}
+
+	return self.SetCallback( "OnTick", OnTick.bindenv(this) );
 }
 
-function CSGOHudWeaponAmmo::OnTick()
+function CSGOHudWeaponAmmo::OnTickWeapon()
 {
 	local weapon = player.GetActiveWeapon();
 
@@ -137,12 +163,13 @@ function CSGOHudWeaponAmmo::OnTick()
 			m_bVisible = false;
 			self.SetVisible( false );
 
-			SetVisibleInClip( false );
-			SetVisibleInReserve( false );
+			m_bVisibleClip = false;
+			m_bVisibleReserve = false;
 
 			m_nAmmo1 = m_nAmmo2 = -1;
 			m_hWeapon = null;
 		}
+
 		return;
 	}
 
@@ -171,10 +198,10 @@ function CSGOHudWeaponAmmo::OnTick()
 		m_hWeapon = weapon;
 		m_nAmmo1 = nAmmo1;
 		m_nAmmo2 = nAmmo2;
+		m_nAmmoSecondary = nAmmoSecondary;
 
 		if ( nAmmoSecondary != -1 )
 		{
-			m_nAmmoSecondary = nAmmoSecondary;
 			m_szAmmoSecondary = "" + nAmmoSecondary;
 			m_chCurTextureDataAmmo2 = m_TextureDataAmmo2[ szClassname ];
 		}
@@ -193,28 +220,20 @@ function CSGOHudWeaponAmmo::OnTick()
 				SetAmmoInReserve( nAmmo2 );
 
 				if ( !m_bVisibleClip )
-				{
-					SetVisibleInClip( true );
-				}
+					m_bVisibleClip = true;
 
 				if ( !m_bVisibleReserve )
-				{
-					SetVisibleInReserve( true );
-				}
+					m_bVisibleReserve = true;
 			}
 			else
 			{
 				SetAmmoInClip( nAmmo1 );
 
 				if ( !m_bVisibleClip )
-				{
-					SetVisibleInClip( true );
-				}
+					m_bVisibleClip = true;
 
 				if ( m_bVisibleReserve )
-				{
-					SetVisibleInReserve( false );
-				}
+					m_bVisibleReserve = false;
 			}
 
 			if ( !m_bVisible )
@@ -230,14 +249,10 @@ function CSGOHudWeaponAmmo::OnTick()
 			m_chCurTextureDataAmmo = m_TextureDataAmmo2[ szClassname ];
 
 			if ( m_bVisibleClip )
-			{
-				SetVisibleInClip( false );
-			}
+				m_bVisibleClip = false;
 
 			if ( m_bVisibleReserve )
-			{
-				SetVisibleInReserve( false );
-			}
+				m_bVisibleReserve = false;
 
 			if ( !m_bVisible )
 			{
@@ -252,8 +267,8 @@ function CSGOHudWeaponAmmo::OnTick()
 				m_bVisible = false;
 				self.SetVisible( false );
 
-				SetVisibleInClip( false );
-				SetVisibleInReserve( false );
+				m_bVisibleClip = false;
+				m_bVisibleReserve = false;
 			}
 		}
 	}
@@ -271,20 +286,7 @@ function CSGOHudWeaponAmmo::OnTickAPC()
 		m_nAmmoSecondary = nAmmoSecondary;
 		m_szAmmoSecondary = "" + nAmmoSecondary;
 
-		m_chCurTextureDataAmmo2 = m_TextureDataAmmo[ "weapon_rpg" ];
-		m_chCurTextureDataAmmo = m_TextureDataAmmo[ "weapon_ar2" ];
-
 		SetAmmoInClip( nAmmo1 );
-
-		if ( !m_bVisibleClip )
-		{
-			SetVisibleInClip( true );
-		}
-
-		if ( m_bVisibleReserve )
-		{
-			SetVisibleInReserve( false );
-		}
 
 		if ( !m_bVisible )
 		{
@@ -294,6 +296,25 @@ function CSGOHudWeaponAmmo::OnTickAPC()
 	}
 }
 
+function CSGOHudWeaponAmmo::OnTickAirboat()
+{
+	local nAmmo1 = NetProps.GetPropInt( CSHud.m_hVehicle, "m_nAmmoCount" );
+
+	// update on change
+	if ( nAmmo1 != m_nAmmo1 )
+	{
+		m_nAmmo1 = nAmmo1;
+		SetAmmoInClip( nAmmo1 );
+
+		if ( !m_bVisible )
+		{
+			m_bVisible = true;
+			self.SetVisible( true );
+		}
+	}
+}
+
+// NOTE: CSGO ammo panel height does not match health panel height
 function CSGOHudWeaponAmmo::Paint()
 {
 	local width = YRES(143);
@@ -351,7 +372,7 @@ function CSGOHudWeaponAmmo::Paint()
 		}
 	}
 
-	if ( m_szAmmoSecondary != "" )
+	if ( 0 in m_szAmmoSecondary )
 	{
 		local x = x0 + YRES(18);
 
@@ -390,12 +411,8 @@ function CSGOHudWeaponAmmo::SetAmmoInReserve( nAmt )
 	m_szAmmoReserve = Fmt( "/ %3d", nAmt );
 }
 
-function CSGOHudWeaponAmmo::SetVisibleInClip( state )
+function CSGOHudWeaponAmmo::SetVisible( state )
 {
-	m_bVisibleClip = state;
-}
-
-function CSGOHudWeaponAmmo::SetVisibleInReserve( state )
-{
-	m_bVisibleReserve = state;
+	m_bVisible = state;
+	return self.SetVisible( state );
 }

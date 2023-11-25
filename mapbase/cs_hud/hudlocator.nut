@@ -14,19 +14,20 @@ class CSGOHudLocator
 	self = null
 	m_bVisible = false
 
-	m_hTarget = null
-	m_hTargetTex = null
+	// HL2 has only one and hardcoded locator position and texture
+	m_vecLocatorOrigin = null
+	m_hTargetTexture = 0
 }
 
 function CSGOHudLocator::Init()
 {
 	self = vgui.CreatePanel( "Panel", CSHud.GetRootPanel(), "CSGOHudLocator" )
-	self.SetSize( ScreenWidth(), ScreenHeight() );
-	self.SetZPos( 0 );
-	self.SetAlpha( 0 );
+	self.SetSize( XRES(640), YRES(480) );
 	self.SetVisible( m_bVisible );
 	self.SetPaintBackgroundEnabled( false );
 	self.SetCallback( "Paint", Paint.bindenv(this) );
+
+	m_vecLocatorOrigin = Vector();
 }
 
 function CSGOHudLocator::Paint()
@@ -87,11 +88,10 @@ function CSGOHudLocator::Paint()
 		}
 	}
 
-	if ( m_hTarget.IsValid() )
 	{
 		viewYaw = -viewYaw; // flip back
 
-		local vecDelta = m_hTarget.GetCenter().Subtract( MainViewOrigin() );
+		local vecDelta = MainViewOrigin().Subtract( m_vecLocatorOrigin ).Multiply(-1);
 		local yawDelta = atan2( vecDelta.y, vecDelta.x ) * RAD2DEG;
 		local yawDiff = AngleDiff( viewYaw, yawDelta ) / 2.0;
 
@@ -103,15 +103,12 @@ function CSGOHudLocator::Paint()
 		local texWide = ( 1.0 - fabs(yawDiff) / 90.0 ) * texTall;
 		local xpos = x0 + ( cos((yawDiff-90.0)*DEG2RAD) + 1.0 ) * ( width / 2 + margin ) - texWide / 2.0;
 
-		surface.DrawTexturedBox( m_hTargetTex, xpos-margin, y0-YRES(12), texWide, texTall, 0xe7, 0xe7, 0xe7, 0x99 );
+		surface.DrawTexturedBox( m_hTargetTexture, xpos-margin, y0-YRES(12), texWide, texTall, 0xe7, 0xe7, 0xe7, 0x99 );
 	}
 }
 
-function CSGOHudLocator::SetVisible( state, target, texture )
+function CSGOHudLocator::SetVisible( state )
 {
 	m_bVisible = state;
-	m_hTarget = target;
-	m_hTargetTex = texture;
-
 	return self.SetVisible( state );
 }

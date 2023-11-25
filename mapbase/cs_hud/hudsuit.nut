@@ -4,7 +4,7 @@
 //
 local CSHud = this;
 local XRES = XRES, YRES = YRES;
-local surface = surface, Entities = Entities;
+local surface = surface;
 
 
 class CSGOHudFlashlight
@@ -12,55 +12,40 @@ class CSGOHudFlashlight
 	self = null
 	m_flFlashlight = 0.0
 
-	m_bFade = false
+	m_bFading = false
 }
 
 function CSGOHudFlashlight::Init()
 {
 	self = vgui.CreatePanel( "Panel", CSHud.GetRootPanel(), "CSGOHudFlashlight" )
 	self.SetSize( XRES(640), YRES(480) );
-	self.SetZPos( 0 );
-	self.SetAlpha( 0 );
 	self.SetVisible( false );
 	self.SetPaintBackgroundEnabled( false );
 	self.SetCallback( "Paint", Paint.bindenv(this) );
 
 	m_flFlashlight = 1.0;
 
-	m_bFade = true;
+	m_bFading = true;
 }
 
-function CSGOHudFlashlight::FadeThink(_)
+function CSGOHudFlashlight::FadeOut()
 {
-	local a = self.GetAlpha();
-	if ( a <= 0 )
-	{
-		self.SetVisible( false );
-		return -1;
-	}
-
-	self.SetAlpha( a - 15 );
-	return 0.015;
-}
-
-function CSGOHudFlashlight::StartFade()
-{
-	if ( m_bFade )
+	if ( m_bFading )
 		return;
 
-	m_bFade = true;
-	Entities.First().SetContextThink( "CSGOHudFlashlight::FadeOut", FadeThink.bindenv(this), 0.25 );
+	m_bFading = true;
+	CSHud.PanelFadeOut( "CSGOHudFlashlight", self, 0.25 );
 }
 
-function CSGOHudFlashlight::StopFade()
+function CSGOHudFlashlight::SetVisible()
 {
 	self.SetAlpha( 255 );
 	self.SetVisible( true );
 
-	if ( m_bFade )
+	if ( m_bFading )
 	{
-		m_bFade = false;
-		Entities.First().SetContextThink( "CSGOHudFlashlight::FadeOut", null, 0.0 );
+		m_bFading = false;
+		CSHud.StopPanelFadeOut( "CSGOHudFlashlight" );
 	}
 }
 
@@ -125,55 +110,40 @@ class CSGOHudSuitPower
 	self = null
 	m_flPower = 0.0
 
-	m_bFade = false
+	m_bFading = false
 }
 
 function CSGOHudSuitPower::Init()
 {
 	self = vgui.CreatePanel( "Panel", CSHud.GetRootPanel(), "CSGOHudSuitPower" )
 	self.SetSize( XRES(640), YRES(480) );
-	self.SetZPos( 0 );
-	self.SetAlpha( 0 );
 	self.SetVisible( false );
 	self.SetPaintBackgroundEnabled( false );
 	self.SetCallback( "Paint", Paint.bindenv(this) );
 
 	m_flPower = 1.0;
 
-	m_bFade = true;
+	m_bFading = true;
 }
 
-function CSGOHudSuitPower::FadeThink(_)
+function CSGOHudSuitPower::FadeOut()
 {
-	local a = self.GetAlpha();
-	if ( a <= 0 )
-	{
-		self.SetVisible( false );
-		return -1;
-	}
-
-	self.SetAlpha( a - 15 );
-	return 0.015;
-}
-
-function CSGOHudSuitPower::StartFade()
-{
-	if ( m_bFade )
+	if ( m_bFading )
 		return;
 
-	m_bFade = true;
-	Entities.First().SetContextThink( "CSGOHudSuitPower::FadeOut", FadeThink.bindenv(this), 0.25 );
+	m_bFading = true;
+	CSHud.PanelFadeOut( "CSGOHudSuitPower", self, 0.25 );
 }
 
-function CSGOHudSuitPower::StopFade()
+function CSGOHudSuitPower::SetVisible()
 {
 	self.SetAlpha( 255 );
 	self.SetVisible( true );
 
-	if ( m_bFade )
+	if ( m_bFading )
 	{
-		m_bFade = false;
-		Entities.First().SetContextThink( "CSGOHudSuitPower::FadeOut", null, 0.0 );
+		m_bFading = false;
+		CSHud.StopPanelFadeOut( "CSGOHudSuitPower" );
 	}
 }
 

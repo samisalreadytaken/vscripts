@@ -4,8 +4,8 @@
 //
 local CSHud = this;
 local XRES = XRES, YRES = YRES;
-local surface = surface, Localize = Localize, input = input, Time = Time;
-local Convars = Convars, dummy = dummy;
+local surface = surface, Localize = Localize, input = input, Time = Time,
+	NetProps = NetProps, Convars = Convars, dummy = dummy;
 
 
 const MAX_WEAPONS = 48;
@@ -18,20 +18,26 @@ class CSGOHudWeaponSelection
 	constructor( player )
 	{
 		this.player = player;
+
+		if ( NetProps.GetPropArraySize( player, "m_hMyWeapons" ) != MAX_WEAPONS )
+		{
+			printf( "Player max weapon count mismatch! %d != %d\n",
+				MAX_WEAPONS, NetProps.GetPropArraySize( player, "m_hMyWeapons" ) );
+		}
 	}
 
 	self = null
 	player = null
+	m_bHidden = false
 
 	m_IconChars = null
 	m_ItemPanels = null
 
-	m_iSelectedSlot = 0
-	m_iSelectedPos = 0
-	m_hLastWeapon = null
+	m_iSelectedSlot = -1
+	m_iSelectedPos = -1
 
 	m_bFading = false
-	m_flHideTime = 1.e+38
+	m_flHideTime = FLT_MAX
 
 	m_iAttackButton = input.StringToButtonCode( input.LookupBinding( "+attack" ) );
 	m_iAttack2Button = input.StringToButtonCode( input.LookupBinding( "+attack2" ) );
@@ -198,12 +204,9 @@ function CSGOHudWeaponSelection::CItemPanel::SetPos( x, y )
 function CSGOHudWeaponSelection::Init()
 {
 	self = vgui.CreatePanel( "Panel", CSHud.GetRootPanel(), "CSGOHudWeaponSelection" );
-	self.SetPos( 0, 0 );
-	self.SetSize( ScreenWidth(), ScreenHeight() );
+	self.SetSize( XRES(640), YRES(480) );
 	self.SetVisible( false );
-	self.SetPaintEnabled( true );
 	self.SetPaintBackgroundEnabled( false );
-	self.AddTickSignal( 25 );
 	self.SetCallback( "OnTick", OnTick.bindenv(this) );
 	self.SetCallback( "Paint", Paint.bindenv(this) );
 	self.SetCallback( "PerformLayout", PerformLayoutInternal.bindenv(this) );
@@ -268,6 +271,9 @@ function CSGOHudWeaponSelection::UnregisterCommands()
 
 function CSGOHudWeaponSelection::Paint()
 {
+	if ( m_bHidden )
+		return;
+
 	foreach ( slot in m_ItemPanels )
 		foreach ( panel in slot )
 			panel.Paint();
@@ -290,9 +296,10 @@ function CSGOHudWeaponSelection::OnTick()
 			self.SetAlpha( 255 );
 			self.SetVisible( false );
 
+			m_iSelectedSlot = m_iSelectedPos = -1;
+
 			if ( !hud_fastswitch )
 			{
-				m_iSelectedSlot = m_iSelectedPos = -1;
 				Convars.UnregisterCommand( "+attack" );
 				Convars.UnregisterCommand( "+attack2" );
 			}
@@ -594,12 +601,6 @@ function CSGOHudWeaponSelection::SelectSlot( slot )
 
 function CSGOHudWeaponSelection::SelectWeapon( wep )
 {
-	local hCurWep = player.GetActiveWeapon();
-	if ( wep != hCurWep )
-	{
-		m_hLastWeapon = hCurWep;
-	}
-
 	input.MakeWeaponSelection( wep );
 	return CSHud.OnSelectWeapon( wep );
 }
@@ -634,19 +635,19 @@ function CSGOHudWeaponSelection::OpenSelection()
 	}
 }
 
-// NOTE: Does not account for conditions when weapons cannot be switched!
 function CSGOHudWeaponSelection::LastWeapon(...)
 {
-	if ( m_hLastWeapon && m_hLastWeapon.IsValid() )
+	local hLastWeapon = NetProps.GetPropEntity( player, "m_hLastWeapon" );
+	if ( hLastWeapon )
 	{
-		input.MakeWeaponSelection( m_hLastWeapon );
-		CSHud.OnSelectWeapon( m_hLastWeapon );
+		input.MakeWeaponSelection( hLastWeapon );
+		CSHud.OnSelectWeapon( hLastWeapon );
 
 		// Update selection box if weapon selection is visible
 		if ( self.IsVisible() )
 		{
-			m_iSelectedSlot = m_hLastWeapon.GetSlot();
-			m_iSelectedPos = m_hLastWeapon.GetPosition();
+			m_iSelectedSlot = hLastWeapon.GetSlot();
+			m_iSelectedPos = hLastWeapon.GetPosition();
 
 			m_flHideTime = Time() + 1.0;
 			m_bFading = false;
@@ -655,31 +656,10 @@ function CSGOHudWeaponSelection::LastWeapon(...)
 			PerformLayoutInternal();
 		}
 	}
-
-	m_hLastWeapon = player.GetActiveWeapon();
 }
 
-// NOTE: Does not account for conditions when weapons cannot be switched!
 function CSGOHudWeaponSelection::PhysSwap(...)
 {
-	local hCurWep = player.GetActiveWeapon();
-	if ( hCurWep )
-	{
-		local bPlayerOwnsGravityGun = false;
-		for ( local i = 0; i < MAX_WEAPONS; ++i )
-		{
-			local wep = player.GetWeapon(i);
-			if ( wep && wep.GetClassname() == "weapon_physcannon" )
-			{
-				bPlayerOwnsGravityGun = true;
-				break;
-			}
-		}
-
-		if ( bPlayerOwnsGravityGun )
-			m_hLastWeapon = hCurWep;
-	}
-
 	if ( self.IsVisible() )
 	{
 		// Hide selection now

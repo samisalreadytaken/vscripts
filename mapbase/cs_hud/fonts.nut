@@ -9,7 +9,6 @@ surface.CreateFont( "hud-HA-text",
 	"tall"			: 20
 	"weight"		: 500
 	"antialias" 	: true
-	"dropshadow" 	: false
 	"proportional" 	: true
 } );
 
@@ -20,7 +19,25 @@ surface.CreateFont( "hud-HA-text-blur",
 	"tall"			: 20
 	"weight"		: 500
 	"antialias" 	: true
-	"dropshadow" 	: false
+	"proportional" 	: true
+} );
+
+surface.CreateFont( "hud-HA-text-medium",
+{
+	"name"			: stratum
+	"tall"			: 16
+	"weight"		: 500
+	"antialias" 	: true
+	"proportional" 	: true
+} );
+
+surface.CreateFont( "hud-HA-text-medium-blur",
+{
+	"name"			: stratum
+	"blur"			: 2
+	"tall"			: 16
+	"weight"		: 500
+	"antialias" 	: true
 	"proportional" 	: true
 } );
 
@@ -30,7 +47,6 @@ surface.CreateFont( "hud-HA-text-sm",
 	"tall"			: 10
 	"weight"		: 500
 	"antialias" 	: true
-	"dropshadow" 	: false
 	"proportional" 	: true
 } );
 
@@ -41,7 +57,6 @@ surface.CreateFont( "hud-HA-text-sm-blur",
 	"tall"			: 10
 	"weight"		: 500
 	"antialias" 	: true
-	"dropshadow" 	: false
 	"proportional" 	: true
 } );
 
@@ -98,4 +113,13 @@ surface.CreateFont( "weapon-selection-item-icon-blur",
 	"custom"		: true
 	"dropshadow"	: true
 	"proportional"	: true
+} );
+
+surface.CreateFont( "hud-hint__text",
+{
+	"name"			: stratum // monospace doesn't work
+	"tall"			: 9
+	"weight"		: 500
+	"antialias" 	: true
+	"proportional" 	: true
 } );
