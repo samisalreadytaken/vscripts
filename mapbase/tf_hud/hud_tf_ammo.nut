@@ -31,17 +31,6 @@ class CTFHudWeaponAmmo
 	m_nAmmoSecondary = -1
 }
 
-// TODO: Use native RemoveTickSignal when added
-function CTFHudWeaponAmmo::RemoveTickSignal()
-{
-	self.SetCallback( "OnTick", null );
-}
-
-function CTFHudWeaponAmmo::AddTickSignal()
-{
-	self.SetCallback( "OnTick", OnTick.bindenv(this) );
-}
-
 function CTFHudWeaponAmmo::Init()
 {
 	self = vgui.CreatePanel( "Panel", TFHud.GetRootPanel(), "TFHudWeaponAmmo" );

@@ -24,17 +24,21 @@ enum TFPlayerClass
 	SPY
 }
 
+local NetMsg = NetMsg, NetProps = NetProps;
 
 if ( SERVER_DLL )
 {
-	TFHud <- {}
+	TFHud <-
+	{
+		version = TF2HUD_VERSION
+	}
 
 	function TFHud::Init( player )
 	{
 		if ( !player )
 			return;
 
-		player.SetContextThink( "TFHud.StatusUpdate", StatusUpdate, 0.0 );
+		player.SetContextThink( "TFHud.Armor", ArmorCheck, 0.0 );
 
 		NetMsg.Receive( "TFHud.Reload", function( player )
 		{
@@ -43,23 +47,17 @@ if ( SERVER_DLL )
 			player.SetContextThink( "TFHud.StatusUpdate", null, 0.0 );
 			delete ::TFHud;
 
-			IncludeScript( "tf_hud/hud_tf.nut" );
+			IncludeScript( TF2HUD_PATH + "hud_tf.nut" );
 			::TFHud.Init( player );
 		} );
 	}
 
-	function TFHud::StatusUpdate( player )
+	function TFHud::ArmorCheck( player )
 	{
-		local suit = player.IsSuitEquipped();
+		local nArmor = player.GetArmor();
 
-		NetMsg.Start( "TFHud.StatusUpdate" );
-			NetMsg.WriteShort( player.GetArmor() );
-			NetMsg.WriteBool( suit );
-			if ( suit )
-			{
-				NetMsg.WriteFloat( player.GetFlashlightBattery() * 0.01 );
-				NetMsg.WriteFloat( player.GetAuxPower() * 0.01 );
-			}
+		NetMsg.Start( "TFHud.Armor" );
+			NetMsg.WriteShort( nArmor );
 		NetMsg.Send( player, false );
 
 		return 0.1;
@@ -73,6 +71,9 @@ if ( CLIENT_DLL )
 
 	TFHud <-
 	{
+		version = TF2HUD_VERSION
+
+		player = null
 		m_bVisible = true
 
 		m_pPlayerStatus = null
@@ -87,19 +88,22 @@ if ( CLIENT_DLL )
 		m_nPlayerTeam = TFTEAM.RED
 		m_nPlayerClass = TFPlayerClass.ENGINEER
 
+		m_hWeapon = null
+
 		m_hAnim = null
 		m_hCrosshair = null
 		m_Crosshairs = null
 	}
 
-	IncludeScript( "tf_hud/hud_tf_playerstatus.nut", TFHud );
-	IncludeScript( "tf_hud/hud_tf_playerclass.nut", TFHud );
-	IncludeScript( "tf_hud/hud_tf_health.nut", TFHud );
-	IncludeScript( "tf_hud/hud_tf_ammo.nut", TFHud );
-	IncludeScript( "tf_hud/hud_tf_weaponselection.nut", TFHud );
-	IncludeScript( "tf_hud/hud_tf_flashlight.nut", TFHud );
-	IncludeScript( "tf_hud/hud_tf_suitpower.nut", TFHud );
-	IncludeScript( "tf_hud/hud_tf_scope.nut", TFHud );
+	IncludeScript( TF2HUD_PATH + "hud_tf_playerstatus.nut", TFHud );
+	IncludeScript( TF2HUD_PATH + "hud_tf_playerclass.nut", TFHud );
+	IncludeScript( TF2HUD_PATH + "hud_tf_health.nut", TFHud );
+	//IncludeScript( TF2HUD_PATH + "hud_tf_damageindicator.nut", TFHud );
+	IncludeScript( TF2HUD_PATH + "hud_tf_ammo.nut", TFHud );
+	IncludeScript( TF2HUD_PATH + "hud_tf_weaponselection.nut", TFHud );
+	IncludeScript( TF2HUD_PATH + "hud_tf_flashlight.nut", TFHud );
+	IncludeScript( TF2HUD_PATH + "hud_tf_suitpower.nut", TFHud );
+	IncludeScript( TF2HUD_PATH + "hud_tf_scope.nut", TFHud );
 /*
 	//
 	// Fullscreen overlay effect drawn over the HUD.
@@ -187,39 +191,28 @@ if ( CLIENT_DLL )
 
 		if ( state )
 		{
-			NetMsg.Receive( "TFHud.StatusUpdate", StatusUpdate.bindenv(this) );
+			Entities.First().SetContextThink( "TFHud.Think", Think.bindenv(this), 0.0 );
 
 			m_pWeaponSelection.RegisterCommands();
-			m_pScope.RegisterCommands();
+			m_pWeaponSelection.self.AddTickSignal( 25 );
 
-			m_pWeaponAmmo.AddTickSignal();
-
-			local player = Entities.GetLocalPlayer();
-			if ( player )
-			{
-				local weapon = player.GetActiveWeapon();
-				if ( weapon )
-					OnSelectWeapon( weapon );
-			}
+			m_pPlayerHealth.self.SetVisible( state );
 		}
 		else
 		{
 			NetMsg.Receive( "TFHud.StatusUpdate", dummy );
 
 			m_pWeaponSelection.UnregisterCommands();
-			m_pScope.UnregisterCommands();
+			m_pWeaponSelection.self.RemoveTickSignal();
 
-			m_pWeaponAmmo.RemoveTickSignal();
-
-			m_pPlayerStatus.self.SetVisible( false );
-			m_pWeaponAmmo.self.SetVisible( false );
-			m_pWeaponAmmo.m_hSecondaryBG.SetVisible( false );
-			m_pWeaponSelection.self.SetVisible( false );
-			m_pFlashlight.self.SetVisible( false );
-			m_pSuitPower.self.SetVisible( false );
-			m_pScope.self.SetVisible( false );
-			m_pScope.m_bVisible = false;
-			m_hCrosshair.SetVisible( false );
+			m_pPlayerStatus.self.SetVisible( state );
+			m_pWeaponAmmo.self.SetVisible( state );
+			m_pWeaponAmmo.m_hSecondaryBG.SetVisible( state );
+			m_pWeaponSelection.self.SetVisible( state );
+			m_pFlashlight.self.SetVisible( state );
+			m_pSuitPower.self.SetVisible( state );
+			m_pScope.SetVisible( state );
+			m_hCrosshair.SetVisible( state );
 		}
 
 		SetPlayerClass( m_nPlayerTeam, m_nPlayerClass, 1 );
@@ -232,14 +225,16 @@ if ( CLIENT_DLL )
 		if ( m_pPlayerHealth && m_pPlayerHealth.self && m_pPlayerHealth.self.IsValid() )
 			return;
 
-			m_pPlayerStatus = CTFHudPlayerStatus();
-			m_pPlayerClass = CTFHudPlayerClass();
-			m_pPlayerHealth = CTFHudPlayerHealth();
-			m_pWeaponAmmo = CTFHudWeaponAmmo();
-			m_pWeaponSelection = CTFHudWeaponSelection();
-			m_pFlashlight = CTFHudFlashlight();
-			m_pSuitPower = CTFHudSuitPower();
-			m_pScope = CTFHudScope();
+		player = Entities.GetLocalPlayer();
+
+		m_pPlayerStatus = CTFHudPlayerStatus();
+		m_pPlayerClass = CTFHudPlayerClass();
+		m_pPlayerHealth = CTFHudPlayerHealth();
+		m_pWeaponAmmo = CTFHudWeaponAmmo();
+		m_pWeaponSelection = CTFHudWeaponSelection( player );
+		m_pFlashlight = CTFHudFlashlight();
+		m_pSuitPower = CTFHudSuitPower();
+		m_pScope = CTFHudScope();
 
 		m_pPlayerStatus.Init();
 		m_pPlayerClass.Init();
@@ -253,6 +248,11 @@ if ( CLIENT_DLL )
 		m_pPlayerHealth.m_flMaxHealth = 100.0;
 		m_pPlayerHealth.m_nHealthWarningThreshold = 39;
 		m_pPlayerHealth.m_bBleeding = false;
+
+		NetMsg.Receive( "TFHud.Armor", function()
+		{
+			m_pPlayerHealth.m_nArmor = NetMsg.ReadShort();
+		}.bindenv(this) );
 
 		m_hAnim = vgui.CreatePanel( "Panel", GetRootPanel(), "TFHudAnim" );
 		m_hAnim.SetPaintEnabled( false );
@@ -278,10 +278,6 @@ if ( CLIENT_DLL )
 	// Purge and reload the HUD
 	// To keep forward compatibility, this should always clean itself,
 	// then run `hud_tf.nut` and `TFHud.Init()`
-	//
-	// BUGBUG: Overridden concommands stop working when TFHud.Reload() is called on some saves.
-	// Saving and loading the game again in this state is fine.
-	// TODO: After fixing this, auto-update the HUD on save files by comparing versions.
 	function TFHud::Reload(...)
 	{
 		print("CL: Reloading tf_hud...\n");
@@ -302,8 +298,8 @@ if ( CLIENT_DLL )
 
 		Entities.First().SetContextThink( "TFHud.Reload", function(_)
 		{
-			IncludeScript( "tf_hud/fonts.nut" );
-			IncludeScript( "tf_hud/hud_tf.nut" );
+			IncludeScript( TF2HUD_PATH + "fonts.nut" );
+			IncludeScript( TF2HUD_PATH + "hud_tf.nut" );
 			::TFHud.Init();
 
 			NetMsg.Start( "TFHud.Reload" );
@@ -369,14 +365,24 @@ if ( CLIENT_DLL )
 
 	function TFHud::OnSelectWeapon( weapon )
 	{
+		m_hWeapon = weapon;
+
+		if ( !weapon )
+			return m_hCrosshair.SetVisible( false );
+
 		if ( m_Crosshairs )
 		{
 			local classname = weapon.GetClassname();
 			if ( classname in m_Crosshairs )
 			{
-				return m_hCrosshair.SetImage( m_Crosshairs[classname], true );
+				m_hCrosshair.SetImage( m_Crosshairs[classname], true );
 			}
 		}
+
+		// Update key bindings and convars
+		m_pWeaponSelection.m_iAttackButton = input.StringToButtonCode( input.LookupBinding( "+attack" ) );
+		m_pWeaponSelection.m_iAttack2Button = input.StringToButtonCode( input.LookupBinding( "+attack2" ) );
+		m_pWeaponSelection.hud_fastswitch = Convars.GetInt( "hud_fastswitch" );
 	}
 
 	function TFHud::SetCrosshairImage( img, classname = null )
@@ -396,14 +402,15 @@ if ( CLIENT_DLL )
 		return m_hCrosshair.SetVisible( state );
 	}
 
-	function TFHud::StatusUpdate()
+	function TFHud::Think(_)
 	{
-		m_pPlayerHealth.m_nArmor = NetMsg.ReadShort();
-
-		if ( NetMsg.ReadBool() )
+		if ( NetProps.GetPropInt( player, "m_Local.m_bWearingSuit" ) )
 		{
-			m_pFlashlight.m_flFlashlight = NetMsg.ReadFloat();
-			m_pSuitPower.m_flPower = NetMsg.ReadFloat();
+			local flFlashlight = NetProps.GetPropFloat( player, "m_HL2Local.m_flFlashBattery" ) * 0.01;
+			m_pFlashlight.m_flFlashlight = flFlashlight;
+
+			local flPower = NetProps.GetPropFloat( player, "m_HL2Local.m_flSuitPower" ) * 0.01;
+			m_pSuitPower.m_flPower = flPower;
 
 			if ( !m_pFlashlight.self.IsVisible() )
 			{
@@ -419,5 +426,44 @@ if ( CLIENT_DLL )
 				m_pSuitPower.self.SetVisible( false );
 			}
 		}
+
+		{
+			local weapon = player.GetActiveWeapon();
+			if ( m_hWeapon != weapon )
+			{
+				// Update if weapon is changed
+				OnSelectWeapon( weapon );
+			}
+
+			if ( !NetProps.GetPropInt( player, "m_HL2Local.m_bZooming" ) )
+			{
+				// If the player zooms in within the think interval, scope will stay visible. That's ok.
+				local fov = NetProps.GetPropInt( player, "m_iFOV" );
+				if ( !fov && m_pScope.m_bVisible )
+				{
+					m_pScope.SetVisible( false );
+					m_hCrosshair.SetVisible( true );
+
+					surface.PlaySound( "ui/weapon/zoom.wav" );
+				}
+				else
+				{
+					if ( weapon &&
+							( weapon.GetClassname() == "weapon_crossbow" ) &&
+							( weapon == NetProps.GetPropEntity( player, "m_hZoomOwner" ) ) )
+					{
+						if ( fov && !m_pScope.m_bVisible )
+						{
+							m_pScope.SetVisible( true );
+							m_hCrosshair.SetVisible( false );
+
+							surface.PlaySound( "ui/weapon/zoom.wav" );
+						}
+					}
+				}
+			} // !zooming
+		} // !vehicle
+
+		return 0.1;
 	}
 }

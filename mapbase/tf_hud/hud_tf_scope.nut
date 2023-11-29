@@ -16,8 +16,6 @@ class CTFHudScope
 	m_hScopeTex1 = null
 	m_hScopeTex2 = null
 	m_hScopeTex3 = null
-
-	m_bSuitZoom = false
 }
 
 function CTFHudScope::Init()
@@ -34,62 +32,6 @@ function CTFHudScope::Init()
 	m_hScopeTex1 = surface.ValidateTexture( "hud/scope_sniper_ll", true );
 	m_hScopeTex2 = surface.ValidateTexture( "hud/scope_sniper_ul", true );
 	m_hScopeTex3 = surface.ValidateTexture( "hud/scope_sniper_ur", true );
-}
-
-function CTFHudScope::RegisterCommands()
-{
-	Entities.First().SetContextThink( "TFHudScopeThink", OnThink.bindenv(this), 0.0 );
-
-	// HACKHACK: hook commands as NetProps does not work
-	Convars.RegisterCommand( "+zoom", SuitZoom.bindenv( this ), "", FCVAR_CLIENTDLL );
-	Convars.RegisterCommand( "-zoom", SuitZoom.bindenv( this ), "", FCVAR_CLIENTDLL );
-}
-
-function CTFHudScope::UnregisterCommands()
-{
-	Entities.First().SetContextThink( "TFHudScopeThink", null, 0.0 );
-
-	Convars.UnregisterCommand( "+zoom" );
-	Convars.UnregisterCommand( "-zoom" );
-}
-
-function CTFHudScope::SuitZoom( cmd, _ )
-{
-	m_bSuitZoom = ( cmd[0] == '+' );
-	return true;
-}
-
-function CTFHudScope::OnThink(_)
-{
-	if ( m_bSuitZoom )
-		return 0.1;
-
-	local fov = NetProps.GetPropInt( player, "m_iFOV" );
-	if ( !fov && m_bVisible )
-	{
-		m_bVisible = false;
-		self.SetVisible( false );
-		TFHud.SetCrosshairVisible( true );
-
-		surface.PlaySound( "ui/weapon/zoom.wav" );
-	}
-	else
-	{
-		local wep = player.GetActiveWeapon();
-		if ( wep && wep.GetClassname() == "weapon_crossbow" )
-		{
-			if ( fov && !m_bVisible )
-			{
-				m_bVisible = true;
-				self.SetVisible( true );
-				TFHud.SetCrosshairVisible( false );
-
-				surface.PlaySound( "ui/weapon/zoom.wav" );
-			}
-		}
-	}
-
-	return 0.1;
 }
 
 function CTFHudScope::Paint()
@@ -118,4 +60,10 @@ function CTFHudScope::Paint()
 
 	surface.DrawFilledRect( 0, 0, x0, tall );
 	surface.DrawFilledRect( wideHalf + texWide, 0, x0, tall );
+}
+
+function CTFHudScope::SetVisible( state )
+{
+	m_bVisible = state;
+	return self.SetVisible( state );
 }

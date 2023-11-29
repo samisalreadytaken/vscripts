@@ -38,13 +38,35 @@ enum TFPlayerClass
 	SPY
 }
 
+const TF2HUD_VERSION = 23111300;
+
+// Automatically detect the subdirectory.
+// Does not work if it was loaded with DoIncludeScript()
+local TF2HUD_PATH = "tf_hud/";
+local si = getstackinfos(3);
+if ( si )
+{
+	foreach ( k, v in si.locals )
+	{
+		local i;
+		if ( ( typeof v == "string" ) && ( ( i = v.find("init") ) != null ) )
+		{
+			TF2HUD_PATH = v.slice( 0, i );
+			break;
+		}
+	}
+}
+
+local CONST = getconsttable();
+CONST.TF2HUD_PATH <- TF2HUD_PATH;
+
 local Init = function(...)
 {
 	if ( CLIENT_DLL )
-		IncludeScript( "tf_hud/fonts.nut" );
+		IncludeScript( TF2HUD_PATH + "fonts.nut" );
 
 	if ( !("TFHud" in this) ) // Level transition (OnRestore)
-		IncludeScript( "tf_hud/hud_tf.nut" );
+		IncludeScript( TF2HUD_PATH + "hud_tf.nut" );
 
 	if ( SERVER_DLL )
 	{
@@ -95,10 +117,58 @@ ListenToGameEvent( "player_spawn", function( event )
 		{
 			Entities.First().SetContextThink( "TFHud.Load", function(_)
 			{
+				// This is not well tested
 				if ( "TFHud" in getroottable() )
-					return;
+				{
+					local reload = 0;
 
-				print( "This save file does not include TFHud, loading...\n" );
+					if ( "version" in TFHud )
+					{
+						// Save is more recent, don't reload
+						if ( TFHud.version >= TF2HUD_VERSION )
+							return;
+
+						reload = 1;
+					}
+					else
+					{
+						if ( "StatusUpdate2" in TFHud ) // StatusUpdate2 was added in the same update as cs_hud_reload
+						{
+							reload = 1;
+						}
+						else
+						{
+							// Do nothing, the added complexity to reload this version is not worth it.
+							print( "This save file includes an ancient version of TFHud. Not updating.\n" );
+							return;
+						}
+					}
+
+					if ( reload )
+					{
+						if ( "version" in TFHud )
+						{
+							printf( "Updating TFHud to %i (from %i)\n", TF2HUD_VERSION, TFHud.version );
+						}
+						else
+						{
+							printf( "Updating TFHud to %i\n", TF2HUD_VERSION );
+						}
+
+						// Wait for player to spawn
+						Entities.First().SetContextThink( "TFHud.Load2", function(_)
+						{
+							SendToConsole( "tf_hud_reload" );
+						}, 0.25 );
+					}
+
+					// Let client handle the reload
+					return;
+				}
+				else
+				{
+					print( "This save file does not include TFHud, loading...\n" );
+				}
 
 				Hooks.Add( this, "OnRestore", InitRestore, "TFHud" );
 

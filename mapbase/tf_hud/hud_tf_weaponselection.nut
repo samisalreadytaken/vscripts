@@ -2,9 +2,10 @@
 //                       github.com/samisalreadytaken
 //-----------------------------------------------------------------------
 //
-local XRES = XRES, YRES = YRES;
-local input = input, Time = Time;
 local TFHud = this;
+local XRES = XRES, YRES = YRES;
+local input = input, Time = Time,
+	NetProps = NetProps, Convars = Convars, dummy = dummy;
 
 
 const MAX_WEAPONS = 48;
@@ -13,13 +14,23 @@ const MAX_WEAPON_POSITIONS = 4;
 
 class CTFHudWeaponSelection
 {
+	constructor( player )
+	{
+		this.player = player;
+
+		if ( NetProps.GetPropArraySize( player, "m_hMyWeapons" ) != MAX_WEAPONS )
+		{
+			printf( "Player max weapon count mismatch! %d != %d\n",
+				MAX_WEAPONS, NetProps.GetPropArraySize( player, "m_hMyWeapons" ) );
+		}
+	}
+
 	self = null
 	m_ItemPanels = null
 	m_IconChars = null
 
-	m_iActiveSlot = 0
-	m_iActivePos = 0
-	m_hLastWeapon = null
+	m_iSelectedSlot = -1
+	m_iSelectedPos = -1
 
 	m_flRightMargin = 32
 	m_flSmallBoxWide = 72
@@ -30,6 +41,10 @@ class CTFHudWeaponSelection
 
 	m_bFading = false
 	m_flHideTime = 1.e+38
+
+	m_iAttackButton = input.StringToButtonCode( input.LookupBinding( "+attack" ) );
+	m_iAttack2Button = input.StringToButtonCode( input.LookupBinding( "+attack2" ) );
+	hud_fastswitch = Convars.GetInt( "hud_fastswitch" );
 }
 
 class CTFHudWeaponSelection.CItemPanel
@@ -122,7 +137,7 @@ function CTFHudWeaponSelection::CItemPanel::SetItemName( name )
 function CTFHudWeaponSelection::CItemPanel::SetIconText( ch )
 {
 	m_pWeaponIcon.SetText( ch );
-	m_pWeaponIconBlur.SetText( ch );
+	return m_pWeaponIconBlur.SetText( ch );
 }
 
 function CTFHudWeaponSelection::CItemPanel::PerformLayout()
@@ -141,9 +156,7 @@ function CTFHudWeaponSelection::CItemPanel::PerformLayout()
 	{
 		m_pBackground.SetImage( "hud/weapon_selection_unselected", true );
 		m_pWeaponIcon.SetVisible( false );
-		m_pWeaponIconBlur.SetVisible( false );
-
-		return;
+		return m_pWeaponIconBlur.SetVisible( false );
 	}
 
 	if ( !m_pWeaponIcon.IsVisible() )
@@ -156,22 +169,20 @@ function CTFHudWeaponSelection::CItemPanel::PerformLayout()
 
 	if ( m_bSelected )
 	{
-		local img;
 		switch ( TFHud.m_nPlayerTeam )
 		{
-			case TFTEAM.RED:	img = "hud/weapon_selection_red"; break;
-			case TFTEAM.BLUE:	img = "hud/weapon_selection_blue"; break;
+			case TFTEAM.RED:	m_pBackground.SetImage( "hud/weapon_selection_red", true ); break;
+			case TFTEAM.BLUE:	m_pBackground.SetImage( "hud/weapon_selection_blue", true ); break;
 		}
-		m_pBackground.SetImage( img, true );
 
-		m_pWeaponIconBlur.SetVisible( true );
 		m_pWeaponIconBlur.SetSize( w, t );
+		return m_pWeaponIconBlur.SetVisible( true );
 	}
 	else
 	{
 		m_pBackground.SetImage( "hud/weapon_selection_unselected", true );
 
-		m_pWeaponIconBlur.SetVisible( false );
+		return m_pWeaponIconBlur.SetVisible( false );
 	}
 }
 
@@ -238,28 +249,60 @@ function CTFHudWeaponSelection::UnregisterCommands()
 	Convars.UnregisterCommand( "slot4" );
 	Convars.UnregisterCommand( "slot5" );
 	Convars.UnregisterCommand( "slot6" );
+	Convars.UnregisterCommand( "+attack" );
+	Convars.UnregisterCommand( "+attack2" );
 }
 
 function CTFHudWeaponSelection::OnTick()
 {
+	local curtime = Time();
+
 	if ( m_bFading )
 	{
-		local t = (Time() - m_flHideTime) / 0.5;
+		local t = (curtime - m_flHideTime) / 0.5;
 		if ( t < 1.0 )
 		{
 			self.SetAlpha( (1.0 - t) * 255.0 );
 		}
-		else
+		else if ( self.IsVisible() )
 		{
+			m_bFading = false;
+			self.SetAlpha( 255 );
 			self.SetVisible( false );
+
+			m_iSelectedSlot = m_iSelectedPos = -1;
+
+			if ( !hud_fastswitch )
+			{
+				Convars.UnregisterCommand( "+attack" );
+				Convars.UnregisterCommand( "+attack2" );
+			}
 		}
 	}
 	else
 	{
-		if ( self.IsVisible() && ( m_flHideTime <= Time() || input.IsButtonDown( ButtonCode.MOUSE_LEFT ) ) )
+		local mousepressed = ( input.IsButtonDown( m_iAttackButton ) || input.IsButtonDown( m_iAttack2Button ) );
+
+		if ( self.IsVisible() && ( m_flHideTime <= curtime || mousepressed ) )
 		{
+			m_flHideTime = curtime;
 			m_bFading = true;
-		//	player.EmitSound( "Player.WeaponSelectionClose" )
+		}
+
+		// Select weapon
+		if ( mousepressed && !hud_fastswitch )
+		{
+			local weapon = GetWeapon( m_iSelectedSlot, m_iSelectedPos );
+			if ( weapon )
+			{
+				SelectWeapon( weapon );
+
+				m_iSelectedSlot = m_iSelectedPos = -1;
+				Convars.UnregisterCommand( "+attack" );
+				Convars.UnregisterCommand( "+attack2" );
+
+				player.EmitSound( "Player.WeaponSelectionClose" );
+			}
 		}
 	}
 }
@@ -321,8 +364,8 @@ function CTFHudWeaponSelection::FindPrevWeapon( iSlot, iPos )
 			local wepPos = wep.GetPosition();
 
 			if ( ( wepSlot < iSlot || (wepSlot == iSlot && wepPos < iPos) ) &&
-				( wepSlot > prevSlot || (wepSlot == prevSlot && wepPos > prevPosition) )
-				&& wep.HasAnyAmmo() )
+				( wepSlot > prevSlot || (wepSlot == prevSlot && wepPos > prevPosition) ) &&
+				wep.HasAnyAmmo() )
 			{
 				prevSlot = wepSlot;
 				prevPosition = wepPos;
@@ -412,7 +455,7 @@ function CTFHudWeaponSelection::PerformLayoutInternal()
 					panel.m_pWeaponIcon.SetFgColor( 255, 25, 0, 255 );
 				}
 
-				panel.m_bSelected = ( slot == m_iActiveSlot && pos == m_iActivePos );
+				panel.m_bSelected = ( slot == m_iSelectedSlot && pos == m_iSelectedPos );
 
 				wide = m_flSmallBoxWide;
 				tall = m_flSmallBoxTall;
@@ -442,57 +485,82 @@ function CTFHudWeaponSelection::PerformLayoutInternal()
 
 function CTFHudWeaponSelection::CycleToNextWeapon(...)
 {
-	local activeWep = player.GetActiveWeapon();
-	if ( !activeWep )
-		return;
+	local slot, pos;
 
-	local wep = FindNextWeapon( activeWep.GetSlot(), activeWep.GetPosition() );
+	if ( self.IsVisible() )
+	{
+		slot = m_iSelectedSlot;
+		pos = m_iSelectedPos;
+	}
+	else
+	{
+		local wep = player.GetActiveWeapon();
+		if ( !wep )
+			return;
+
+		slot = wep.GetSlot();
+		pos = wep.GetPosition();
+	}
+
+	local wep = FindNextWeapon( slot, pos );
 	if ( !wep )
 		wep = FindNextWeapon( -1, -1 );
 
 	if ( wep )
-		return SelectWeapon( wep );
+	{
+		m_iSelectedSlot = wep.GetSlot();
+		m_iSelectedPos = wep.GetPosition();
+
+		if ( hud_fastswitch )
+		{
+			SelectWeapon( wep );
+		}
+
+		player.EmitSound( "Player.WeaponSelectionMoveSlot" );
+
+		OpenSelection();
+	}
+
+	return PerformLayoutInternal();
 }
 
 function CTFHudWeaponSelection::CycleToPrevWeapon(...)
 {
-	local activeWep = player.GetActiveWeapon();
-	if ( !activeWep )
-		return;
+	local slot, pos;
 
-	local wep = FindPrevWeapon( activeWep.GetSlot(), activeWep.GetPosition() );
+	if ( self.IsVisible() )
+	{
+		slot = m_iSelectedSlot;
+		pos = m_iSelectedPos;
+	}
+	else
+	{
+		local wep = player.GetActiveWeapon();
+		if ( !wep )
+			return;
+
+		slot = wep.GetSlot();
+		pos = wep.GetPosition();
+	}
+
+	local wep = FindPrevWeapon( slot, pos );
 	if ( !wep )
 		wep = FindPrevWeapon( MAX_WEAPON_SLOTS, MAX_WEAPON_POSITIONS );
 
 	if ( wep )
-		return SelectWeapon( wep );
-}
-
-function CTFHudWeaponSelection::SelectWeapon( weapon )
-{
-	if ( m_bFading )
 	{
-		m_bFading = false;
-		self.SetAlpha( 255 );
+		m_iSelectedSlot = wep.GetSlot();
+		m_iSelectedPos = wep.GetPosition();
+
+		if ( hud_fastswitch )
+		{
+			SelectWeapon( wep );
+		}
+
+		player.EmitSound( "Player.WeaponSelectionMoveSlot" );
+
+		OpenSelection();
 	}
-
-	m_flHideTime = Time() + 1.0;
-	self.SetVisible( true );
-
-	m_iActiveSlot = weapon.GetSlot();
-	m_iActivePos = weapon.GetPosition();
-
-	local hCurWep = player.GetActiveWeapon();
-	if ( weapon != hCurWep )
-	{
-		m_hLastWeapon = hCurWep;
-	}
-
-	input.MakeWeaponSelection( weapon );
-
-	TFHud.OnSelectWeapon( weapon );
-
-	player.EmitSound( "Player.WeaponSelectionMoveSlot" );
 
 	return PerformLayoutInternal();
 }
@@ -501,20 +569,11 @@ function CTFHudWeaponSelection::SelectSlot( slot )
 {
 	--slot;
 
-	if ( m_bFading )
-	{
-		m_bFading = false;
-		self.SetAlpha( 255 );
-	}
-
-	m_flHideTime = Time() + 1.0;
-	self.SetVisible( true );
-
 	local pos = 0;
 
-	if ( slot == m_iActiveSlot )
+	if ( slot == m_iSelectedSlot )
 	{
-		pos = m_iActivePos+1;
+		pos = m_iSelectedPos+1;
 	}
 
 	local wep = GetNextActivePos( slot, pos );
@@ -523,18 +582,13 @@ function CTFHudWeaponSelection::SelectSlot( slot )
 
 	if ( wep )
 	{
-		m_iActiveSlot = slot;
-		m_iActivePos = wep.GetPosition();
+		m_iSelectedSlot = slot;
+		m_iSelectedPos = wep.GetPosition();
 
-		local hCurWep = player.GetActiveWeapon();
-		if ( wep != hCurWep )
+		if ( hud_fastswitch )
 		{
-			m_hLastWeapon = hCurWep;
+			SelectWeapon( wep );
 		}
-
-		input.MakeWeaponSelection( wep );
-
-		TFHud.OnSelectWeapon( wep );
 
 		player.EmitSound( "Player.WeaponSelectionMoveSlot" );
 	}
@@ -543,42 +597,80 @@ function CTFHudWeaponSelection::SelectSlot( slot )
 		player.EmitSound( "Player.DenyWeaponSelection" );
 	}
 
+	// Show empty weapon selection as well
+	OpenSelection();
+
 	return PerformLayoutInternal();
 }
 
-// NOTE: Does not account for conditions when weapons cannot be switched!
-function CTFHudWeaponSelection::LastWeapon(...)
+function CTFHudWeaponSelection::SelectWeapon( wep )
 {
-	if ( m_hLastWeapon && m_hLastWeapon.IsValid() )
-	{
-		input.MakeWeaponSelection( m_hLastWeapon );
-		TFHud.OnSelectWeapon( m_hLastWeapon );
-	}
-
-	m_hLastWeapon = player.GetActiveWeapon();
+	input.MakeWeaponSelection( wep );
+	return TFHud.OnSelectWeapon( wep );
 }
 
-// NOTE: Does not account for conditions when weapons cannot be switched!
-function CTFHudWeaponSelection::PhysSwap(...)
+function CTFHudWeaponSelection::OpenSelection()
 {
-	local hCurWep = player.GetActiveWeapon();
-	if ( hCurWep )
+	m_flHideTime = Time() + 1.0;
+
+	if ( m_bFading )
 	{
-		local bPlayerOwnsGravityGun = false;
-		for ( local i = 0; i < MAX_WEAPONS; ++i )
+		// HACKHACK: Disable +attack
+		// It may have been unregistered on weapon select
+		if ( !hud_fastswitch )
 		{
-			local wep = player.GetWeapon(i);
-			if ( wep && wep.GetClassname() == "weapon_physcannon" )
-			{
-				bPlayerOwnsGravityGun = true;
-				break;
-			}
+			Convars.RegisterCommand( "+attack", dummy, "", FCVAR_CLIENTDLL );
+			Convars.RegisterCommand( "+attack2", dummy, "", FCVAR_CLIENTDLL );
 		}
 
-		if ( bPlayerOwnsGravityGun )
-			m_hLastWeapon = hCurWep;
+		m_bFading = false;
+		return self.SetAlpha( 255 );
+	}
+	else if ( !self.IsVisible() )
+	{
+		// HACKHACK: Disable +attack when weapon selection becomes visible
+		if ( !hud_fastswitch )
+		{
+			Convars.RegisterCommand( "+attack", dummy, "", FCVAR_CLIENTDLL );
+			Convars.RegisterCommand( "+attack2", dummy, "", FCVAR_CLIENTDLL );
+		}
+
+		return self.SetVisible( true );
+	}
+}
+
+function CTFHudWeaponSelection::LastWeapon(...)
+{
+	local hLastWeapon = NetProps.GetPropEntity( player, "m_hLastWeapon" );
+	if ( hLastWeapon )
+	{
+		input.MakeWeaponSelection( hLastWeapon );
+		TFHud.OnSelectWeapon( hLastWeapon );
+
+		// Update selection box if weapon selection is visible
+		if ( self.IsVisible() )
+		{
+			m_iSelectedSlot = hLastWeapon.GetSlot();
+			m_iSelectedPos = hLastWeapon.GetPosition();
+
+			m_flHideTime = Time() + 1.0;
+			m_bFading = false;
+			self.SetAlpha( 255 );
+
+			PerformLayoutInternal();
+		}
+	}
+}
+
+function CTFHudWeaponSelection::PhysSwap(...)
+{
+	if ( self.IsVisible() )
+	{
+		// Hide selection now
+		m_flHideTime = 0.0;
+		player.EmitSound( "Player.WeaponSelectionClose" );
 	}
 
-	m_iActiveSlot = m_iActivePos = -1;
+	m_iSelectedSlot = m_iSelectedPos = -1;
 	return true;
 }
