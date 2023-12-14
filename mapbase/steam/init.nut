@@ -102,27 +102,41 @@ enum PersonaState
 	InGame
 }
 
+// Automatically detect the subdirectory.
+// Does not work if it was loaded with DoIncludeScript()
+local _PATH = "steam/";
+local si = getstackinfos(3);
+if ( si )
+{
+	foreach ( k, v in si.locals )
+	{
+		local i;
+		if ( ( typeof v == "string" ) && ( ( i = v.find("init") ) != null ) )
+		{
+			_PATH = v.slice( 0, i );
+			break;
+		}
+	}
+}
 
 local Init = function(...)
 {
 	if ( CLIENT_DLL )
-		IncludeScript( "steam/fonts.nut" );
+		IncludeScript( _PATH + "fonts.nut" );
 
 	if ( !("SteamNotificationManager" in this) ) // Level transition (OnRestore)
 	{
-		IncludeScript( "steam/utils.nut" );
-
-		IncludeScript( "steam/NotificationManager.nut" );
-
-		IncludeScript( "steam/FriendNotification.nut" );
-		IncludeScript( "steam/AchievementNotification.nut" );
+		IncludeScript( _PATH + "utils.nut" );
+		IncludeScript( _PATH + "NotificationManager.nut" );
+		IncludeScript( _PATH + "FriendNotification.nut" );
+		IncludeScript( _PATH + "AchievementNotification.nut" );
 
 		if ( CLIENT_DLL )
-			IncludeScript( "steam/AchievementDisplay.nut" );
+			IncludeScript( _PATH + "AchievementDisplay.nut" );
 	}
 
 	// always redefine classes. saverestore bug. see mapbase-source#221
-	IncludeScript( "steam/AchievementManager.nut" );
+	IncludeScript( _PATH + "AchievementManager.nut" );
 
 	SteamAchievements.Init();
 
