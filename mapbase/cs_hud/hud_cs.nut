@@ -35,6 +35,8 @@ if ( SERVER_DLL )
 			player.SetContextThink( "CSGOHud.StatusUpdate6", StatusUpdate2, 4.0 );
 		}
 
+		HookEnvHudHints();
+
 		NetMsg.Receive( "CSGOHud.Reload", function( player )
 		{
 			print("SV: Reloading cs_hud...\n");
@@ -45,6 +47,113 @@ if ( SERVER_DLL )
 			IncludeScript( CSGOHUD_PATH + "hud_cs.nut" );
 			::CSHud.Init( player );
 		} );
+	}
+
+	// Mappers need to call this if they are late spawning env_hudhint entities
+	function CSHud::HookEnvHudHints()
+	{
+		local ent;
+		while ( ent = Entities.FindByClassname( ent, "env_hudhint" ) )
+		{
+			local scope = ent.GetOrCreatePrivateScriptScope();
+			if ( ( "__m_bCSGOHudHook" in scope ) && scope.__m_bCSGOHudHook )
+				continue;
+
+			scope.__m_bCSGOHudHook <- true;
+
+			local fnPrevShow, fnPrevHide;
+			local event =
+			{
+				userid = -1,
+				hintmessage = ""
+			}
+
+			if ( "InputShowHudHint" in scope )
+				fnPrevShow = scope.InputShowHudHint;
+
+			if ( "InputHideHudHint" in scope )
+				fnPrevHide = scope.InputHideHudHint;
+
+			const SF_HUDHINT_ALLPLAYERS = 1;
+
+			scope.InputShowHudHint <- function()
+			{
+				if ( fnPrevShow )
+					fnPrevShow();
+
+				event.hintmessage = NetProps.GetPropString( self, "m_iszMessage" );
+
+				if ( self.GetSpawnFlags() & SF_HUDHINT_ALLPLAYERS )
+				{
+					for ( local pl; pl = Entities.FindByClassname( pl, "player" ); )
+					{
+						event.userid = pl.GetUserID();
+						FireGameEvent( "player_hintmessage", event );
+					}
+				}
+				else
+				{
+					if ( ( "activator" in getroottable() ) && activator )
+					{
+						if ( "GetUserID" in activator )
+						{
+							event.userid = activator.GetUserID();
+							FireGameEvent( "player_hintmessage", event );
+						}
+					}
+					else
+					{
+						local player = Entities.GetLocalPlayer();
+						if ( player )
+						{
+							event.userid = player.GetUserID();
+							FireGameEvent( "player_hintmessage", event );
+						}
+					}
+				}
+
+				return false;
+			}
+
+			scope.InputHideHudHint <- function()
+			{
+				if ( fnPrevHide )
+					fnPrevHide();
+
+				event.hintmessage = "";
+
+				if ( self.GetSpawnFlags() & SF_HUDHINT_ALLPLAYERS )
+				{
+					for ( local pl; pl = Entities.FindByClassname( pl, "player" ); )
+					{
+						event.userid = pl.GetUserID();
+						FireGameEvent( "player_hintmessage", event );
+					}
+				}
+				else
+				{
+					if ( ( "activator" in getroottable() ) && activator )
+					{
+						if ( "GetUserID" in activator )
+						{
+							event.userid = activator.GetUserID();
+							FireGameEvent( "player_hintmessage", event );
+						}
+					}
+					else
+					{
+						local player = Entities.GetLocalPlayer();
+						if ( player )
+						{
+							event.userid = player.GetUserID();
+							FireGameEvent( "player_hintmessage", event );
+						}
+					}
+				}
+
+				return false;
+			}
+		}
 	}
 
 	function CSHud::ArmorCheck( player )
