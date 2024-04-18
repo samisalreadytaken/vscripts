@@ -310,13 +310,13 @@ if ( CLIENT_DLL )
 			m_pWeaponSelection.self.AddTickSignal( 25 );
 			m_pWeaponAmmo.AddTickSignal( 50 );
 
-			m_pPlayerHealth.self.SetVisible( state );
-
 			if ( m_pSquadStatus.m_iSquadMembers )
 				m_pSquadStatus.self.SetVisible( state );
 
 			if ( m_bSuitEquipped )
 			{
+				m_pPlayerHealth.self.SetVisible( state );
+
 				if ( m_pFlashlight.m_flFlashlight != 1.0 )
 					m_pFlashlight.SetVisible();
 
@@ -569,6 +569,10 @@ if ( CLIENT_DLL )
 
 		if ( m_bSuitEquipped = NetProps.GetPropInt( player, "m_Local.m_bWearingSuit" ) )
 		{
+			// HL2 maps usually expect the player not to have health visible while naked
+			if ( !m_pPlayerHealth.self.IsVisible() )
+				m_pPlayerHealth.self.SetVisible( true );
+
 			local flFlashlight = NetProps.GetPropFloat( player, "m_HL2Local.m_flFlashBattery" ) * 0.01;
 			m_pFlashlight.m_flFlashlight = flFlashlight;
 
@@ -595,6 +599,9 @@ if ( CLIENT_DLL )
 		}
 		else
 		{
+			if ( m_pPlayerHealth.self.IsVisible() )
+				m_pPlayerHealth.self.SetVisible( false );
+
 			if ( !m_pFlashlight.m_bFading )
 				m_pFlashlight.FadeOut();
 

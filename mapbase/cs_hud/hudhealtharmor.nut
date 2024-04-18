@@ -22,6 +22,8 @@ class CSGOHudHealthArmor
 	self = null
 	player = null
 
+	m_bDrawArmor = true
+
 	m_flMaxHealth = 100.0
 	m_nHealth = -1
 	m_flHealth = 0.0
@@ -178,7 +180,7 @@ function CSGOHudHealthArmor::DrawBackground( bHealthThreshold, height, y0 )
 {
 	local flAlpha = CSHud.m_flBackgroundAlpha;
 
-	if ( CSHud.m_bSuitEquipped )
+	if ( m_bDrawArmor )
 	{
 		local width_a = YRES(82);
 		local width_h = YRES(87);
@@ -315,7 +317,7 @@ function CSGOHudHealthArmor::Paint()
 		surface.DrawColoredText( m_hFontHealth, label_x, label_y, 0xe7, 0xe7, 0xe7, 0xff, m_szHealth );
 	}
 
-	if ( CSHud.m_bSuitEquipped )
+	if ( m_bDrawArmor )
 	{
 		local icon_s = YRES(8);
 		local icon_x = YRES(93.5);
