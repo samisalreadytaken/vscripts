@@ -473,7 +473,7 @@ function Init()
 	if ( !rr_AddDecisionRule( m_rr ) )
 		error( "PingSystem: ERROR invalid RR!\n");
 
-	Msg("PingSystem::Init() [25]\n");
+	Msg("PingSystem::Init() [26]\n");
 }
 
 function OnGameEvent_round_start(ev)
@@ -1558,14 +1558,18 @@ local SpriteThink = function()
 	return (SpriteThink = FadeOut)();
 }
 
+const PING_SYSTEM_DEFAULT_SCALE_INTERNAL = 5.25;
+
 local sprite_kv =
 {
-	scale = 5.25,
+	scale = PING_SYSTEM_DEFAULT_SCALE_INTERNAL,
 	framerate = 0.0,
 	model = PingMaterial[ PingType.BASE ]
 }
 
-local g_nMaxPingCount = 3;
+const PING_SYSTEM_DEFAULT_MAX_PING_COUNT = 4;
+
+local g_nMaxPingCount = PING_SYSTEM_DEFAULT_MAX_PING_COUNT-1;
 
 function SpriteCreate( owner, type, origin, target = null, hParent = null )
 {
@@ -2585,11 +2589,6 @@ function OnGameEvent_player_say(ev)
 	if ( GetListenServerHost() != player )
 		return;
 
-	local argv = split( ev.text, " " );
-	local cmd;
-	if ( 1 in argv )
-		cmd = argv[1];
-
 	local _Msg = Msg;
 	local ClientPrint = ClientPrint;
 	Msg = function( msg )
@@ -2597,9 +2596,62 @@ function OnGameEvent_player_say(ev)
 		return ClientPrint( null, DirectorScript.HUD_PRINTTALK, msg );
 	}
 
-	switch ( cmd )
+	local argv = split( ev.text, " " );
+	local commands = [ "autoping", "duration", "colour", "scale", "maxcount", "savecfg", "loadcfg" ];
+	local strcmp = function( a, b )
 	{
-		case "a":
+		local ret = 0;
+		foreach ( i, c in a )
+		{
+			if ( i in b )
+			{
+				if ( b[i] == c )
+				{
+					++ret;
+				}
+				else
+				{
+					return 0;
+				}
+			}
+		}
+		return ret;
+	}
+	local match = function( input, commands )
+	{
+		if ( !input )
+			return;
+
+		local bestcmd;
+		local bestmatch = 0;
+
+		foreach ( cmd in commands )
+		{
+			local t = strcmp( input, cmd );
+			if ( t )
+			{
+				if ( t > bestmatch )
+				{
+					bestmatch = t;
+					bestcmd = cmd;
+				}
+				else if ( t == bestmatch )
+				{
+					// ambiguous
+					return;
+				}
+			}
+		}
+
+		return bestcmd;
+	}
+
+	local cmd;
+	if ( 1 in argv )
+		cmd = argv[1];
+
+	switch ( match( cmd, commands ) )
+	{
 		case "autoping":
 			if ( !(2 in argv) )
 			{
@@ -2627,7 +2679,6 @@ function OnGameEvent_player_say(ev)
 			PingSystem.DisableAutoPing( argv[2] );
 			break;
 
-		case "d":
 		case "duration":
 			if ( !(2 in argv) || !(3 in argv) )
 			{
@@ -2642,9 +2693,20 @@ function OnGameEvent_player_say(ev)
 				try
 				{
 					// try parsing enum
+					if ( argv[2] != "-1" && argv[2].find(".") == null )
+					{
+						argv[2] = "PingType." + argv[2].toupper();
+					}
+					else
+					{
+						argv[2] = argv[2].toupper();
+					}
+
 					argv[2] = compilestring( "return "+argv[2] )();
+
 					if ( typeof argv[2] != "integer" )
 						throw "";
+
 					doErr = 0;
 				}
 				catch ( err2 )
@@ -2654,7 +2716,7 @@ function OnGameEvent_player_say(ev)
 
 				if ( doErr )
 				{
-					Msg(format( "value is not valid '%s'", ""+argv[2] ));
+					Msg(format( "invalid ping type '%s'", ""+argv[2] ));
 					break;
 				}
 			}
@@ -2669,7 +2731,63 @@ function OnGameEvent_player_say(ev)
 			PingSystem.SetPingDuration( argv[2], argv[3] );
 			break;
 
-		case "s":
+		case "colour":
+			if ( !(5 in argv) )
+			{
+				Msg( "Usage: !ping_system colour <type> <R> <G> <B>" );
+				break;
+			}
+
+			try { argv[2] = argv[2].tointeger(); }
+			catch ( err )
+			{
+				local doErr = 1;
+				try
+				{
+					// try parsing enum
+					if ( argv[2] != "-1" && argv[2].find(".") == null )
+					{
+						argv[2] = "PingType." + argv[2].toupper();
+					}
+					else
+					{
+						argv[2] = argv[2].toupper();
+					}
+
+					argv[2] = compilestring( "return "+argv[2] )();
+
+					if ( typeof argv[2] != "integer" )
+						throw "";
+
+					doErr = 0;
+				}
+				catch ( err2 )
+				{
+					doErr = 1;
+				}
+
+				if ( doErr )
+				{
+					Msg(format( "invalid ping type '%s'", ""+argv[2] ));
+					break;
+				}
+			}
+
+			try
+			{
+				argv[3] = argv[3].tointeger();
+				argv[4] = argv[4].tointeger();
+				argv[5] = argv[5].tointeger();
+			}
+			catch ( err )
+			{
+				Msg(format( "invalid RGB %s,%s,%s", argv[3], argv[4], argv[5] ));
+				break;
+			}
+
+			PingSystem.SetPingColour( argv[2], argv[3], argv[4], argv[5] );
+			break;
+
 		case "scale":
 			if ( !(2 in argv) )
 			{
@@ -2687,7 +2805,6 @@ function OnGameEvent_player_say(ev)
 			PingSystem.SetScaleMultiplier( argv[2] );
 			break;
 
-		case "m":
 		case "maxcount":
 			if ( !(2 in argv) )
 			{
@@ -2705,13 +2822,48 @@ function OnGameEvent_player_say(ev)
 			PingSystem.SetMaxPingCount( argv[2] );
 			break;
 
+		case "loadcfg":
+			switch ( LoadConfig() )
+			{
+				case 1:
+				{
+					Msg("Loaded settings from ping_system_settings.txt\n");
+					break;
+				}
+				case 2:
+				{
+					Msg("No changes found in ping_system_settings.txt\n");
+					break;
+				}
+				default:
+				{
+					Msg("No settings found.\n");
+				}
+			}
+
+			break;
+
+		case "savecfg":
+			if ( SaveConfig() )
+			{
+				Msg("Saved settings in ping_system_settings.txt\n");
+			}
+			else
+			{
+				Msg("No changes, nothing is written.\n");
+			}
+
+			break;
+
 		default:
 			Msg( "Usage: !ping_system <[c]ommand> [value...]" );
 			Msg( "   autoping" );
 			Msg( "   duration" );
+			Msg( "   colour" );
 			Msg( "   scale" );
 			Msg( "   maxcount" );
-			break;
+			Msg( "   savecfg" );
+			Msg( "   loadcfg" );
 	}
 
 	Msg = _Msg;
@@ -2752,6 +2904,17 @@ if ( PING_DEBUG )
 // Settings interface
 //----------------------------------------------------------------------
 
+local PingTypeName = function( type )
+{
+	foreach ( k, v in CONST.PingType )
+	{
+		if ( v == type )
+			return k;
+	}
+
+	return ""+type;
+}
+
 function SetMaxPingCount( n )
 {
 	n = n.tointeger();
@@ -2761,7 +2924,7 @@ function SetMaxPingCount( n )
 		n = 64;;
 
 	g_nMaxPingCount = n - 1;
-	Msg(format( "PingSystem::SetMaxPingCount(%i)\n", n ));
+	Msg(format( "PingSystem.SetMaxPingCount(%i)\n", n ));
 }
 
 function SetPingDuration( type, time )
@@ -2778,7 +2941,7 @@ function SetPingDuration( type, time )
 		m_PingLookup[type][m_lifetime] = time.tofloat();
 	}
 
-	Msg(format( "PingSystem::SetPingDuration(%i, %g)\n", type, time.tofloat() ));
+	Msg(format( "PingSystem.SetPingDuration(PingType.%s, %g)\n", PingTypeName(type), time.tofloat() ));
 }
 
 function SetPingColour( type, r, g, b )
@@ -2801,7 +2964,7 @@ function SetPingColour( type, r, g, b )
 		m_PingLookup[type][m_colour] = col;
 	}
 
-	Msg(format( "PingSystem::SetPingColour(%i, %i, %i, %i)\n", type, r, g, b ));
+	Msg(format( "PingSystem.SetPingColour(PingType.%s, %i, %i, %i)\n", PingTypeName(type), r, g, b ));
 }
 
 function DisableAutoPing( i = 1 )
@@ -2833,7 +2996,7 @@ function DisableAutoPing( i = 1 )
 		break;
 	}
 
-	Msg("PingSystem::DisableAutoPing("+i+")\n");
+	Msg("PingSystem.DisableAutoPing("+i+")\n");
 
 	foreach ( v,_ in s_AutoBlock )
 	{
@@ -2856,21 +3019,160 @@ function SetScaleMultiplier( f )
 	else if ( f > 2.0 )
 		f = 2.0;;
 
-	sprite_kv.scale = 5.25 * f;
+	sprite_kv.scale = PING_SYSTEM_DEFAULT_SCALE_INTERNAL * f;
 
-	Msg("PingSystem::SetScaleMultiplier("+f+")\n");
+	Msg("PingSystem.SetScaleMultiplier("+f+")\n");
 }
 
 //----------------------------------------------------------------------
 
-// load server settings
-// PingSystem.SetPingDuration( -1, 1.0 )
-// PingSystem.SetPingDuration( PingType.WARNING, 10.0 )
-
-local szScript = FileToString( "ping_system_settings.txt" );
-if ( szScript )
+local WriteConfig = function()
 {
-	try ( compilestring(szScript)() )
-	catch ( er ) { error(er) }
+	local WriteColourIfNotEq = function( buf, type, col )
+	{
+		if ( m_PingLookup[type][m_colour] != col )
+		{
+			local col = split( m_PingLookup[type][m_colour], " " );
+			return format( "%sPingSystem.SetPingColour(PingType.%s, %s, %s, %s)\n", buf,
+					PingTypeName(type), col[0], col[1], col[2] );
+		}
+
+		return buf;
+	}
+
+	local WriteTimeIfNotEq = function( buf, type, time )
+	{
+		if ( m_PingLookup[type][m_lifetime] != time )
+		{
+			return format( "%sPingSystem.SetPingDuration(PingType.%s, %g)\n", buf,
+					PingTypeName(type), m_PingLookup[type][m_lifetime] );
+		}
+
+		return buf;
+	}
+
+	local buf = "";
+
+	if ( s_AutoBlock.len() > 1 )
+	{
+		if ( (PingResponse.special in s_AutoBlock) &&
+				(PingResponse.dominated in s_AutoBlock) &&
+				(PingResponse.weapon in s_AutoBlock) &&
+				(PingResponse.death in s_AutoBlock) )
+		{
+			buf = buf + "PingSystem.DisableAutoPing(1)\n\n";
+		}
+		else if ( (PingResponse.special in s_AutoBlock) &&
+				(PingResponse.dominated in s_AutoBlock) )
+		{
+			buf = buf + "PingSystem.DisableAutoPing(2)\n\n";
+		}
+		else if ( (PingResponse.weapon in s_AutoBlock) )
+		{
+			buf = buf + "PingSystem.DisableAutoPing(3)\n\n";
+		}
+	}
+
+	if ( g_nMaxPingCount != PING_SYSTEM_DEFAULT_MAX_PING_COUNT-1 )
+		buf = format( "%sPingSystem.SetMaxPingCount(%d)\n\n", buf, g_nMaxPingCount+1 );
+
+	local timesareequal = true;
+	local prevtime = m_PingLookup[0][m_lifetime];
+
+	foreach ( type, ping in m_PingLookup )
+	{
+		if ( ping[m_lifetime] != prevtime )
+		{
+			timesareequal = false;
+			break;
+		}
+	}
+
+	// time and colour defaults aren't saved, go through them manually
+	if ( !timesareequal )
+	{
+		foreach ( type, ping in m_PingLookup )
+		{
+			switch ( type )
+			{
+				case PingType.TEAMMATE: case PingType.INFECTED: case PingType.WARNING:
+				case PingType.WARNING_MILD: case PingType.WARNING_ONFIRE: case PingType.ONFIRE:
+				case PingType.INCAP: case PingType.HURRY: case PingType.FUELBARREL:
+					continue;
+			}
+
+			buf = WriteColourIfNotEq( buf, type, PingColour.BASE );
+			buf = WriteTimeIfNotEq( buf, type, PING_LIFETIME );
+		}
+
+		buf = WriteColourIfNotEq( buf, PingType.TEAMMATE, PingColour.TEAMMATE );
+		buf = WriteTimeIfNotEq( buf, PingType.TEAMMATE, 5.0 );
+
+		buf = WriteColourIfNotEq( buf, PingType.INFECTED, PingColour.INFECTED );
+		buf = WriteTimeIfNotEq( buf, PingType.INFECTED, 5.0 );
+
+		buf = WriteColourIfNotEq( buf, PingType.WARNING, PingColour.WARNING );
+		buf = WriteTimeIfNotEq( buf, PingType.WARNING, 5.0 );
+
+		buf = WriteColourIfNotEq( buf, PingType.WARNING_MILD, PingColour.INCAP );
+		buf = WriteColourIfNotEq( buf, PingType.WARNING_ONFIRE, PingColour.INCAP );
+		buf = WriteColourIfNotEq( buf, PingType.ONFIRE, PingColour.INCAP );
+		buf = WriteColourIfNotEq( buf, PingType.INCAP, PingColour.INCAP );
+		buf = WriteColourIfNotEq( buf, PingType.HURRY, PingColour.INCAP );
+		buf = WriteColourIfNotEq( buf, PingType.FUELBARREL, PingColour.INCAP );
+	}
+	else
+	{
+		buf = format( "%sPingSystem.SetPingDuration(-1, %.2g)\n\n", buf, prevtime );
+	}
+
+	if ( sprite_kv.scale != PING_SYSTEM_DEFAULT_SCALE_INTERNAL )
+		buf = format( "%sPingSystem.SetScaleMultiplier(%.6g)\n\n", buf, sprite_kv.scale );
+
+	return buf;
 }
+
+function SaveConfig()
+{
+	local buf = WriteConfig();
+	local szScript = FileToString( "ping_system_settings.txt" );
+
+	if ( !szScript || szScript != buf )
+	{
+		StringToFile( "ping_system_settings.txt", buf );
+		return true;
+	}
+
+	return false;
+}
+
+function LoadConfig( initial = false )
+{
+	local buf = "";
+
+	if ( !initial )
+		buf = WriteConfig();
+
+	local szScript = FileToString( "ping_system_settings.txt" );
+	if ( szScript && szScript != buf )
+	{
+		try
+		{
+			compilestring( szScript )();
+			return 1;
+		}
+		catch ( err )
+		{
+			error( err );
+		}
+	}
+	else if ( szScript == buf )
+	{
+		return 2;
+	}
+
+	return 0;
+}
+
+LoadConfig(true);
 
