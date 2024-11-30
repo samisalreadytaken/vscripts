@@ -7,8 +7,7 @@
 // User/player parameters on server take CBasePlayer entity instance, not Steam ID.
 //
 // Client cannot fetch other users' stats,
-// serverside functions are named identical to their clientside counterparts without `User`,
-// even though they take an extra user parameter.
+// serverside functions are named identical to their clientside counterparts
 //
 // Achievement info (name, max val, icon paths & images) are expected to be loaded on client.
 //
@@ -19,6 +18,7 @@
 // users load custom achievements as early as possible.
 //
 // server:
+//		SteamAchievements::GetSteam2ID( player )
 //		SteamAchievements::LoadFromFile( string fileName )
 //		SteamAchievements::SetAchievement( player, string ID )
 //		SteamAchievements::SetStat( player, string ID, int progress )
@@ -156,6 +156,18 @@ local function _ConvertTimeToDate( unUnlockTime, bLocalTime, bISO8601 )
 // Changing these will break reading old logs.
 const key_data = "value";
 const key_UnlockTime = "unlockTime";
+
+function SteamAchievements::GetSteam2ID( player )
+{
+	if ( player && ( player in m_mapID ) )
+	{
+		// accountid to steam2id
+		local id = m_mapID[ player ];
+		local high32bits = id % 2;
+		local low32bits = id / 2;
+		return Fmt( "STEAM_0:%u:%u", high32bits, low32bits );
+	}
+}
 
 function SteamAchievements::Init()
 {
@@ -536,7 +548,6 @@ if ( SERVER_DLL )
 		local id = NetMsg.ReadLong();
 		m_mapID[ player ] <- id;
 		local fileName = Fmt( LOG_FILE_NAME, id );
-		local bAlloc = false;
 
 		// init and load logs
 		local pKV = FileToKeyValues( fileName );
@@ -544,7 +555,6 @@ if ( SERVER_DLL )
 		{
 			pKV = CScriptKeyValues();
 			pKV.SetName( "AchievementLog" );
-			bAlloc = true;
 		}
 
 		local kv = {}
@@ -596,9 +606,6 @@ if ( SERVER_DLL )
 
 			KeyValuesToFile( fileName, pKV );
 		}
-
-		if ( bAlloc )
-			pKV.ReleaseKeyValues();
 
 		return Hooks.Add( player.GetOrCreatePrivateScriptScope(),
 			"UpdateOnRemove",
