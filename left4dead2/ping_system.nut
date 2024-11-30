@@ -151,6 +151,7 @@ enum PingType
 	RESCUE,
 	SAFEROOM,
 	FUELBARREL,
+	MINIGUN,
 	LADDER,
 
 	// chatter
@@ -316,6 +317,7 @@ local PingMaterial = array( PingType.MAX_COUNT );
 	PingMaterial[PingType.RESCUE]		= "ping_system/ping_rescue.vmt",
 	PingMaterial[PingType.SAFEROOM]		= "ping_system/ping_saferoom.vmt",
 	PingMaterial[PingType.FUELBARREL]	= "ping_system/ping_fuelbarrel.vmt",
+	PingMaterial[PingType.MINIGUN]		= "ping_system/ping_minigun.vmt",
 	PingMaterial[PingType.LADDER]		= "ping_system/ping_ladder.vmt",
 
 	PingMaterial[PingType.AFFIRMATIVE]	= "ping_system/ping_affirmative.vmt",
@@ -473,7 +475,7 @@ function Init()
 	if ( !rr_AddDecisionRule( m_rr ) )
 		error( "PingSystem: ERROR invalid RR!\n");
 
-	Msg("PingSystem::Init() [26]\n");
+	Msg("PingSystem::Init() [27]\n");
 }
 
 function OnGameEvent_round_start(ev)
@@ -1214,15 +1216,15 @@ function rr_Ping( Q )
 		}
 		case PingResponse.special:
 		{
-			local specialtype = Q.specialtype;
+			local specialtype = Q.specialtype.toupper();
 
 
 			if (PING_DEBUG)
 			{
-				printl("   PingResponse.special : " + specialtype);
+				printl("   PingResponse.special : " + Q.specialtype);
 
 				if ( !( specialtype in m_ZombieTypeForSI ) && !( specialtype in m_ModelForUncommon ) )
-					error("unrecognised specialtype '" + specialtype + "'\n");
+					error("unrecognised specialtype '" + Q.specialtype + "'\n");
 			}
 
 
@@ -2263,7 +2265,7 @@ function PingEntity( player, pEnt, vecPingPos = null )
 
 			pingType = PingType.MEDCAB;
 			local fw = pEnt.GetForwardVector();
-			local rt = fw.Cross( Vector(0.0, 0.0, 1.0) );
+			local rt = Vector( fw.y, -fw.x );
 			rt.Norm();
 			local up = rt.Cross(fw);
 			up.Norm();
@@ -2286,6 +2288,13 @@ function PingEntity( player, pEnt, vecPingPos = null )
 
 		case "prop_fuel_barrel":
 			pingType = PingType.FUELBARREL;
+			vecPingPos = pEnt.GetCenter();
+			vecPingPos.z += 32.0;
+			break;
+
+		case "prop_minigun":
+		case "prop_minigun_l4d1":
+			pingType = PingType.MINIGUN;
 			vecPingPos = pEnt.GetCenter();
 			vecPingPos.z += 32.0;
 			break;
