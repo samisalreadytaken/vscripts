@@ -72,9 +72,7 @@ local function Think(_)
 						.Add( MainViewRight().Multiply(0.25) )
 						.Subtract( MainViewUp().Multiply(0.25) )
 						.Multiply( flDist );
-				local tr = TraceLineComplex( viewOrigin, rayDelta.Add( viewOrigin ), player, MASK_SHOT_HULL, COLLISION_GROUP_NONE );
-				local frac = tr.Fraction();
-				tr.Destroy();
+				local frac = TraceLineComplex( viewOrigin, rayDelta.Add( viewOrigin ), player, MASK_SHOT_HULL, COLLISION_GROUP_NONE ).Fraction();
 
 				if ( frac != 1.0 )
 				{
