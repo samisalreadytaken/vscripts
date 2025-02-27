@@ -76,7 +76,7 @@ function CSGOHudSquadStatus::Paint()
 		local totalWidth = (c-1) * spacing;
 		local x = x0 + ( width - totalWidth ) / 2 - iconWidthHalf;
 
-		while ( c-- )
+		while ( c-- > 0 )
 		{
 			surface.SetTextPos( x, y );
 			surface.DrawUnicodeChar( 'C', 0 );

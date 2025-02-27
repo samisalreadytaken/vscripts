@@ -20,7 +20,7 @@ class CCSHudScope
 
 	m_bVisible = false
 
-	m_hScopeArc = null
+	m_hScopeCircle = null
 	m_hScopeLens = null
 	m_hScopeBlur = null
 	m_hScopeBlurHorz = null
@@ -37,7 +37,7 @@ function CCSHudScope::Init()
 	self.SetPaintBackgroundEnabled( false );
 	self.SetCallback( "Paint", Paint.bindenv(this) );
 
-	m_hScopeArc = surface.ValidateTexture( "sprites/scope_arc", true );
+	m_hScopeCircle = surface.ValidateTexture( "sprites/scope_circle", true );
 	m_hScopeLens = surface.ValidateTexture( "overlays/scope_lens", true );
 	m_hScopeBlur = surface.ValidateTexture( "sprites/scope_line_blur", true );
 	m_hScopeBlurHorz = surface.ValidateTexture( "sprites/scope_line_blur_horz", true );
@@ -93,20 +93,8 @@ function CCSHudScope::Paint()
 		surface.DrawLine( 0, tallHalf, wide, tallHalf );
 	}
 
-	// Draw the scope
-	surface.SetTexture( m_hScopeArc );
-
-	// lower right
-	surface.DrawTexturedRect( wideHalf, tallHalf, texWide, texTall );
-
-	// lower left
-	surface.DrawTexturedSubRect( x0, tallHalf, x0+texWide, tallHalf+texTall, 1., 0., 0., 1. );
-
-	// upper left
-	surface.DrawTexturedSubRect( x0, 0, x0+texWide, texTall, 1., 1., 0., 0. );
-
-	// upper right
-	surface.DrawTexturedSubRect( wideHalf, 0, wideHalf+texWide, texTall, 0., 1., 1., 0. );
+	surface.SetTexture( m_hScopeCircle );
+	surface.DrawTexturedRect( x0, 0, tall, tall );
 
 	// left
 	surface.DrawFilledRect( 0, 0, x0, tall );

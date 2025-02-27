@@ -62,11 +62,6 @@ if ( SERVER_DLL )
 			scope.__m_bCSGOHudHook <- true;
 
 			local fnPrevShow, fnPrevHide;
-			local event =
-			{
-				userid = -1,
-				hintmessage = ""
-			}
 
 			if ( "InputShowHudHint" in scope )
 				fnPrevShow = scope.InputShowHudHint;
@@ -75,6 +70,12 @@ if ( SERVER_DLL )
 				fnPrevHide = scope.InputHideHudHint;
 
 			const SF_HUDHINT_ALLPLAYERS = 1;
+
+			local event =
+			{
+				userid = -1,
+				hintmessage = ""
+			}
 
 			scope.InputShowHudHint <- function()
 			{

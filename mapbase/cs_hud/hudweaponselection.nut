@@ -245,12 +245,12 @@ function CSGOHudWeaponSelection::RegisterCommands()
 	// Next and prev are reversed so that invprev (scroll down by default) moves down the weapon list and vice versa
 	Convars.RegisterCommand( "invnext", CycleToPrevWeapon.bindenv( this ), "", FCVAR_CLIENTDLL );
 	Convars.RegisterCommand( "invprev", CycleToNextWeapon.bindenv( this ), "", FCVAR_CLIENTDLL );
-	Convars.RegisterCommand( "slot1", function(...) { return SelectSlot( 1 ); }.bindenv( this ), "", FCVAR_CLIENTDLL );
-	Convars.RegisterCommand( "slot2", function(...) { return SelectSlot( 2 ); }.bindenv( this ), "", FCVAR_CLIENTDLL );
-	Convars.RegisterCommand( "slot3", function(...) { return SelectSlot( 3 ); }.bindenv( this ), "", FCVAR_CLIENTDLL );
-	Convars.RegisterCommand( "slot4", function(...) { return SelectSlot( 4 ); }.bindenv( this ), "", FCVAR_CLIENTDLL );
-	Convars.RegisterCommand( "slot5", function(...) { return SelectSlot( 5 ); }.bindenv( this ), "", FCVAR_CLIENTDLL );
-	Convars.RegisterCommand( "slot6", function(...) { return SelectSlot( 6 ); }.bindenv( this ), "", FCVAR_CLIENTDLL );
+	Convars.RegisterCommand( "slot1", function(_) { return SelectSlot( 1 ); }.bindenv( this ), "", FCVAR_CLIENTDLL );
+	Convars.RegisterCommand( "slot2", function(_) { return SelectSlot( 2 ); }.bindenv( this ), "", FCVAR_CLIENTDLL );
+	Convars.RegisterCommand( "slot3", function(_) { return SelectSlot( 3 ); }.bindenv( this ), "", FCVAR_CLIENTDLL );
+	Convars.RegisterCommand( "slot4", function(_) { return SelectSlot( 4 ); }.bindenv( this ), "", FCVAR_CLIENTDLL );
+	Convars.RegisterCommand( "slot5", function(_) { return SelectSlot( 5 ); }.bindenv( this ), "", FCVAR_CLIENTDLL );
+	Convars.RegisterCommand( "slot6", function(_) { return SelectSlot( 6 ); }.bindenv( this ), "", FCVAR_CLIENTDLL );
 }
 
 function CSGOHudWeaponSelection::UnregisterCommands()
@@ -296,10 +296,9 @@ function CSGOHudWeaponSelection::OnTick()
 			self.SetAlpha( 255 );
 			self.SetVisible( false );
 
-			m_iSelectedSlot = m_iSelectedPos = -1;
-
 			if ( !hud_fastswitch )
 			{
+				m_iSelectedSlot = m_iSelectedPos = -1;
 				Convars.UnregisterCommand( "+attack" );
 				Convars.UnregisterCommand( "+attack2" );
 			}
@@ -479,7 +478,7 @@ function CSGOHudWeaponSelection::PerformLayoutInternal()
 	}
 }
 
-function CSGOHudWeaponSelection::CycleToNextWeapon(...)
+function CSGOHudWeaponSelection::CycleToNextWeapon(_)
 {
 	local slot, pos;
 
@@ -520,7 +519,7 @@ function CSGOHudWeaponSelection::CycleToNextWeapon(...)
 	return PerformLayoutInternal();
 }
 
-function CSGOHudWeaponSelection::CycleToPrevWeapon(...)
+function CSGOHudWeaponSelection::CycleToPrevWeapon(_)
 {
 	local slot, pos;
 
@@ -635,7 +634,7 @@ function CSGOHudWeaponSelection::OpenSelection()
 	}
 }
 
-function CSGOHudWeaponSelection::LastWeapon(...)
+function CSGOHudWeaponSelection::LastWeapon(_)
 {
 	local hLastWeapon = NetProps.GetPropEntity( player, "m_hLastWeapon" );
 	if ( hLastWeapon )
@@ -658,7 +657,7 @@ function CSGOHudWeaponSelection::LastWeapon(...)
 	}
 }
 
-function CSGOHudWeaponSelection::PhysSwap(...)
+function CSGOHudWeaponSelection::PhysSwap(_)
 {
 	if ( self.IsVisible() )
 	{
