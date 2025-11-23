@@ -6,7 +6,7 @@
 // Contextual Ping System
 //
 
-const PING_SYSTEM_VERSION = 36;
+const PING_SYSTEM_VERSION = 37;
 
 const CONTENTS_WINDOW				= 0x2;
 //(CONTENTS_SOLID|CONTENTS_MOVEABLE|CONTENTS_MONSTER|CONTENTS_WINDOW|CONTENTS_DEBRIS|CONTENTS_GRATE)
@@ -29,13 +29,13 @@ const PING_SYSTEM_EF_DEFAULT	= 0x50;
 const PING_SYSTEM_EF_NOINTERP	= 0x58;
 
 const FLT_MAX			= 3.402823466e+38;
-const DEG2RAD			= 0.017453293;
-const RAD2DEG			= 57.295779513;
-const PI				= 3.141592654;
+const DEG2RAD			= 0.017453292519943;
+const RAD2DEG			= 57.295779513082323;
+const PI				= 3.141592653589793;
 const MAX_COORD_FLOAT	= 16384.0;
-const MAX_TRACE_LENGTH	= 56755.840862417;
-const DEG2RADDIV2		= 0.008726646;
-const PIDIV2			= 1.570796327;
+const MAX_TRACE_LENGTH	= 56755.8408624169711543;
+const DEG2RADDIV2		= 0.008726646259971648;
+const PIDIV2			= 1.5707963267948966;
 
 local TICK_INTERVAL;
 local CONST = getconsttable();
@@ -84,6 +84,7 @@ const COS_90DEG = 0.0;
 
 const PING_SYSTEM_LIFETIME_DEFAULT = 8.0;
 const PING_SYSTEM_LIFETIME_CHATTER = 6.0;
+const PING_SYSTEM_LIFETIME_WARNING = 4.0;
 const PING_SYSTEM_ITEM_SEARCH_RADIUS = 12.0;
 const PING_SYSTEM_DEFAULT_SCALE_INTERNAL = 5.0;
 const PING_SYSTEM_OFFSCREEN_DEFAULT_SCALE_INTERNAL = 2.0;
@@ -95,8 +96,10 @@ const PING_SYSTEM_SOUND_COOLDOWN = 1.25;
 const PING_SYSTEM_SOUND_COOLDOWN_SHORT = 0.7;
 const PING_SYSTEM_DEFAULT_MAX_PING_COUNT = 4;
 const PING_SYSTEM_OFFSCREEN_INDICATOR_RADIUS = 6.0;
-const PING_SYSTEM_FADE_DURATION_INV = 2.0;
+const PING_SYSTEM_FADE_RATE_INV = 0.7;
 const PING_SYSTEM_ITEM_TAKEN_FADE_DURATION = 0.25;
+const PING_SYSTEM_SLOW_FADE_FULLVIS_DURATION = 0.1;
+const PING_SYSTEM_SLOW_FADE_FULLVIS_DURATION_INV = 0.9;
 const PING_SYSTEM_PING_THINK_SLOW = 0.75;
 const PING_SYSTEM_WHEEL_OPEN_TIME = 0.25;
 const PING_SYSTEM_WHEEL_ITEM_COUNT = 4;
@@ -111,12 +114,15 @@ delete CONST.COS_53DEG;
 delete CONST.COS_90DEG;
 delete CONST.PING_SYSTEM_LIFETIME_DEFAULT;
 delete CONST.PING_SYSTEM_LIFETIME_CHATTER;
+delete CONST.PING_SYSTEM_LIFETIME_WARNING;
 delete CONST.PING_SYSTEM_DEFAULT_SCALE_INTERNAL;
 delete CONST.PING_SYSTEM_OFFSCREEN_DEFAULT_SCALE_INTERNAL;
 delete CONST.PING_SYSTEM_DEFAULT_MAX_PING_COUNT;
 delete CONST.PING_SYSTEM_OFFSCREEN_INDICATOR_RADIUS;
-delete CONST.PING_SYSTEM_FADE_DURATION_INV;
+delete CONST.PING_SYSTEM_FADE_RATE_INV;
 delete CONST.PING_SYSTEM_ITEM_TAKEN_FADE_DURATION;
+delete CONST.PING_SYSTEM_SLOW_FADE_FULLVIS_DURATION;
+delete CONST.PING_SYSTEM_SLOW_FADE_FULLVIS_DURATION_INV;
 delete CONST.PING_SYSTEM_PING_THINK_SLOW;
 delete CONST.PING_SYSTEM_WHEEL_OPEN_TIME;
 delete CONST.PING_SYSTEM_WHEEL_ITEM_COUNT;
@@ -124,8 +130,10 @@ delete CONST.PING_SYSTEM_WHEEL_ITEM_COUNT;
 if (PING_DEBUG)
 {
 	Assert( PING_SYSTEM_OFFSCREEN_INDICATOR_RADIUS >= 0.0 && PING_SYSTEM_OFFSCREEN_INDICATOR_RADIUS <= 10.0 );
+	Assert( fabs( 1.0 -
+				( PING_SYSTEM_SLOW_FADE_FULLVIS_DURATION + PING_SYSTEM_SLOW_FADE_FULLVIS_DURATION_INV ) )
+			< 0.001 );
 }
-
 
 enum PingType
 {
@@ -138,7 +146,7 @@ enum PingType
 	DEAD_SURVIVOR,
 
 	WARNING,
-	WARNING_ONFIRE,
+	WARNING_ONFIRE, // unused
 	WARNING_MILD,
 
 	MEDKIT,
@@ -225,9 +233,14 @@ enum PingType
 m_PingIsWarning <-
 {
 	[PingType.WARNING]			= null,
-	[PingType.WARNING_ONFIRE]	= null,
 	[PingType.WARNING_MILD]		= null,
 	[PingType.INCAP]			= null,
+}
+
+m_PingIsSlowFade <-
+{
+	[PingType.WARNING]			= null,
+	[PingType.TEAMMATE]			= null,
 }
 
 m_PingIsUsable <-
@@ -298,6 +311,9 @@ m_PingHasTarget <-
 	[PingType.MINIGUN]			= null,
 }
 
+foreach ( k, v in m_PingIsWarning )
+	m_PingHasTarget[k] <- null;
+
 foreach ( k, v in m_PingIsUsable )
 	m_PingHasTarget[k] <- null;
 
@@ -367,6 +383,7 @@ if ( !( "m_Players" in this ) )
 	const m_lifetime = 2;
 	const m_soundDefault = 3;
 	const m_soundAlert = 4;
+	const m_fnThink = 5;
 
 	delete CONST.PingColour;
 	delete CONST.PingSound;
@@ -374,6 +391,7 @@ if ( !( "m_Players" in this ) )
 	delete CONST.m_lifetime;
 	delete CONST.m_soundDefault;
 	delete CONST.m_soundAlert;
+	delete CONST.m_fnThink;
 }
 
 {
@@ -387,7 +405,6 @@ if ( !( "m_Players" in this ) )
 	PingMaterial[PingType.DEAD_SURVIVOR]			= "ping_system/ping_dead_survivor.vmt",
 
 	PingMaterial[PingType.WARNING]					= "ping_system/ping_warning.vmt",
-	PingMaterial[PingType.WARNING_ONFIRE]			= "ping_system/ping_warning_fire.vmt",
 	PingMaterial[PingType.WARNING_MILD]				= "ping_system/ping_warning.vmt",
 
 	PingMaterial[PingType.MEDKIT]					= "ping_system/ping_first_aid_kit.vmt",
@@ -466,41 +483,10 @@ if ( !( "m_Players" in this ) )
 	foreach ( type, mat in PingMaterial )
 	{
 		m_PingLookup[type] =
-			[ mat, PingColour.BASE, PING_SYSTEM_LIFETIME_DEFAULT, PingSound.DEFAULT, PingSound.ALERT ];
+			[ mat, PingColour.BASE, PING_SYSTEM_LIFETIME_DEFAULT, PingSound.DEFAULT, PingSound.ALERT, null ];
 	}
 }
 
-local m_PingLookup = m_PingLookup;
-
-	m_PingLookup[ PingType.TEAMMATE ][ m_colour ]			= PingColour.TEAMMATE;
-	m_PingLookup[ PingType.TEAMMATE ][ m_lifetime ]			= 4.0;
-
-	m_PingLookup[ PingType.INCAP ][ m_colour ]				= PingColour.INCAP;
-	m_PingLookup[ PingType.INCAP ][ m_lifetime ]			= 4.0;
-
-	m_PingLookup[ PingType.INFECTED ][ m_colour ]			= PingColour.INFECTED;
-	m_PingLookup[ PingType.INFECTED ][ m_lifetime ]			= 4.0;
-
-	m_PingLookup[ PingType.UNCOMMON ][ m_colour ]			= PingColour.WARNING_MILD;
-	m_PingLookup[ PingType.UNCOMMON ][ m_lifetime ]			= 2.0;
-
-	m_PingLookup[ PingType.WARNING ][ m_colour ]			= PingColour.WARNING;
-	m_PingLookup[ PingType.WARNING ][ m_lifetime ]			= 4.0;
-
-	m_PingLookup[ PingType.WARNING_ONFIRE ][ m_colour ]		= PingColour.WARNING;
-	m_PingLookup[ PingType.WARNING_ONFIRE ][ m_lifetime ]	= 4.0;
-
-	m_PingLookup[ PingType.WARNING_MILD ][ m_colour ]		= PingColour.WARNING_MILD;
-	m_PingLookup[ PingType.ONFIRE ][ m_colour ]				= PingColour.WARNING_MILD;
-	m_PingLookup[ PingType.HURRY ][ m_colour ]				= PingColour.WARNING_MILD;
-	m_PingLookup[ PingType.FUELBARREL ][ m_colour ]			= PingColour.WARNING_MILD;
-
-	m_PingLookup[ PingType.AFFIRMATIVE ][ m_lifetime ]		= PING_SYSTEM_LIFETIME_CHATTER;
-	m_PingLookup[ PingType.NEGATIVE ][ m_lifetime ]			= PING_SYSTEM_LIFETIME_CHATTER;
-	m_PingLookup[ PingType.WAIT ][ m_lifetime ]				= PING_SYSTEM_LIFETIME_CHATTER;
-	m_PingLookup[ PingType.RESCUE ][ m_lifetime ]			= PING_SYSTEM_LIFETIME_CHATTER;
-	m_PingLookup[ PingType.HURRY ][ m_lifetime ]			= PING_SYSTEM_LIFETIME_CHATTER;
-	m_PingLookup[ PingType.LOOKOUT ][ m_lifetime ]			= PING_SYSTEM_LIFETIME_CHATTER;
 
 enum PingResponse
 {
@@ -970,8 +956,10 @@ local m_Players = m_Players;
 local m_Users = m_Users;
 local m_Teams = m_Teams;
 local m_Targets = m_Targets;
+local m_PingLookup = m_PingLookup;
 local m_PingWheelItems = m_PingWheelItems;
 local m_PingIsWarning = m_PingIsWarning;
+local m_PingIsSlowFade = m_PingIsSlowFade;
 local m_PingIsUsable = m_PingIsUsable;
 local m_PingHasTarget = m_PingHasTarget;
 local m_PingHasSelfOffscreen = m_PingIsWarning;
@@ -1002,10 +990,51 @@ foreach ( k, v in m_PingTypeForWeaponClass )
 	m_IsPingableEntity[ k ] <- null;
 
 local PlayerPing, PingChatter, UpdateOffscreenIndicators, PingWheelUpdate, PingWheelClose;
-local FadeOutOffscreen;
+local FadeOutOffscreen, SpriteThinkSlowFade, SpriteThinkTarget, SpriteThinkIncap, SpriteThinkItem, SpriteThinkDoor;
 
 function Precache()
 {
+	// Simplifying think func assignment, but not all is set
+	foreach ( k, v in m_PingHasTarget )
+		m_PingLookup[k][ m_fnThink ] = SpriteThinkItem;
+
+	foreach ( k, v in m_PingIsWarning )
+		m_PingLookup[k][ m_fnThink ] = SpriteThinkTarget;
+
+	foreach ( k, v in m_PingIsSlowFade )
+		m_PingLookup[k][ m_fnThink ] = SpriteThinkSlowFade;
+
+	m_PingLookup[ PingType.DOOR ][ m_fnThink ]				= SpriteThinkDoor;
+	m_PingLookup[ PingType.INCAP ][ m_fnThink ]				= SpriteThinkIncap;
+
+	m_PingLookup[ PingType.TEAMMATE ][ m_colour ]			= PingColour.TEAMMATE;
+	m_PingLookup[ PingType.TEAMMATE ][ m_lifetime ]			= 4.0;
+
+	m_PingLookup[ PingType.INCAP ][ m_colour ]				= PingColour.INCAP;
+	m_PingLookup[ PingType.INCAP ][ m_lifetime ]			= 4.0;
+	m_PingLookup[ PingType.INCAP ][ m_fnThink ]				= SpriteThinkIncap;
+
+	m_PingLookup[ PingType.INFECTED ][ m_colour ]			= PingColour.INFECTED;
+	m_PingLookup[ PingType.INFECTED ][ m_lifetime ]			= 4.0;
+
+	m_PingLookup[ PingType.UNCOMMON ][ m_colour ]			= PingColour.WARNING_MILD;
+	m_PingLookup[ PingType.UNCOMMON ][ m_lifetime ]			= 2.0;
+
+	m_PingLookup[ PingType.WARNING ][ m_colour ]			= PingColour.WARNING;
+	m_PingLookup[ PingType.WARNING ][ m_lifetime ]			= PING_SYSTEM_LIFETIME_WARNING;
+
+	m_PingLookup[ PingType.WARNING_MILD ][ m_colour ]		= PingColour.WARNING_MILD;
+	m_PingLookup[ PingType.ONFIRE ][ m_colour ]				= PingColour.WARNING_MILD;
+	m_PingLookup[ PingType.HURRY ][ m_colour ]				= PingColour.WARNING_MILD;
+	m_PingLookup[ PingType.FUELBARREL ][ m_colour ]			= PingColour.WARNING_MILD;
+
+	m_PingLookup[ PingType.AFFIRMATIVE ][ m_lifetime ]		= PING_SYSTEM_LIFETIME_CHATTER;
+	m_PingLookup[ PingType.NEGATIVE ][ m_lifetime ]			= PING_SYSTEM_LIFETIME_CHATTER;
+	m_PingLookup[ PingType.WAIT ][ m_lifetime ]				= PING_SYSTEM_LIFETIME_CHATTER;
+	m_PingLookup[ PingType.RESCUE ][ m_lifetime ]			= PING_SYSTEM_LIFETIME_CHATTER;
+	m_PingLookup[ PingType.HURRY ][ m_lifetime ]			= PING_SYSTEM_LIFETIME_CHATTER;
+	m_PingLookup[ PingType.LOOKOUT ][ m_lifetime ]			= PING_SYSTEM_LIFETIME_CHATTER;
+
 	foreach ( pingInfo in m_PingLookup )
 		PrecacheModel( pingInfo[0] );
 
@@ -1019,6 +1048,8 @@ function Precache()
 		PrecacheSound( PingSound.DEFAULT );
 		PrecacheSound( PingSound.ALERT );
 	}
+
+	LoadConfig(true);
 }
 
 function ManagerThink()
@@ -2190,6 +2221,8 @@ function rr_Ping( Q )
 
 local PreFadeOut = function( target = null )
 {
+	m_bActive = false;
+
 	local pings = m_hUser[m_Pings];
 	local i = pings.find( self );
 
@@ -2213,7 +2246,7 @@ local PreFadeOut = function( target = null )
 local FadeOut = function()
 {
 	local dt = Time() - m_flDieTime;
-	local alpha = m_nRenderAlpha * ( 1.0 - dt * PING_SYSTEM_FADE_DURATION_INV );
+	local alpha = m_nRenderAlpha * ( 1.0 - dt * PING_SYSTEM_FADE_RATE_INV );
 
 	if (PING_DEBUG)
 	{
@@ -2238,7 +2271,7 @@ local FadeOut = function()
 FadeOutOffscreen = function()
 {
 	local dt = Time() - m_flDieTime;
-	local alpha = m_nRenderAlpha * ( 1.0 - dt * PING_SYSTEM_FADE_DURATION_INV );
+	local alpha = m_nRenderAlpha * ( 1.0 - dt * PING_SYSTEM_FADE_RATE_INV );
 
 	if (PING_DEBUG)
 	{
@@ -2293,7 +2326,7 @@ local SpriteThinkOffscreen = function()
 {
 	if ( m_hTarget.IsValid() &&
 			// Fade out with the target
-			m_hTarget.GetScriptScope().m_nRenderAlpha == 255 )
+			m_hTarget.GetScriptScope().m_bActive )
 	{
 		if ( m_bVisible )
 			return 0.0;
@@ -2341,7 +2374,59 @@ local SpriteThinkOffscreen = function()
 	return (Think = FadeOutOffscreen)();
 }
 
-local SpriteThinkEnemy = function()
+SpriteThinkSlowFade = function()
+{
+	local curtime = Time();
+
+	if ( GetNetPropInt( m_hTarget, "m_lifeState" ) )
+	{
+		if (PING_DEBUG_VERBOSE)
+		{
+			printf( "ping[%d] target %s is dead : lifeState(%d)\n",
+					self.GetEntityIndex(),
+					""+m_hTarget, GetNetPropInt( m_hTarget, "m_lifeState" ));
+		}
+
+		curtime -= PING_SYSTEM_ITEM_TAKEN_FADE_DURATION;
+		m_flDieTime = curtime - 0.01;
+		PreFadeOut( m_hTarget );
+		return (Think = FadeOut)();
+	}
+
+	if ( curtime >= m_flDieTime )
+	{
+		local dt = curtime - m_flDieTime;
+		dt *= m_Data;
+		dt *= dt;
+
+		local alpha = 255.0 * ( 1.0 - dt );
+
+		if (PING_DEBUG)
+		{
+			Assert( dt >= 0.0 );
+			Assert( alpha < 256.0 );
+		}
+
+		if ( alpha > 4.0 )
+		{
+			self.__KeyValueFromInt( "renderamt", m_nRenderAlpha = alpha );
+			return 0.0;
+		}
+
+		if (PING_DEBUG_VERBOSE)
+			printf( "ping[%d] expired\n", self.GetEntityIndex() );
+
+		PreFadeOut( m_hTarget );
+		self.Kill();
+		return -1;
+	}
+	else
+	{
+		return PING_SYSTEM_PING_THINK_SLOW;
+	}
+}
+
+SpriteThinkTarget = function()
 {
 	local curtime = Time();
 
@@ -2361,7 +2446,7 @@ local SpriteThinkEnemy = function()
 	}
 	else if (PING_DEBUG_VERBOSE)
 	{
-		printf( "start fade ping[%d]\n", self.GetEntityIndex() );
+		printf( "start fade target ping[%d]\n", self.GetEntityIndex() );
 	}
 
 	m_flDieTime = curtime - 0.01;
@@ -2369,7 +2454,7 @@ local SpriteThinkEnemy = function()
 	return (Think = FadeOut)();
 }
 
-local SpriteThinkIncap = function()
+SpriteThinkIncap = function()
 {
 	local curtime = Time();
 
@@ -2392,7 +2477,7 @@ local SpriteThinkIncap = function()
 	}
 	else if (PING_DEBUG_VERBOSE)
 	{
-		printf( "start fade ping[%d]\n", self.GetEntityIndex() );
+		printf( "start fade incap ping[%d]\n", self.GetEntityIndex() );
 	}
 
 	m_flDieTime = curtime - 0.01;
@@ -2400,7 +2485,7 @@ local SpriteThinkIncap = function()
 	return (Think = FadeOut)();
 }
 
-local SpriteThinkItem = function()
+SpriteThinkItem = function()
 {
 	local curtime = Time();
 
@@ -2426,7 +2511,7 @@ local SpriteThinkItem = function()
 	}
 	else if (PING_DEBUG_VERBOSE)
 	{
-		printf( "start fade ping[%d]\n", self.GetEntityIndex() );
+		printf( "start fade item ping[%d]\n", self.GetEntityIndex() );
 	}
 
 	m_flDieTime = curtime - 0.01;
@@ -2434,7 +2519,8 @@ local SpriteThinkItem = function()
 	return (Think = FadeOut)();
 }
 
-local SpriteThinkDoor = function()
+// Double doors have owners for the other half
+SpriteThinkDoor = function()
 {
 	local curtime = Time();
 
@@ -2455,7 +2541,7 @@ local SpriteThinkDoor = function()
 	}
 	else if (PING_DEBUG_VERBOSE)
 	{
-		printf( "start fade ping[%d]\n", self.GetEntityIndex() );
+		printf( "start fade door ping[%d]\n", self.GetEntityIndex() );
 	}
 
 	m_flDieTime = curtime - 0.01;
@@ -2480,7 +2566,7 @@ local SpriteThinkDroppedPhysics = function()
 	}
 	else if (PING_DEBUG_VERBOSE)
 	{
-		printf( "start fade ping[%d]\n", self.GetEntityIndex() );
+		printf( "start fade phys ping[%d]\n", self.GetEntityIndex() );
 	}
 
 	m_flDieTime = curtime - 0.01;
@@ -2534,7 +2620,7 @@ local SpriteThinkChatter = function()
 
 local SpriteThinkCountdown = function()
 {
-	if ( m_flFrame == 3.0 )
+	if ( m_Data == 3.0 )
 	{
 		if (PING_DEBUG_VERBOSE)
 			printf( "ping[%d] countdown end\n", self.GetEntityIndex() );
@@ -2544,19 +2630,19 @@ local SpriteThinkCountdown = function()
 		return -1;
 	}
 
-	SetNetPropFloat( self, "m_flFrame", m_flFrame++ );
+	SetNetPropFloat( self, "m_flFrame", m_Data++ );
 
 	if (PING_DEBUG_VERBOSE)
-		printf( "ping[%d] countdown %d\n", self.GetEntityIndex(), m_flFrame.tointeger() );
+		printf( "ping[%d] countdown %d\n", self.GetEntityIndex(), m_Data.tointeger() );
 
 	return 1.0;
 }
 
 local SpriteThink = function()
 {
-	if ( m_bInitRem )
+	if ( m_Data )
 	{
-		m_bInitRem = false;
+		m_Data = false;
 		return m_flDieTime;
 	}
 
@@ -2625,33 +2711,18 @@ local SetPingThink = function( pSpr, sc, type, target = null )
 {
 	AddThinkToEnt( pSpr, "Think" );
 
-	if ( type in m_PingIsWarning )
+	if ( type in m_PingHasTarget )
 	{
-		if ( type != PingType.INCAP )
+		if ( target &&
+				target.GetClassname() == "prop_physics" &&
+				GetNetPropEntity( target, "m_hOwnerEntity" ) )
 		{
-			sc.Think <- SpriteThinkEnemy;
+			sc.Think <- SpriteThinkDroppedPhysics;
 		}
 		else
 		{
-			sc.Think <- SpriteThinkIncap;
-		}
-	}
-	else if ( type in m_PingHasTarget )
-	{
-		if ( type != PingType.DOOR )
-		{
-			if ( target.GetClassname() == "prop_physics" && GetNetPropEntity( target, "m_hOwnerEntity" ) )
-			{
-				sc.Think <- SpriteThinkDroppedPhysics;
-			}
-			else
-			{
-				sc.Think <- SpriteThinkItem;
-			}
-		}
-		else
-		{
-			sc.Think <- SpriteThinkDoor;
+			local pingInfo = m_PingLookup[ type ];
+			sc.Think <- pingInfo[m_fnThink];
 		}
 	}
 	else if ( type == PingType.COUNTDOWN )
@@ -2709,7 +2780,7 @@ PlayerPing = function( player, type, origin, target = null, hParent = null )
 			// Ignore fading pings,
 			// their offscreen parts would also need resetting,
 			// complicating the logic
-			if ( sc.m_nRenderAlpha == 255 )
+			if ( sc.m_bActive )
 			{
 				if (PING_DEBUG)
 					Assert( sc.Think != FadeOut );
@@ -2759,8 +2830,6 @@ PlayerPing = function( player, type, origin, target = null, hParent = null )
 					}
 				}
 
-				sc.m_flDieTime = curtime + pingInfo[m_lifetime];
-
 				// Enable interp if it was disabled
 				// and teleport to prevent invalid interpolation
 				if ( GetNetPropInt( pSpr, "m_fEffects" ) & EF_NOINTERP )
@@ -2779,14 +2848,23 @@ PlayerPing = function( player, type, origin, target = null, hParent = null )
 						printf( "  type change %d -> %d\n", sc.m_nPingType, type );
 
 					if ( sc.m_nPingType == PingType.COUNTDOWN )
-					{
 						SetNetPropFloat( pSpr, "m_flFrame", 0.0 );
-						SetPingThink( pSpr, sc, type, target );
-					}
 
 					sc.m_nPingType = type;
+					SetPingThink( pSpr, sc, type, target );
 					pSpr.SetModel( pingInfo[0] );
 					SetNetPropInt( pSpr, "m_clrRender", pingInfo[m_colour] );
+				}
+
+				if ( type in m_PingIsSlowFade )
+				{
+					sc.m_Data = 1.0 / ( pingInfo[m_lifetime] * PING_SYSTEM_SLOW_FADE_FULLVIS_DURATION_INV );
+					sc.m_flDieTime = curtime + pingInfo[m_lifetime] * PING_SYSTEM_SLOW_FADE_FULLVIS_DURATION;
+					pSpr.__KeyValueFromInt( "renderamt", sc.m_nRenderAlpha = 255 );
+				}
+				else
+				{
+					sc.m_flDieTime = curtime + pingInfo[m_lifetime];
 				}
 
 				if (PING_DEBUG_VERBOSE)
@@ -2807,7 +2885,7 @@ PlayerPing = function( player, type, origin, target = null, hParent = null )
 				0 in playerPings &&
 				curtime - lastPingTime < PING_SYSTEM_PING_INTERVAL &&
 				( sc = ( pSpr = playerPings.top() ).GetScriptScope() ).m_nPingType == PingType.BASE &&
-				sc.m_nRenderAlpha == 255 )
+				sc.m_bActive )
 		{
 			if (PING_DEBUG_VERBOSE)
 				printf( "player[%d] extended base ping[%d]\n", player.GetEntityIndex(), pSpr.GetEntityIndex() );
@@ -2899,41 +2977,28 @@ PlayerPing = function( player, type, origin, target = null, hParent = null )
 	AddThinkToEnt( pSpr, "Think" );
 
 	sc = pSpr.GetScriptScope();
+	sc.m_bActive <- true;
 	sc.m_nRenderAlpha <- 255;
 	sc.m_hUser <- user;
 	sc.m_nPingType <- type;
+	sc.m_Data <- null; // Extra data
 
-	if ( type in m_PingIsWarning )
+	if ( type in m_PingHasTarget )
 	{
-		sc.m_flDieTime <- curtime + pingInfo[m_lifetime];
-		sc.m_hTarget <- target;
-		sc.m_hTeamTargets <- teamTargets;
-
-		if ( type != PingType.INCAP )
+		if ( type in m_PingIsSlowFade )
 		{
-			sc.Think <- SpriteThinkEnemy;
+			sc.m_Data <- 1.0 / ( pingInfo[m_lifetime] * PING_SYSTEM_SLOW_FADE_FULLVIS_DURATION_INV );
+			sc.m_flDieTime <- curtime + pingInfo[m_lifetime] * PING_SYSTEM_SLOW_FADE_FULLVIS_DURATION;
+			sc.Think <- SpriteThinkSlowFade;
 		}
 		else
 		{
-			sc.Think <- SpriteThinkIncap;
-		}
+			sc.m_flDieTime <- curtime + pingInfo[m_lifetime];
 
-		if ( target )
-			teamTargets[ target ] <- pSpr;
-	}
-	else if ( type in m_PingHasTarget )
-	{
-		sc.m_flDieTime <- curtime + pingInfo[m_lifetime];
-		sc.m_hTarget <- target;
-		sc.m_hTeamTargets <- teamTargets;
-
-		if (PING_DEBUG)
-			Assert( target );
-
-		if ( type != PingType.DOOR )
-		{
 			// HACKHACK: If this is a prop_physics with an owner, assume it is a dropped item
-			if ( target.GetClassname() == "prop_physics" && GetNetPropEntity( target, "m_hOwnerEntity" ) )
+			if ( target &&
+					target.GetClassname() == "prop_physics" &&
+					GetNetPropEntity( target, "m_hOwnerEntity" ) )
 			{
 				// NOTE: prop_physics might be rolling around, but parenting doesn't look good,
 				// and I don't want to correct pos/rot every frame
@@ -2941,30 +3006,32 @@ PlayerPing = function( player, type, origin, target = null, hParent = null )
 			}
 			else
 			{
-				sc.Think <- SpriteThinkItem;
+				if (PING_DEBUG)
+					Assert( pingInfo[m_fnThink] );
+
+				sc.Think <- pingInfo[m_fnThink];
 			}
 		}
-		else
-		{
-			// Double doors have owners for the other half
-			sc.Think <- SpriteThinkDoor;
-		}
 
-		teamTargets[ target ] <- pSpr;
+		sc.m_hTarget <- target;
+		sc.m_hTeamTargets <- teamTargets;
+
+		if ( target )
+			teamTargets[ target ] <- pSpr;
 	}
 	else if ( type == PingType.COUNTDOWN )
 	{
 		sc.m_flDieTime <- 0.0;
 		sc.m_hTarget <- null;
-		sc.m_flFrame <- 0.0;
+		sc.m_Data <- 0.0;
 		sc.Think <- SpriteThinkCountdown;
 	}
 	// base, static
 	else
 	{
-		sc.m_bInitRem <- true;
 		sc.m_flDieTime <- pingInfo[m_lifetime];
 		sc.m_hTeamTargets <- null;
+		sc.m_Data <- true;
 		sc.Think <- SpriteThink;
 	}
 
@@ -3011,6 +3078,7 @@ PingChatter = function( player, pingType )
 	AddThinkToEnt( pSpr, "Think" );
 
 	local sc = pSpr.GetScriptScope();
+	sc.m_bActive <- true;
 	sc.m_nRenderAlpha <- 255;
 	sc.m_hUser <- user;
 	sc.m_nPingType <- pingType;
@@ -3446,7 +3514,7 @@ PingWheelUpdate = function( player, user, state )
 
 		local target = user[m_Pings].top();
 
-		if ( target.IsValid() && target.GetScriptScope().m_nRenderAlpha == 255 )
+		if ( target.IsValid() && target.GetScriptScope().m_bActive )
 		{
 			if (PING_DEBUG)
 				Assert( !user[m_hPingWheel] );
@@ -3519,7 +3587,7 @@ PingWheelUpdate = function( player, user, state )
 				print( "player[%d] wheel[-1] open no target\n",
 						player.GetEntityIndex() );
 			}
-			else if ( target.GetScriptScope().m_nRenderAlpha != 255 )
+			else if ( !target.GetScriptScope().m_bActive )
 			{
 				printf( "player[%d] wheel[-1] open target is fading %d\n",
 						player.GetEntityIndex(),
@@ -3543,7 +3611,7 @@ PingWheelClose = function( player, user, success )
 
 			if ( sc.m_iSelection &&
 					( target = sc.m_hTarget ).IsValid() &&
-					( targetsc = target.GetScriptScope() ).m_nRenderAlpha == 255 )
+					( targetsc = target.GetScriptScope() ).m_bActive )
 			{
 				if (PING_DEBUG_VERBOSE)
 				{
@@ -3571,7 +3639,7 @@ PingWheelClose = function( player, user, success )
 
 				if ( selectedPing == PingType.COUNTDOWN )
 				{
-					targetsc.m_flFrame <- 0.0;
+					targetsc.m_Data = 0.0;
 					targetsc.Think = SpriteThinkCountdown;
 					if ( !( "m_hTarget" in targetsc ) )
 						targetsc.m_hTarget <- null;
@@ -3583,7 +3651,7 @@ PingWheelClose = function( player, user, success )
 					// Extend time
 					AddThinkToEnt( target, "Think" );
 					targetsc.Think = SpriteThink;
-					targetsc.m_bInitRem = true;
+					targetsc.m_Data = true;
 					targetsc.m_flDieTime = pingInfo[m_lifetime];
 				}
 				else if ( targetsc.m_nPingType == PingType.COUNTDOWN )
@@ -3592,7 +3660,7 @@ PingWheelClose = function( player, user, success )
 					// but its original type is lost.
 					// Convert to static ping
 					targetsc.Think = SpriteThink;
-					targetsc.m_bInitRem <- true;
+					targetsc.m_Data = true;
 					targetsc.m_flDieTime = pingInfo[m_lifetime];
 				}
 
@@ -3612,7 +3680,7 @@ PingWheelClose = function( player, user, success )
 							player.GetEntityIndex(),
 							pWheel.GetEntityIndex() );
 				}
-				else if ( target.GetScriptScope().m_nRenderAlpha != 255 )
+				else if ( !target.GetScriptScope().m_bActive )
 				{
 					printf( "player[%d] wheel[%d] apply target is fading\n",
 							player.GetEntityIndex(),
@@ -3686,14 +3754,7 @@ function PingEntity( player, pEnt, vecPingPos = null )
 				// enemy (SI)
 				else
 				{
-					if ( pEnt.IsOnFire() )
-					{
-						pingType = PingType.WARNING_ONFIRE;
-					}
-					else
-					{
-						pingType = PingType.WARNING;
-					}
+					pingType = PingType.WARNING;
 				}
 			}
 			// player is SI
@@ -3702,14 +3763,7 @@ function PingEntity( player, pEnt, vecPingPos = null )
 				// enemy (survivor)
 				if ( pEnt.IsSurvivor() )
 				{
-					if ( pEnt.IsOnFire() )
-					{
-						pingType = PingType.WARNING_ONFIRE;
-					}
-					else
-					{
-						pingType = PingType.WARNING;
-					}
+					pingType = PingType.WARNING;
 				}
 				// teammate (SI)
 				else
@@ -3969,7 +4023,7 @@ function PingEntity( player, pEnt, vecPingPos = null )
 				}
 				else if (PING_DEBUG)
 				{
-					error( "            NO MATCH\n" );
+					print( "            NO MATCH\n" );
 				}
 
 				break;
@@ -5016,7 +5070,7 @@ local WriteConfig = function()
 			switch ( type )
 			{
 				case PingType.TEAMMATE: case PingType.INFECTED: case PingType.UNCOMMON:
-				case PingType.WARNING: case PingType.WARNING_MILD: case PingType.WARNING_ONFIRE:
+				case PingType.WARNING: case PingType.WARNING_MILD:
 				case PingType.ONFIRE: case PingType.INCAP: case PingType.FUELBARREL:
 				case PingType.AFFIRMATIVE: case PingType.NEGATIVE: case PingType.WAIT:
 				case PingType.RESCUE: case PingType.HURRY: case PingType.LOOKOUT:
@@ -5040,10 +5094,7 @@ local WriteConfig = function()
 		buf = WriteTimeIfNotEq( buf, PingType.UNCOMMON, 2.0 );
 
 		buf = WriteColourIfNotEq( buf, PingType.WARNING, PingColour.WARNING );
-		buf = WriteTimeIfNotEq( buf, PingType.WARNING, 4.0 );
-
-		buf = WriteColourIfNotEq( buf, PingType.WARNING_ONFIRE, PingColour.WARNING );
-		buf = WriteTimeIfNotEq( buf, PingType.WARNING_ONFIRE, 4.0 );
+		buf = WriteTimeIfNotEq( buf, PingType.WARNING, PING_SYSTEM_LIFETIME_WARNING );
 
 		buf = WriteColourIfNotEq( buf, PingType.WARNING_MILD, PingColour.WARNING_MILD );
 		buf = WriteColourIfNotEq( buf, PingType.ONFIRE, PingColour.WARNING_MILD );
@@ -5135,8 +5186,6 @@ function LoadConfig( initial = false )
 
 	return 0;
 }
-
-LoadConfig(true);
 
 //----------------------------------------------------------------------
 
