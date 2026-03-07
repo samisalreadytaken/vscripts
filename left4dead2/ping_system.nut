@@ -6,7 +6,7 @@
 // Contextual Ping System
 //
 
-const PING_SYSTEM_VERSION = 37;
+const PING_SYSTEM_VERSION = 38;
 
 const CONTENTS_WINDOW				= 0x2;
 //(CONTENTS_SOLID|CONTENTS_MOVEABLE|CONTENTS_MONSTER|CONTENTS_WINDOW|CONTENTS_DEBRIS|CONTENTS_GRATE)
@@ -95,7 +95,12 @@ const PING_SYSTEM_SOUND_COUNT_THRESHOLD = 5;
 const PING_SYSTEM_SOUND_COOLDOWN = 1.25;
 const PING_SYSTEM_SOUND_COOLDOWN_SHORT = 0.7;
 const PING_SYSTEM_DEFAULT_MAX_PING_COUNT = 4;
-const PING_SYSTEM_OFFSCREEN_INDICATOR_RADIUS = 6.0;
+const PING_SYSTEM_OFFSCREEN_INDICATOR_RADIUS_DEFAULT = 6.00525; // 0.273
+const PING_SYSTEM_OFFSCREEN_INDICATOR_RADIUS_MIN = 0.75;
+const PING_SYSTEM_OFFSCREEN_INDICATOR_RADIUS_MAX_H = 18.0;
+const PING_SYSTEM_OFFSCREEN_INDICATOR_RADIUS_MAX_H_N = -18.0;
+const PING_SYSTEM_OFFSCREEN_INDICATOR_RADIUS_MAX_V = 10.0;
+const PING_SYSTEM_OFFSCREEN_INDICATOR_RADIUS_DT = 19.25; // MAX=20
 const PING_SYSTEM_FADE_RATE_INV = 0.7;
 const PING_SYSTEM_ITEM_TAKEN_FADE_DURATION = 0.25;
 const PING_SYSTEM_SLOW_FADE_FULLVIS_DURATION = 0.1;
@@ -118,7 +123,12 @@ delete CONST.PING_SYSTEM_LIFETIME_WARNING;
 delete CONST.PING_SYSTEM_DEFAULT_SCALE_INTERNAL;
 delete CONST.PING_SYSTEM_OFFSCREEN_DEFAULT_SCALE_INTERNAL;
 delete CONST.PING_SYSTEM_DEFAULT_MAX_PING_COUNT;
-delete CONST.PING_SYSTEM_OFFSCREEN_INDICATOR_RADIUS;
+delete CONST.PING_SYSTEM_OFFSCREEN_INDICATOR_RADIUS_DEFAULT;
+delete CONST.PING_SYSTEM_OFFSCREEN_INDICATOR_RADIUS_MIN;
+delete CONST.PING_SYSTEM_OFFSCREEN_INDICATOR_RADIUS_MAX_H;
+delete CONST.PING_SYSTEM_OFFSCREEN_INDICATOR_RADIUS_MAX_H_N;
+delete CONST.PING_SYSTEM_OFFSCREEN_INDICATOR_RADIUS_MAX_V;
+delete CONST.PING_SYSTEM_OFFSCREEN_INDICATOR_RADIUS_DT;
 delete CONST.PING_SYSTEM_FADE_RATE_INV;
 delete CONST.PING_SYSTEM_ITEM_TAKEN_FADE_DURATION;
 delete CONST.PING_SYSTEM_SLOW_FADE_FULLVIS_DURATION;
@@ -129,7 +139,8 @@ delete CONST.PING_SYSTEM_WHEEL_ITEM_COUNT;
 
 if (PING_DEBUG)
 {
-	Assert( PING_SYSTEM_OFFSCREEN_INDICATOR_RADIUS >= 0.0 && PING_SYSTEM_OFFSCREEN_INDICATOR_RADIUS <= 10.0 );
+	Assert( PING_SYSTEM_OFFSCREEN_INDICATOR_RADIUS_DEFAULT >= 0.0 &&
+			PING_SYSTEM_OFFSCREEN_INDICATOR_RADIUS_DEFAULT <= 10.0 );
 	Assert( fabs( 1.0 -
 				( PING_SYSTEM_SLOW_FADE_FULLVIS_DURATION + PING_SYSTEM_SLOW_FADE_FULLVIS_DURATION_INV ) )
 			< 0.001 );
@@ -572,20 +583,20 @@ m_WeaponClassForName <-
 	fireworkcrate		= "weapon_fireworkcrate*",
 
 	// Comment these out to enable model lookup for response spotting
-	baseball_bat		= "weapon_melee*",
-	fireaxe				= "weapon_melee*",
-	crowbar				= "weapon_melee*",
-	cricket_bat			= "weapon_melee*",
-	electric_guitar		= "weapon_melee*",
-	frying_pan			= "weapon_melee*",
-	golfclub			= "weapon_melee*",
-	katana				= "weapon_melee*",
-	knife				= "weapon_melee*",
-	machete				= "weapon_melee*",
-	pitchfork			= "weapon_melee*",
-	shovel				= "weapon_melee*",
-	tonfa				= "weapon_melee*",
-	riotshield			= "weapon_melee*",
+	//baseball_bat		= "weapon_melee*",
+	//fireaxe				= "weapon_melee*",
+	//crowbar				= "weapon_melee*",
+	//cricket_bat			= "weapon_melee*",
+	//electric_guitar		= "weapon_melee*",
+	//frying_pan			= "weapon_melee*",
+	//golfclub			= "weapon_melee*",
+	//katana				= "weapon_melee*",
+	//knife				= "weapon_melee*",
+	//machete				= "weapon_melee*",
+	//pitchfork			= "weapon_melee*",
+	//shovel				= "weapon_melee*",
+	//tonfa				= "weapon_melee*",
+	//riotshield			= "weapon_melee*",
 }
 
 m_ModelForWeaponName <-
@@ -903,6 +914,8 @@ local m_bButtonEnabled = true;
 local m_bOffscreenIndicators = true;
 local m_bPingWheelEnabled = true;
 local m_nOffscreenIndicatorStyle = 0;
+local m_flOffscreenIndicatorRadius = PING_SYSTEM_OFFSCREEN_INDICATOR_RADIUS_DEFAULT;
+local m_flOffscreenIndicatorMaxVert = PING_SYSTEM_OFFSCREEN_INDICATOR_RADIUS_MAX_V;
 local m_nMaxPingCount = PING_SYSTEM_DEFAULT_MAX_PING_COUNT-1;
 local m_bChatterEnabled = true;
 local m_bPlaySoundOverride = true;
@@ -1667,6 +1680,27 @@ function OnGameEvent_player_death( event )
 	}
 }
 
+function OnGameEvent_player_incapacitated( event )
+{
+	if ( PingResponse.dominated in m_AutoBlock )
+		return;
+
+	local player = GetPlayerFromUserID( event.userid );
+	if ( player && player.IsSurvivor() && player.IsIncapacitated() )
+		return EntFire( "!activator", "RunScriptCode", "return ::PingSystem.PlayerPingIncap(self)", 5.0, player );
+}
+
+function PlayerPingIncap( player )
+{
+	if ( player && player.IsValid() && player.IsSurvivor() && player.IsIncapacitated() )
+	{
+		if (PING_DEBUG)
+			printf( "PlayerPingIncap %s\n", ""+player );
+
+		return PingEntity( player, player );
+	}
+}
+
 delete CONST.PING_ATTACHMENT;
 delete CONST.PING_ATTACHMENT1;
 
@@ -1824,88 +1858,90 @@ function rr_Ping( Q )
 
 		case PingResponse.weapon:
 		{
+			local flThresholdBase = COS_10DEG;
+			if ( bAuto )
+			{
+				if ( IsPlayerABot(who) )
+					flThresholdBase = COS_90DEG;
+				else
+					flThresholdBase = COS_37DEG;
+			}
+
+			local flThreshold = flThresholdBase;
+			local eyePos = who.EyePosition();
+			local eyeDir = who.EyeAngles().Forward();
+			local pEnt, pTarget;
+
 			if ( "weaponname" in Q )
 			{
 				if (PING_DEBUG)
 					printl( "   PingResponse.weapon : " + Q.weaponname );
 
 				local weaponname = Q.weaponname.tolower();
-				if ( !( weaponname in m_WeaponClassForName ) )
+				if ( weaponname in m_WeaponClassForName )
 				{
-					if (PING_DEBUG)
-						error( "weapon class not found for '" + weaponname + "'\n" );
-					return;
-				}
+					local weaponclass = m_WeaponClassForName[ weaponname ];
 
-				local weaponclass = m_WeaponClassForName[ weaponname ];
-
-				local flThresholdBase = COS_10DEG;
-				if ( bAuto )
-				{
-					if ( IsPlayerABot(who) )
-						flThresholdBase = COS_90DEG;
-					else
-						flThresholdBase = COS_37DEG;
-				}
-
-				local flThreshold = flThresholdBase;
-				local eyePos = who.EyePosition();
-				local eyeDir = who.EyeAngles().Forward();
-				local pEnt, pTarget;
-
-				while ( pEnt = FindEntityByClassWithin( pEnt, weaponclass, eyePos, 256.0 ) )
-				{
-					if ( GetNetPropEntity( pEnt, "m_hOwnerEntity" ) ||
-							( GetNetPropInt( pEnt, "m_fEffects" ) & EF_NODRAW ) )
-						continue;
-
-					local delta = pEnt.GetCenter() - eyePos;
-					local dist = delta.Norm();
-					local dot = eyeDir.Dot( delta );
-					if ( dot > flThreshold ||
-							// Use higher FOV for close items
-							// but not too high if players are pinging beyond the items in front
-							( dist < 85.0 && dot > COS_20DEG ) )
+					while ( pEnt = FindEntityByClassWithin( pEnt, weaponclass, eyePos, 256.0 ) )
 					{
-						pTarget = pEnt;
-						flThreshold = dot;
+						if ( GetNetPropEntity( pEnt, "m_hOwnerEntity" ) ||
+								( GetNetPropInt( pEnt, "m_fEffects" ) & EF_NODRAW ) )
+							continue;
+
+						local delta = pEnt.GetCenter() - eyePos;
+						local dist = delta.Norm();
+						local dot = eyeDir.Dot( delta );
+						if ( dot > flThreshold ||
+								// Use higher FOV for close items
+								// but not too high in case players are pinging beyond the items in front
+								( dist < 85.0 && dot > COS_20DEG ) )
+						{
+							pTarget = pEnt;
+							flThreshold = dot;
+						}
 					}
+
+					if (PING_DEBUG) if ( pTarget )
+					{
+						printf( "	  target %s (%.2f, %.2f)\n",
+								""+pTarget,
+								acos( flThreshold ) * RAD2DEG,
+								( pTarget.GetCenter() - eyePos ).Length() );
+
+						if ( GetNetPropInt( pTarget, "m_fEffects" ) & EF_NODRAW )
+							print( "	 nodraw\n" );
+					}
+
+					if ( pTarget )
+						return PingEntity( who, pTarget );
+
+					pEnt = null;
 				}
-
-				if (PING_DEBUG) if ( pTarget )
-				{
-					printf( "	  target %s (%.2f, %.2f)\n",
-							""+pTarget,
-							acos( flThreshold ) * RAD2DEG,
-							( pTarget.GetCenter() - eyePos ).Length() );
-
-					if ( GetNetPropInt( pTarget, "m_fEffects" ) & EF_NODRAW )
-						print( "	 nodraw\n" );
-				}
-
-				if ( pTarget )
-					return PingEntity( who, pTarget );
 
 				// It could be a 'weapon_spawn', re-search -
-
-				local weaponmodel;
 				if ( weaponname in m_ModelForWeaponName )
-					weaponmodel = m_ModelForWeaponName[ weaponname ];
-
-				if (PING_DEBUG)
 				{
-					if ( !weaponmodel && weaponname != "ammo" )
-						error( "model not found for weaponname " + weaponname + "\n" );
+					weaponname = m_ModelForWeaponName[ weaponname ];
+
+					// Looking for an exact model, so increase search radius for it
+					flThreshold = COS_37DEG;
+				}
+				else if (PING_DEBUG)
+				{
+					if ( weaponname != "ammo" )
+						error( "class and model not found for weaponname " + weaponname + "\n" );
+				}
+				else
+				{
+					flThreshold = flThresholdBase;
 				}
 
-				pEnt = null;
-				flThreshold = flThresholdBase;
 				while ( pEnt = FindEntityByClassWithin( pEnt, "weapon*", eyePos, 256.0 ) )
 				{
 					// Looking for weapon* class, check the model if it is the one we're searching for.
 					// if there is no model data, found generic weapon entity's model will be looked up in PingEntity.
 					// Checking weaponID is not viable with melee weapons and medkit.
-					if ( weaponmodel && pEnt.GetModelName() != weaponmodel )
+					if ( weaponname && pEnt.GetModelName() != weaponname )
 						continue;
 
 					if ( GetNetPropEntity( pEnt, "m_hOwnerEntity" ) ||
@@ -1929,7 +1965,7 @@ function rr_Ping( Q )
 							""+pTarget,
 							acos( flThreshold ) * RAD2DEG,
 							( pTarget.GetCenter() - eyePos ).Length(),
-							(weaponmodel?split(weaponmodel,"/").top():"weapon*") );
+							(weaponname?split(weaponname,"/").top():"weapon*") );
 
 					if ( GetNetPropInt( pTarget, "m_fEffects" ) & EF_NODRAW )
 						print( "	 nodraw\n" );
@@ -1959,15 +1995,6 @@ function rr_Ping( Q )
 				// this is a mess...
 				if (PING_DEBUG)
 					print( "   PingResponse.weapon : NULL\n" );
-
-				local flThresholdBase = COS_10DEG;
-				if ( bAuto )
-					flThresholdBase = COS_37DEG;
-
-				local flThreshold = flThresholdBase;
-				local eyePos = who.EyePosition();
-				local eyeDir = who.EyeAngles().Forward();
-				local pEnt, pTarget;
 
 				// Auto-ping of propanetank, oxygentank
 				// Sometimes "PlayerLook" is also fired, but that seems rarer than "PlayerLookHere"
@@ -3100,12 +3127,13 @@ PingChatter = function( player, pingType )
 UpdateOffscreenIndicators = function( player, user )
 {
 	local indicators = user[m_OffscreenIndicators];
+	local playerTeam = GetNetPropInt( player, "m_iTeamNum" );
 	local eyePos, eyeAng, forward, left, up,
 		  fov, foviw,
 		  cosz = COS_53DEG, cosy = COS_37DEG;
 
 	// for each of my team's pings
-	foreach ( pl in m_Teams[ GetNetPropInt( player, "m_iTeamNum" ) ] ) if ( pl.IsValid() )
+	foreach ( pl in m_Teams[playerTeam] ) if ( pl.IsValid() )
 	{
 		local pings = m_Users[ pl.GetEntityIndex() - 1 ][m_Pings];
 
@@ -3254,6 +3282,7 @@ UpdateOffscreenIndicators = function( player, user )
 					{
 						pDetailIcon =
 							sc.m_hDetailIcon = SpawnEntityFromTable( "env_sprite", offscreen_interactable_sprite_kv );
+						SetNetPropInt( pDetailIcon, "m_iTeamNum", playerTeam );
 						SetNetPropEntity( pDetailIcon, "m_hMoveParent", GetNetPropEntity( player, "m_hViewModel" ) );
 
 						if (PING_DEBUG_VERBOSE)
@@ -3271,6 +3300,7 @@ UpdateOffscreenIndicators = function( player, user )
 		else
 		{
 			indicators[ i + 1 ] = pSpr = SpawnEntityFromTable( "env_sprite", offscreen_sprite_kv );
+			SetNetPropInt( pSpr, "m_iTeamNum", playerTeam );
 			SetNetPropInt( pSpr, "m_clrRender", GetNetPropInt( target, "m_clrRender" ) & 0x00FFFFFF );
 			SetNetPropEntity( pSpr, "m_hMoveParent", GetNetPropEntity( player, "m_hViewModel" ) );
 			AddThinkToEnt( pSpr, "Think" );
@@ -3289,6 +3319,7 @@ UpdateOffscreenIndicators = function( player, user )
 			{
 				local pDetailIcon =
 					sc.m_hDetailIcon <- SpawnEntityFromTable( "env_sprite", offscreen_interactable_sprite_kv );
+				SetNetPropInt( pDetailIcon, "m_iTeamNum", playerTeam );
 				// Sprite tries being clever and disobeys parallel orientation
 				// when parented to the directional sprite, complicating this logic
 				SetNetPropEntity( pDetailIcon, "m_hMoveParent", GetNetPropEntity( player, "m_hViewModel" ) );
@@ -3319,12 +3350,11 @@ UpdateOffscreenIndicators = function( player, user )
 		}
 
 		local delta = indicators[ i + 2 ];
-		local dist = indicators[ i + 3 ];
-
-		local fwd = 15.0;
+		local deltaX = 15.0;
 		local deltaY = -delta.Dot( left );
 		local deltaZ = delta.Dot( up );
-		local deltaLen = PING_SYSTEM_OFFSCREEN_INDICATOR_RADIUS / sqrt( deltaY * deltaY + deltaZ * deltaZ );
+
+		local radius = m_flOffscreenIndicatorRadius / sqrt( deltaY * deltaY + deltaZ * deltaZ );
 		local angle = ( atan2( deltaY, -deltaZ ) + PI ) * RAD2DEG;
 
 		// Point downwards if the target is behind and the player is looking up
@@ -3341,63 +3371,96 @@ UpdateOffscreenIndicators = function( player, user )
 		{
 			if ( fov <= 90 )
 			{
-				fwd /= foviw;
+				deltaX /= foviw;
 			}
 			else
 			{
-				deltaLen *= foviw;
+				radius *= foviw;
 			}
 		}
 
 		// Depth sort
 		// Prioritise warning pings
+		// Distorts positions, which may look ugly with a lot of icons
 		if ( pingType in m_PingIsWarning )
 		{
-			eyePos.x = fwd - i * 0.01;
+			eyePos.x = deltaX - i * 0.01;
 		}
 		else
 		{
-			eyePos.x = fwd + i * 0.01;
+			eyePos.x = deltaX + i * 0.01;
 		}
 
-		eyePos.y = deltaY * deltaLen;
+		{
+			local py = deltaY * radius;
+
+			// Simple clamp, makes position not fully accurate,
+			// but it's cheap and close enough
+			if ( py > PING_SYSTEM_OFFSCREEN_INDICATOR_RADIUS_MAX_H )
+			{
+				py = PING_SYSTEM_OFFSCREEN_INDICATOR_RADIUS_MAX_H;
+			}
+			else if ( py < PING_SYSTEM_OFFSCREEN_INDICATOR_RADIUS_MAX_H_N )
+			{
+				py = PING_SYSTEM_OFFSCREEN_INDICATOR_RADIUS_MAX_H_N;
+			}
+
+			eyePos.y = py;
+		}
 
 		if ( m_nOffscreenIndicatorStyle )
 		{
-			eyePos.z = PING_SYSTEM_OFFSCREEN_INDICATOR_RADIUS;
+			eyePos.z = PING_SYSTEM_OFFSCREEN_INDICATOR_RADIUS_DEFAULT;
 		}
 		else
 		{
-			eyePos.z = deltaZ * deltaLen;
+			local pz = deltaZ * radius;
+
+			if ( pz > m_flOffscreenIndicatorMaxVert )
+			{
+				pz = m_flOffscreenIndicatorMaxVert;
+			}
+			else if ( pz < -m_flOffscreenIndicatorMaxVert )
+			{
+				pz = -m_flOffscreenIndicatorMaxVert;
+			}
+
+			eyePos.z = pz;
 		}
 
 		pSpr.SetLocalOrigin( eyePos );
 
-		local pDetailIcon = sc.m_hDetailIcon;
-		if ( pDetailIcon )
-			pDetailIcon.SetLocalOrigin( eyePos );
+		{
+			local pDetailIcon = sc.m_hDetailIcon;
+			if ( pDetailIcon )
+				pDetailIcon.SetLocalOrigin( eyePos );
+		}
 
 		// Angle has to be set on server as client cannot access this data
 		eyeAng.x = eyeAng.y = 0.0; eyeAng.z = -angle;
 		pSpr.SetLocalAngles( eyeAng );
 
-		// VS.RemapValClamped( dist, 1536.0, 3072.0, 255.0, 15.0 )
-		dist = ( dist - 1536.0 ) * 0.00065104166666667;
+		{
+			local dist = indicators[ i + 3 ];
 
-		if ( dist <= 0.0 )
-		{
-			dist = 255;
-		}
-		else if ( dist >= 1.0 )
-		{
-			dist = 15;
-		}
-		else
-		{
-			dist = ( 255.0 - 240.0 * dist ).tointeger();
-		}
+			// VS.RemapValClamped( dist, 1536.0, 3072.0, 255.0, 15.0 )
+			dist = ( dist - 1536.0 ) * 0.00065104166666667;
 
-		sc.m_nRenderAlphaTarget = dist;
+			if ( dist <= 0.0 )
+			{
+				dist = 255;
+			}
+			else if ( dist >= 1.0 )
+			{
+				dist = 15;
+			}
+			else
+			{
+				dist = ( 255.0 - 240.0 * dist ).tointeger();
+			}
+
+			sc.m_nRenderAlphaTarget = dist;
+		}
 	}
 }
 
@@ -3519,8 +3582,10 @@ PingWheelUpdate = function( player, user, state )
 			if (PING_DEBUG)
 				Assert( !user[m_hPingWheel] );
 
+			local playerTeam = GetNetPropInt( player, "m_iTeamNum" );
 			local pWheel =
 				user[m_hPingWheel] = SpawnEntityFromTable( "env_sprite", wheel_sprite_kv );
+			SetNetPropInt( pWheel, "m_iTeamNum", playerTeam );
 			SetNetPropInt( pWheel, "m_clrRender", 0x00FFFFFF );
 			SetNetPropEntity( pWheel, "m_hMoveParent", GetNetPropEntity( player, "m_hViewModel" ) );
 
@@ -3533,6 +3598,11 @@ PingWheelUpdate = function( player, user, state )
 				local item2 = SpawnEntityFromTable( "env_sprite", wheel_item_sprite_kv );
 				local item3 = SpawnEntityFromTable( "env_sprite", wheel_item_sprite_kv );
 				local item4 = SpawnEntityFromTable( "env_sprite", wheel_item_sprite_kv );
+
+				SetNetPropInt( item1, "m_iTeamNum", playerTeam );
+				SetNetPropInt( item2, "m_iTeamNum", playerTeam );
+				SetNetPropInt( item3, "m_iTeamNum", playerTeam );
+				SetNetPropInt( item4, "m_iTeamNum", playerTeam );
 
 				SetNetPropInt( item1, "m_clrRender", 0x00FFFFFF );
 				SetNetPropInt( item2, "m_clrRender", 0x00FFFFFF );
@@ -3898,6 +3968,10 @@ function PingEntity( player, pEnt, vecPingPos = null )
 
 		case "prop_minigun":
 		case "prop_minigun_l4d1":
+
+			// TODO: Add unique icon
+			//if ( GetModelName() == "models/w_models/weapons/50cal.mdl" )
+
 			pingType = PingType.MINIGUN;
 			vecPingPos = pEnt.GetCenter();
 			vecPingPos.z += 32.0;
@@ -4132,6 +4206,17 @@ function PingTrace( player )
 		}
 	}
 
+	// If player is aiming at the ground, ping self as incap
+	if ( player.IsIncapacitated() && ( player.GetCenter() - s_tr.pos ).LengthSqr() < 4096.0 )
+	{
+		if (PING_DEBUG)
+			printf( "player[%d] is incap, dist(%.2f)\n",
+					player.GetEntityIndex(),
+					( player.GetCenter() - s_tr.pos ).Length() );
+
+		s_tr.enthit = player;
+	}
+
 	return PingEntity( player, s_tr.enthit, s_tr.pos );
 }
 
@@ -4242,10 +4327,11 @@ function OnGameEvent_player_say( event )
 	local argv = split( event.text, " " );
 	local commands =
 		[
-			"autoping", "duration", "colour",
-			"scale", "maxcount", "sound",
+			"autoping", "time", "duration", "colour",
+			"scale", "count", "maxcount", "sound",
 			"button", "chatter", "wheel",
 			"offscreen", "offscreenstyle", "offscreenscale",
+			"offscreenradius", "offscreenvert",
 			"savecfg", "loadcfg", "debug"
 		];
 	local strcmp = function( a, b )
@@ -4329,45 +4415,38 @@ function OnGameEvent_player_say( event )
 			PingSystem.DisableAutoPing( argv[2] );
 			break;
 
+		case "time":
 		case "duration":
 			if ( !(2 in argv) || !(3 in argv) )
 			{
-				Msg( "Usage: !ping_system duration <type> <time>" );
+				Msg( "Usage: !ping_system time <type> <time>" );
 				break;
 			}
 
-			try { argv[2] = argv[2].tointeger(); }
-			catch ( err )
+			if ( argv[2].find("PingType.") == 0 )
+				argv[2] = argv[2].slice( 9 );
+
+			argv[2] = argv[2].toupper();
+
+			if ( argv[2] in CONST.PingType )
 			{
-				local doErr = 1;
-				try
+				argv[2] = CONST.PingType[ argv[2] ];
+			}
+			else
+			{
+				local s = "WEAPON_" + argv[2];
+				if ( s in CONST.PingType )
 				{
-					// try parsing enum
-					if ( argv[2] != "-1" && argv[2].find(".") == null )
-					{
-						argv[2] = "PingType." + argv[2].toupper();
-					}
-					else
-					{
-						argv[2] = argv[2].toupper();
-					}
-
-					argv[2] = compilestring( "return "+argv[2] )();
-
-					if ( typeof argv[2] != "integer" )
-						throw "";
-
-					doErr = 0;
+					argv[2] = CONST.PingType[ s ];
 				}
-				catch ( err2 )
+				else
 				{
-					doErr = 1;
-				}
-
-				if ( doErr )
-				{
-					Msg(Fmt( "invalid ping type '%s'", ""+argv[2] ));
-					break;
+					try { argv[2] = argv[2].tointeger(); }
+					catch ( err )
+					{
+						Msg(Fmt( "invalid ping type '%s'", ""+argv[2] ));
+						break;
+					}
 				}
 			}
 
@@ -4388,38 +4467,30 @@ function OnGameEvent_player_say( event )
 				break;
 			}
 
-			try { argv[2] = argv[2].tointeger(); }
-			catch ( err )
+			if ( argv[2].find("PingType.") == 0 )
+				argv[2] = argv[2].slice( 9 );
+
+			argv[2] = argv[2].toupper();
+
+			if ( argv[2] in CONST.PingType )
 			{
-				local doErr = 1;
-				try
+				argv[2] = CONST.PingType[ argv[2] ];
+			}
+			else
+			{
+				local s = "WEAPON_" + argv[2];
+				if ( s in CONST.PingType )
 				{
-					// try parsing enum
-					if ( argv[2] != "-1" && argv[2].find(".") == null )
-					{
-						argv[2] = "PingType." + argv[2].toupper();
-					}
-					else
-					{
-						argv[2] = argv[2].toupper();
-					}
-
-					argv[2] = compilestring( "return "+argv[2] )();
-
-					if ( typeof argv[2] != "integer" )
-						throw "";
-
-					doErr = 0;
+					argv[2] = CONST.PingType[ s ];
 				}
-				catch ( err2 )
+				else
 				{
-					doErr = 1;
-				}
-
-				if ( doErr )
-				{
-					Msg(Fmt( "invalid ping type '%s'", ""+argv[2] ));
-					break;
+					try { argv[2] = argv[2].tointeger(); }
+					catch ( err )
+					{
+						Msg(Fmt( "invalid ping type '%s'", ""+argv[2] ));
+						break;
+					}
 				}
 			}
 
@@ -4441,7 +4512,7 @@ function OnGameEvent_player_say( event )
 		case "scale":
 			if ( !(2 in argv) )
 			{
-				Msg( "Usage: !ping_system scale <value>" );
+				Msg( "Usage: !ping_system scale <[0.25, 2.0]>" );
 				break;
 			}
 
@@ -4455,10 +4526,11 @@ function OnGameEvent_player_say( event )
 			PingSystem.SetScaleMultiplier( argv[2] );
 			break;
 
+		case "count":
 		case "maxcount":
 			if ( !(2 in argv) )
 			{
-				Msg( "Usage: !ping_system maxcount <amount>" );
+				Msg( "Usage: !ping_system count <[1, 64]>" );
 				break;
 			}
 
@@ -4577,7 +4649,7 @@ function OnGameEvent_player_say( event )
 		case "offscreenscale":
 			if ( !(2 in argv) )
 			{
-				Msg( "Usage: !ping_system offscreenscale <value>" );
+				Msg( "Usage: !ping_system offscreenscale <[0.25, 2.0]>" );
 				break;
 			}
 
@@ -4589,6 +4661,40 @@ function OnGameEvent_player_say( event )
 			}
 
 			PingSystem.SetOffscreenIndicatorScale( argv[2] );
+			break;
+
+		case "offscreenradius":
+			if ( !(2 in argv) )
+			{
+				Msg( "Usage: !ping_system offscreenradius <[0, 1]>" );
+				break;
+			}
+
+			try { argv[2] = argv[2].tofloat(); }
+			catch ( err )
+			{
+				Msg(Fmt( "value is not a float '%s'", argv[2] ));
+				break;
+			}
+
+			PingSystem.SetOffscreenIndicatorRadius( argv[2] );
+			break;
+
+		case "offscreenvert":
+			if ( !(2 in argv) )
+			{
+				Msg( "Usage: !ping_system offscreenvert <[0, 1]>" );
+				break;
+			}
+
+			try { argv[2] = argv[2].tofloat(); }
+			catch ( err )
+			{
+				Msg(Fmt( "value is not a float '%s'", argv[2] ));
+				break;
+			}
+
+			PingSystem.SetOffscreenIndicatorVerticalMargin( argv[2] );
 			break;
 
 		case "loadcfg":
@@ -4631,7 +4737,7 @@ function OnGameEvent_player_say( event )
 
 		default:
 			Msg( "Usage: !ping_system <[c]ommand> [value...]" );
-			Msg( "   autoping, duration, colour\n   scale, maxcount, sound\n   button, chatter, wheel\n   offscreen, offscreenstyle, offscreenscale\n   savecfg, loadcfg" );
+			Msg( "   autoping, time, colour\n   scale, count, sound\n   button, chatter, wheel\n   offscreen, offscreenstyle, offscreenscale,\n   offscreenradius, offscreenvert\n   savecfg, loadcfg" );
 	}
 
 	Msg = _Msg;
@@ -4668,6 +4774,9 @@ function SetMaxPingCount( n )
 function SetPingDuration( type, time )
 {
 	time = time.tofloat();
+
+	if ( time < 0.1 )
+		time = 0.1;
 
 	if ( type == -1 )
 	{
@@ -4906,6 +5015,41 @@ function SetOffscreenIndicatorScale( scale )
 	return Msg("PingSystem.SetOffscreenIndicatorScale("+scale+")\n");
 }
 
+function SetOffscreenIndicatorRadius( radius )
+{
+	radius = radius.tofloat();
+
+	if ( radius < 0.0 )
+	{
+		radius = ( PING_SYSTEM_OFFSCREEN_INDICATOR_RADIUS_DEFAULT - PING_SYSTEM_OFFSCREEN_INDICATOR_RADIUS_MIN )
+			/ PING_SYSTEM_OFFSCREEN_INDICATOR_RADIUS_DT;
+	}
+	else if ( radius > 1.0 )
+	{
+		radius = 1.0;
+	}
+
+	m_flOffscreenIndicatorRadius =
+		( PING_SYSTEM_OFFSCREEN_INDICATOR_RADIUS_MIN +
+		  radius * PING_SYSTEM_OFFSCREEN_INDICATOR_RADIUS_DT );
+
+	return Msg("PingSystem.SetOffscreenIndicatorRadius("+radius+")\n");
+}
+
+function SetOffscreenIndicatorVerticalMargin( ratio )
+{
+	ratio = ratio.tofloat();
+
+	if ( ratio < 0.0 )
+		ratio = 0.0;
+	else if ( ratio > 1.0 )
+		ratio = 1.0;
+
+	m_flOffscreenIndicatorMaxVert = PING_SYSTEM_OFFSCREEN_INDICATOR_RADIUS_MAX_V * ratio;
+
+	return Msg("PingSystem.SetOffscreenIndicatorVerticalMargin("+ratio+")\n");
+}
+
 function DisableChatter( state )
 {
 	m_bChatterEnabled = !state;
@@ -5007,6 +5151,27 @@ local WriteConfig = function()
 	if ( m_nOffscreenIndicatorStyle )
 		buf = buf + "PingSystem.SetOffscreenIndicatorStyle(1)\n";
 
+	if ( offscreen_sprite_kv.scale !=
+			( PING_SYSTEM_OFFSCREEN_DEFAULT_SCALE_INTERNAL *
+			  ( sprite_kv.scale / PING_SYSTEM_DEFAULT_SCALE_INTERNAL ) ) )
+	{
+		buf = Fmt( "%sPingSystem.SetOffscreenIndicatorScale(%.6g)\n", buf,
+				offscreen_sprite_kv.scale / PING_SYSTEM_OFFSCREEN_DEFAULT_SCALE_INTERNAL );
+	}
+
+	if ( fabs( m_flOffscreenIndicatorRadius - PING_SYSTEM_OFFSCREEN_INDICATOR_RADIUS_DEFAULT ) > 0.01 )
+	{
+		buf = Fmt( "%sPingSystem.SetOffscreenIndicatorRadius(%.6g)\n", buf,
+				( m_flOffscreenIndicatorRadius - PING_SYSTEM_OFFSCREEN_INDICATOR_RADIUS_MIN )
+				/ PING_SYSTEM_OFFSCREEN_INDICATOR_RADIUS_DT );
+	}
+
+	if ( m_flOffscreenIndicatorMaxVert != PING_SYSTEM_OFFSCREEN_INDICATOR_RADIUS_MAX_V )
+	{
+		buf = Fmt( "%sPingSystem.SetOffscreenIndicatorVerticalMargin(%.6g)\n", buf,
+				m_flOffscreenIndicatorMaxVert / PING_SYSTEM_OFFSCREEN_INDICATOR_RADIUS_MAX_V );
+	}
+
 	if ( m_nMaxPingCount != PING_SYSTEM_DEFAULT_MAX_PING_COUNT-1 )
 		buf = Fmt( "%sPingSystem.SetMaxPingCount(%d)\n", buf, m_nMaxPingCount+1 );
 
@@ -5014,14 +5179,6 @@ local WriteConfig = function()
 	{
 		buf = Fmt( "%sPingSystem.SetScaleMultiplier(%.6g)\n", buf,
 				sprite_kv.scale / PING_SYSTEM_DEFAULT_SCALE_INTERNAL );
-	}
-
-	if ( offscreen_sprite_kv.scale !=
-			( PING_SYSTEM_OFFSCREEN_DEFAULT_SCALE_INTERNAL *
-			  ( sprite_kv.scale / PING_SYSTEM_DEFAULT_SCALE_INTERNAL ) ) )
-	{
-		buf = Fmt( "%sPingSystem.SetOffscreenIndicatorScale(%.6g)\n", buf,
-				offscreen_sprite_kv.scale / PING_SYSTEM_OFFSCREEN_DEFAULT_SCALE_INTERNAL );
 	}
 
 	if ( m_PingWheelItems[0] != PingType.RESCUE )
