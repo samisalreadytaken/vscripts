@@ -6,7 +6,7 @@
 // Contextual Ping System
 //
 
-const PING_SYSTEM_VERSION = 38;
+const PING_SYSTEM_VERSION = 40;
 
 const CONTENTS_WINDOW				= 0x2;
 //(CONTENTS_SOLID|CONTENTS_MOVEABLE|CONTENTS_MONSTER|CONTENTS_WINDOW|CONTENTS_DEBRIS|CONTENTS_GRATE)
@@ -1788,7 +1788,7 @@ function rr_Ping( Q )
 
 			foreach ( p in m_Players )
 			{
-				if ( p.IsValid() && GetNetPropInt( p, "m_survivorCharacter" ) == id )
+				if ( p && p.IsValid() && GetNetPropInt( p, "m_survivorCharacter" ) == id )
 				{
 					who = p;
 					break;
@@ -2607,7 +2607,7 @@ local SpriteThinkChatter = function()
 
 	if ( curtime < m_flDieTime )
 	{
-		if ( m_hTarget.IsValid() )
+		if ( !GetNetPropInt( m_hTarget, "m_lifeState" ) )
 		{
 			// Recalculate position on state change
 			// not perfect, good enough
