@@ -212,7 +212,14 @@ function CSGOHudWeaponAmmo::OnTickWeapon()
 
 		if ( weapon.UsesPrimaryAmmo() )
 		{
-			m_chCurTextureDataAmmo = m_TextureDataAmmo[ szClassname ];
+			if ( szClassname in m_TextureDataAmmo )
+			{
+				m_chCurTextureDataAmmo = m_TextureDataAmmo[ szClassname ];
+			}
+			else
+			{
+				m_chCurTextureDataAmmo = m_TextureDataAmmo[ "weapon_pistol" ];
+			}
 
 			if ( weapon.UsesClipsForAmmo1() )
 			{
@@ -246,7 +253,14 @@ function CSGOHudWeaponAmmo::OnTickWeapon()
 		// weapon_slam does this...
 		else if ( nAmmoSecondary != -1 )
 		{
-			m_chCurTextureDataAmmo = m_TextureDataAmmo2[ szClassname ];
+			if ( szClassname in m_TextureDataAmmo2 )
+			{
+				m_chCurTextureDataAmmo = m_TextureDataAmmo2[ szClassname ];
+			}
+			else
+			{
+				m_chCurTextureDataAmmo = m_TextureDataAmmo2[ "weapon_smg1" ];
+			}
 
 			if ( m_bVisibleClip )
 				m_bVisibleClip = false;

@@ -6,7 +6,7 @@ local CSHud = this;
 local XRES = XRES, YRES = YRES;
 local surface = surface;
 local MainViewOrigin = MainViewOrigin, MainViewAngles = MainViewAngles,
-	cos = cos, atan2 = atan2, AngleDiff = AngleDiff, fabs = fabs;
+	cos = cos, atan2 = atan2, AngleDiff = AngleDiff, fabs = fabs, FrameTime = FrameTime;
 
 
 class CSGOHudLocator
@@ -17,6 +17,9 @@ class CSGOHudLocator
 	// HL2 has only one and hardcoded locator position and texture
 	m_vecLocatorOrigin = null
 	m_hTargetTexture = 0
+
+	m_flPrevYaw = 0.0
+	m_flAngularVelocity = 0.0
 }
 
 function CSGOHudLocator::Init()
@@ -52,6 +55,30 @@ function CSGOHudLocator::Paint()
 	}
 
 	local viewYaw = MainViewAngles().y;
+	local flDelta = viewYaw - m_flPrevYaw;
+
+	// A little bit of magnetic oscillation
+	if ( flDelta > 0.05 || -0.05 > flDelta )
+	{
+		flDelta = flDelta % 360.0;
+		if ( flDelta > 180.0 )
+			flDelta = flDelta - 360.0;
+		else if ( -180.0 > flDelta )
+			flDelta = flDelta + 360.0;
+
+		//local z = 0.275, o = 25.0;
+		local kp = 625.0, kd = 13.75;
+
+		local frametime = FrameTime();
+		local flAccel = flDelta * kp - m_flAngularVelocity * kd;
+		m_flAngularVelocity += flAccel * frametime;
+		viewYaw = m_flPrevYaw += m_flAngularVelocity * frametime;
+	}
+	else
+	{
+		m_flAngularVelocity = 0.0;
+		m_flPrevYaw = viewYaw;
+	}
 
 	// Compass ticks
 	{
@@ -103,7 +130,7 @@ function CSGOHudLocator::Paint()
 		local texWide = ( 1.0 - fabs(yawDiff) / 90.0 ) * texTall;
 		local xpos = x0 + ( cos((yawDiff-90.0)*DEG2RAD) + 1.0 ) * ( width / 2 + margin ) - texWide / 2.0;
 
-		surface.DrawTexturedBox( m_hTargetTexture, xpos-margin, y0-YRES(12), texWide, texTall, 0xe7, 0xe7, 0xe7, 0x99 );
+		return surface.DrawTexturedBox( m_hTargetTexture, xpos-margin, y0-YRES(12), texWide, texTall, 0xe7, 0xe7, 0xe7, 0x99 );
 	}
 }
 

@@ -25,13 +25,13 @@ class CSGOHudDamageIndicator
 	m_hTexVert = null
 	m_hTexHorz = null
 
-	m_nAlphaTop = 0
-	m_nAlphaBottom = 0
-	m_nAlphaLeft = 0
-	m_nAlphaRight = 0
+	m_nAlphaTop = 0.0
+	m_nAlphaBottom = 0.0
+	m_nAlphaLeft = 0.0
+	m_nAlphaRight = 0.0
 
 	m_nFlash = 0
-	m_nFlashAlpha = 0
+	m_nFlashAlpha = 0.0
 	m_hGradient = null
 }
 
@@ -52,7 +52,7 @@ function CSGOHudDamageIndicator::Init()
 // NOTE: Matches SFUI, not Panorama. Panorama seems to use a different scaling
 function CSGOHudDamageIndicator::Paint()
 {
-	local decay = ( FrameTime() * 255.0 ).tointeger();
+	local decay = FrameTime() * 255.0;
 
 	local cx = XRES(320);
 	local cy = YRES(240);
@@ -62,21 +62,21 @@ function CSGOHudDamageIndicator::Paint()
 		case CSGOHUD_DMG_INDICATOR_BURN:
 		{
 			surface.DrawTexturedBox( m_hGradient, 0, cy, cx<<1, cy, 255, 0, 0, m_nFlashAlpha );
-			if ( ( m_nFlashAlpha -= decay ) <= 0 )
+			if ( ( m_nFlashAlpha -= decay ) <= 0.0 )
 				m_nFlash = 0;
 			break;
 		}
 		case CSGOHUD_DMG_INDICATOR_POISON:
 		{
 			surface.DrawTexturedBox( m_hGradient, 0, cy, cx<<1, cy, 255, 236, 128, m_nFlashAlpha );
-			if ( ( m_nFlashAlpha -= decay ) <= 0 )
+			if ( ( m_nFlashAlpha -= decay ) <= 0.0 )
 				m_nFlash = 0;
 			break;
 		}
 		case CSGOHUD_DMG_INDICATOR_RADIATION:
 		{
 			surface.DrawTexturedBox( m_hGradient, 0, cy, cx<<1, cy, 255, 255, 255, m_nFlashAlpha );
-			if ( ( m_nFlashAlpha -= decay ) <= 0 )
+			if ( ( m_nFlashAlpha -= decay ) <= 0.0 )
 				m_nFlash = 0;
 			break;
 		}
@@ -102,8 +102,8 @@ function CSGOHudDamageIndicator::Paint()
 		surface.SetColor( 255, 255, 255, m_nAlphaTop );
 		surface.DrawTexturedRect( x, y, sw, sh );
 
-		if ( ( m_nAlphaTop -= decay ) < 0 )
-			m_nAlphaTop = 0;
+		if ( ( m_nAlphaTop -= decay ) < 0.0 )
+			m_nAlphaTop = 0.0;
 	}
 
 	// bottom
@@ -113,8 +113,8 @@ function CSGOHudDamageIndicator::Paint()
 		surface.SetColor( 255, 255, 255, m_nAlphaBottom );
 		surface.DrawTexturedSubRect( x, y, x + sw, y + sh, 0., 1., 1., 0. );
 
-		if ( ( m_nAlphaBottom -= decay ) < 0 )
-			m_nAlphaBottom = 0;
+		if ( ( m_nAlphaBottom -= decay ) < 0.0 )
+			m_nAlphaBottom = 0.0;
 	}
 
 	surface.SetTexture( m_hTexHorz );
@@ -126,8 +126,8 @@ function CSGOHudDamageIndicator::Paint()
 		surface.SetColor( 255, 255, 255, m_nAlphaLeft );
 		surface.DrawTexturedRect( x, y, sh, sw );
 
-		if ( ( m_nAlphaLeft -= decay ) < 0 )
-			m_nAlphaLeft = 0;
+		if ( ( m_nAlphaLeft -= decay ) < 0.0 )
+			m_nAlphaLeft = 0.0;
 	}
 
 	// right
@@ -137,11 +137,11 @@ function CSGOHudDamageIndicator::Paint()
 		surface.SetColor( 255, 255, 255, m_nAlphaRight );
 		surface.DrawTexturedSubRect( x, y, x + sh, y + sw, 1., 0., 0., 1. );
 
-		if ( ( m_nAlphaRight -= decay ) < 0 )
-			m_nAlphaRight = 0;
+		if ( ( m_nAlphaRight -= decay ) < 0.0 )
+			m_nAlphaRight = 0.0;
 	}
 
-	if ( !(m_nAlphaTop|m_nAlphaBottom|m_nAlphaLeft|m_nAlphaRight|m_nFlash) )
+	if ( !(m_nAlphaTop+m_nAlphaBottom+m_nAlphaLeft+m_nAlphaRight+m_nFlash) )
 	{
 		self.SetVisible( false );
 	}
@@ -160,17 +160,17 @@ function CSGOHudDamageIndicator::DamageTaken( bits, origin )
 		if ( bits & DMG_BURN )
 		{
 			m_nFlash = CSGOHUD_DMG_INDICATOR_BURN;
-			m_nFlashAlpha = 127;
+			m_nFlashAlpha = 127.0;
 		}
 		else if ( bits & DMG_POISON )
 		{
 			m_nFlash = CSGOHUD_DMG_INDICATOR_POISON;
-			m_nFlashAlpha = 127;
+			m_nFlashAlpha = 127.0;
 		}
 		else if ( bits & DMG_RADIATION )
 		{
 			m_nFlash = CSGOHUD_DMG_INDICATOR_RADIATION;
-			m_nFlashAlpha = 127;
+			m_nFlashAlpha = 127.0;
 		}
 	}
 
@@ -179,7 +179,7 @@ function CSGOHudDamageIndicator::DamageTaken( bits, origin )
 
 	if ( flDist < 42.0 )
 	{
-		m_nAlphaTop = m_nAlphaBottom = m_nAlphaRight = m_nAlphaLeft = 255;
+		m_nAlphaTop = m_nAlphaBottom = m_nAlphaRight = m_nAlphaLeft = 255.0;
 		return self.SetVisible( true );
 	}
 
@@ -190,13 +190,13 @@ function CSGOHudDamageIndicator::DamageTaken( bits, origin )
 	local dot = vecDelta.Dot( viewForward );
 	if ( dot > 0.32 )
 	{
-		dot = ( dot * 255.0 ).tointeger();
+		dot = dot * 255.0;
 		if ( m_nAlphaTop < dot )
 			m_nAlphaTop = dot;
 	}
 	else if ( dot < -0.32 )
 	{
-		dot = ( dot * -255.0 ).tointeger();
+		dot = dot * -255.0;
 		if ( m_nAlphaBottom < dot )
 			m_nAlphaBottom = dot;
 	}
@@ -204,13 +204,13 @@ function CSGOHudDamageIndicator::DamageTaken( bits, origin )
 	dot = vecDelta.Dot( viewRight );
 	if ( dot > 0.32 )
 	{
-		dot = ( dot * 255.0 ).tointeger();
+		dot = dot * 255.0;
 		if ( m_nAlphaRight < dot )
 			m_nAlphaRight = dot;
 	}
 	else if ( dot < -0.32 )
 	{
-		dot = ( dot * -255.0 ).tointeger();
+		dot = dot * -255.0;
 		if ( m_nAlphaLeft < dot )
 			m_nAlphaLeft = dot;
 	}

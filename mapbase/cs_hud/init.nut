@@ -24,7 +24,7 @@
 //		"materials/panorama/images/hud/reticle/reticlefriend_additive"
 //-------------------------------------------------------------
 
-const CSGOHUD_VERSION = 23120820;
+const CSGOHUD_VERSION = 26070118;
 
 // Automatically detect the subdirectory.
 // Does not work if it was loaded with DoIncludeScript()

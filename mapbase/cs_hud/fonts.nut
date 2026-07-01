@@ -1,5 +1,5 @@
 
-surface.AddCustomFontFile( "resources/stratum2bold.ttf" );
+surface.AddCustomFontFile( "resource/stratum2bold.ttf" );
 
 local stratum = IsLinux() ? "Stratum2" : "Stratum2 Bold";
 

@@ -453,7 +453,17 @@ function CSGOHudWeaponSelection::PerformLayoutInternal()
 
 				panel = m_ItemPanels[slot][pos];
 				panel.m_szName = Localize.GetTokenAsUTF8( wep.GetPrintName() );
-				panel.m_chIcon = m_IconChars[ wep.GetClassname() ];
+
+				local szClassname = wep.GetClassname();
+				if ( szClassname in m_IconChars )
+				{
+					panel.m_chIcon = m_IconChars[ szClassname ];
+				}
+				else
+				{
+					panel.m_chIcon = m_IconChars[ "weapon_pistol" ];
+				}
+
 				panel.m_bHasAnyAmmo = wep.HasAnyAmmo();
 				panel.m_bSelected = ( slot == m_iSelectedSlot && pos == m_iSelectedPos );
 				panel.m_nPos = curpos++;

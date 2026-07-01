@@ -326,6 +326,9 @@ if ( CLIENT_DLL )
 			}
 
 			m_hVehicle = null;
+			if ( m_hWeapon && !m_hWeapon.IsValid() )
+				m_hWeapon = null;
+
 			OnSelectWeapon( m_hWeapon );
 
 			Convars.SetFloat( "hud_locator_alpha", 0.0 );
@@ -860,6 +863,8 @@ if ( CLIENT_DLL )
 		if ( alpha > 0 )
 		{
 			local decay = ( FrameTime() * 765.0 ).tointeger();
+			if ( decay < 0 )
+				decay = 1;
 			SetAlpha( alpha - decay );
 			return 0.0;
 		}
