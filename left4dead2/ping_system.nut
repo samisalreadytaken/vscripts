@@ -6,7 +6,7 @@
 // Contextual Ping System
 //
 
-const PING_SYSTEM_VERSION = 40;
+const PING_SYSTEM_VERSION = 41;
 
 const CONTENTS_WINDOW				= 0x2;
 //(CONTENTS_SOLID|CONTENTS_MOVEABLE|CONTENTS_MONSTER|CONTENTS_WINDOW|CONTENTS_DEBRIS|CONTENTS_GRATE)
@@ -348,11 +348,8 @@ enum PingColour
 	INCAP			= 0xFF1991FF,
 }
 
-enum PingSound
-{
-	DEFAULT		= "Default.Right", // "common/right.wav"
-	ALERT		= "Default.RearRight", // "common/rearright.wav"
-}
+const PingSound_Default		= "Default.Right"; // "common/right.wav"
+const PingSound_Alert		= "Default.RearRight"; // "common/rearright.wav"
 
 if ( !( "m_Players" in this ) )
 {
@@ -377,7 +374,8 @@ if ( !( "m_Players" in this ) )
 	const m_nConsecutivePings = 6; // int
 	const m_OffscreenIndicators = 7; // {}[4]
 	const m_hPingWheel = 8; // sprite
-	const PING_SYSTEM_USER_MEMBER_COUNT = 9;
+	const m_bBeingRevived = 9; // bool
+	const PING_SYSTEM_USER_MEMBER_COUNT = 10;
 
 	delete CONST.m_Buttons;
 	delete CONST.m_Pings;
@@ -388,6 +386,7 @@ if ( !( "m_Players" in this ) )
 	delete CONST.m_nConsecutivePings;
 	delete CONST.m_OffscreenIndicators;
 	delete CONST.m_hPingWheel;
+	delete CONST.m_bBeingRevived;
 	delete CONST.PING_SYSTEM_USER_MEMBER_COUNT;
 
 	const m_colour = 1;
@@ -397,7 +396,8 @@ if ( !( "m_Players" in this ) )
 	const m_fnThink = 5;
 
 	delete CONST.PingColour;
-	delete CONST.PingSound;
+	delete CONST.PingSound_Default;
+	delete CONST.PingSound_Alert;
 	delete CONST.m_colour;
 	delete CONST.m_lifetime;
 	delete CONST.m_soundDefault;
@@ -411,7 +411,7 @@ if ( !( "m_Players" in this ) )
 	PingMaterial[PingType.TEAMMATE]					= "ping_system/ping_base.vmt",
 	PingMaterial[PingType.INFECTED]					= "ping_system/ping_base.vmt",
 	PingMaterial[PingType.UNCOMMON]					= "ping_system/ping_base.vmt",
-	PingMaterial[PingType.INCAP]					= "ping_system/ping_base.vmt",
+	PingMaterial[PingType.INCAP]					= "ping_system/ping_incap.vmt",
 	PingMaterial[PingType.ONFIRE]					= "ping_system/ping_base_fire.vmt",
 	PingMaterial[PingType.DEAD_SURVIVOR]			= "ping_system/ping_dead_survivor.vmt",
 
@@ -494,7 +494,14 @@ if ( !( "m_Players" in this ) )
 	foreach ( type, mat in PingMaterial )
 	{
 		m_PingLookup[type] =
-			[ mat, PingColour.BASE, PING_SYSTEM_LIFETIME_DEFAULT, PingSound.DEFAULT, PingSound.ALERT, null ];
+		[
+			mat,
+			PingColour.BASE,
+			PING_SYSTEM_LIFETIME_DEFAULT,
+			PingSound_Default,
+			PingSound_Alert,
+			null
+		];
 	}
 }
 
@@ -1056,10 +1063,10 @@ function Precache()
 	PrecacheModel( wheel_sprite_kv.model );
 	PrecacheModel( wheel_item_sprite_kv.model );
 
-	if ( !IsSoundPrecached( PingSound.DEFAULT ) )
+	if ( !IsSoundPrecached( PingSound_Default ) )
 	{
-		PrecacheSound( PingSound.DEFAULT );
-		PrecacheSound( PingSound.ALERT );
+		PrecacheSound( PingSound_Default );
+		PrecacheSound( PingSound_Alert );
 	}
 
 	LoadConfig(true);
@@ -1419,7 +1426,8 @@ function AddPlayer( player, teamnum )
 		user[m_flLastPingSoundTime] =
 		user[m_flPingButtonTime] = 0.0;
 		user[m_nConsecutivePings] = 0;
-		user[m_hPingWheel] = null;
+		user[m_hPingWheel] =
+		user[m_bBeingRevived] = null;
 	}
 	else if ( idx in m_Players )
 	{
@@ -1441,7 +1449,8 @@ function AddPlayer( player, teamnum )
 			user[m_flLastPingSoundTime] =
 			user[m_flPingButtonTime] = 0.0;
 			user[m_nConsecutivePings] = 0;
-			user[m_hPingWheel] = null;
+			user[m_hPingWheel] =
+			user[m_bBeingRevived] = null;
 		}
 	}
 
@@ -1690,12 +1699,54 @@ function OnGameEvent_player_incapacitated( event )
 		return EntFire( "!activator", "RunScriptCode", "return ::PingSystem.PlayerPingIncap(self)", 5.0, player );
 }
 
+function OnGameEvent_revive_begin( event )
+{
+	if ( PingResponse.dominated in m_AutoBlock )
+		return;
+
+	local player = GetPlayerFromUserID( event.subject );
+	if ( player && player.IsSurvivor() && player.IsIncapacitated() )
+	{
+		if (PING_DEBUG_VERBOSE)
+			printf( "%s.m_bBeingRevived %d\n", ""+player, 1 );
+
+		local user = m_Users[ player.GetEntityIndex() - 1 ];
+		user[m_bBeingRevived] = 1;
+	}
+}
+
+local fnReviveEnd = function( event )
+{
+	if ( PingResponse.dominated in m_AutoBlock )
+		return;
+
+	local player = GetPlayerFromUserID( event.subject );
+	if ( player )
+	{
+		if (PING_DEBUG_VERBOSE)
+			printf( "%s.m_bBeingRevived %d\n", ""+player, 0 );
+
+		local user = m_Users[ player.GetEntityIndex() - 1 ];
+		user[m_bBeingRevived] = null;
+	}
+}
+
+OnGameEvent_revive_end <- OnGameEvent_revive_success <- fnReviveEnd;
+
 function PlayerPingIncap( player )
 {
 	if ( player && player.IsValid() && player.IsSurvivor() && player.IsIncapacitated() )
 	{
+		local user = m_Users[ player.GetEntityIndex() - 1 ];
+
 		if (PING_DEBUG)
-			printf( "PlayerPingIncap %s\n", ""+player );
+			printf( "PlayerPingIncap %s %s\n", ""+player, user[m_bBeingRevived] ? "(rev)" : "" );
+
+		if ( user[m_bBeingRevived] )
+		{
+			user[m_bBeingRevived] = null;
+			return;
+		}
 
 		return PingEntity( player, player );
 	}
@@ -2487,7 +2538,7 @@ SpriteThinkIncap = function()
 
 	if ( curtime < m_flDieTime )
 	{
-		if ( m_hTarget.IsValid() && !GetNetPropInt( m_hTarget, "m_lifeState" ) &&
+		if ( !GetNetPropInt( m_hTarget, "m_lifeState" ) &&
 				( m_hTarget.IsIncapacitated() || GetNetPropInt( m_hTarget, "m_isHangingFromTongue" ) ) )
 			return PING_SYSTEM_PING_THINK_SLOW;
 
@@ -4839,7 +4890,7 @@ function SetPingSound( type, soundDefault, soundAlert )
 	}
 	else
 	{
-		soundDefault = PingSound.DEFAULT;
+		soundDefault = PingSound_Default;
 	}
 
 	if ( typeof soundAlert == "string" )
@@ -4853,7 +4904,7 @@ function SetPingSound( type, soundDefault, soundAlert )
 	}
 	else
 	{
-		soundAlert = PingSound.ALERT;
+		soundAlert = PingSound_Alert;
 	}
 
 	if ( type == -1 )
@@ -4877,8 +4928,8 @@ function SetPingSound( type, soundDefault, soundAlert )
 		pingInfo[m_soundAlert] = soundAlert;
 	}
 
-	soundDefault = ( soundDefault != PingSound.DEFAULT ) ? Fmt( "\"%s\"", soundDefault ) : "null";
-	soundAlert = ( soundAlert != PingSound.ALERT ) ? Fmt( "\"%s\"", soundAlert ) : "null";
+	soundDefault = ( soundDefault != PingSound_Default ) ? Fmt( "\"%s\"", soundDefault ) : "null";
+	soundAlert = ( soundAlert != PingSound_Alert ) ? Fmt( "\"%s\"", soundAlert ) : "null";
 
 	return Msg(Fmt( "PingSystem.SetPingSound(%s, %s, %s)\n",
 				PingTypeName(type), soundDefault, soundAlert ));
@@ -5198,8 +5249,8 @@ local WriteConfig = function()
 	local timesareequal = true;
 	local customsound = 0;
 	local prevtime = m_PingLookup[0][m_lifetime];
-	local soundDefault = PingSound.DEFAULT;
-	local soundAlert = PingSound.ALERT;
+	local soundDefault = PingSound_Default;
+	local soundAlert = PingSound_Alert;
 
 	foreach ( type, pingInfo in m_PingLookup )
 	{
@@ -5272,8 +5323,8 @@ local WriteConfig = function()
 
 	if ( customsound == 1 )
 	{
-		soundDefault = ( soundDefault != PingSound.DEFAULT ) ? Fmt( "\"%s\"", soundDefault ) : "null";
-		soundAlert = ( soundAlert != PingSound.ALERT ) ? Fmt( "\"%s\"", soundAlert ) : "null";
+		soundDefault = ( soundDefault != PingSound_Default ) ? Fmt( "\"%s\"", soundDefault ) : "null";
+		soundAlert = ( soundAlert != PingSound_Alert ) ? Fmt( "\"%s\"", soundAlert ) : "null";
 
 		buf = Fmt( "%sPingSystem.SetPingSound(PingType.ALL, %s, %s)\n", buf,
 				soundDefault, soundAlert );
@@ -5288,10 +5339,10 @@ local WriteConfig = function()
 			soundDefault = pingInfo[m_soundDefault];
 			soundAlert = pingInfo[m_soundAlert];
 
-			if ( soundDefault != PingSound.DEFAULT || soundAlert != PingSound.ALERT )
+			if ( soundDefault != PingSound_Default || soundAlert != PingSound_Alert )
 			{
-				soundDefault = ( soundDefault != PingSound.DEFAULT ) ? Fmt( "\"%s\"", soundDefault ) : "null";
-				soundAlert = ( soundAlert != PingSound.ALERT ) ? Fmt( "\"%s\"", soundAlert ) : "null";
+				soundDefault = ( soundDefault != PingSound_Default ) ? Fmt( "\"%s\"", soundDefault ) : "null";
+				soundAlert = ( soundAlert != PingSound_Alert ) ? Fmt( "\"%s\"", soundAlert ) : "null";
 
 				buf = Fmt( "%sPingSystem.SetPingSound(%s, %s, %s)\n", buf,
 						PingTypeName(type), soundDefault, soundAlert );
